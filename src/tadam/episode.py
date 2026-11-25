@@ -34,6 +34,7 @@ class Shot:
     subs: list = field(default_factory=list)       # [{from, to, who, text, kind}]
     song: dict | None = None
     quiet: bool = False
+    lines_from: int = 0              # the scene's script lines before the shot's own ("camera" of script.json)
 
 
 @dataclass
@@ -46,6 +47,8 @@ class Episode:
     shots: list[Shot]
     music: dict | None = None
     notes: list[str] = field(default_factory=list)
+    names: dict = field(default_factory=dict)      # cast key -> the hero's name in this language
+    script_sha: str = ""                           # sha-256 of episodes/<n>/script.json as it was read
 
     @property
     def seconds(self) -> float:
@@ -103,6 +106,10 @@ def build(world: World, n: str, lang: str | None = None, link: tts.Link | None =
           client: tts.Client | None = None, log=print) -> Episode:
     n = str(n)
     script, err = read_json(world.episode_dir(n) / "script.json")
+    try:
+        script_sha = hashlib.sha256((world.episode_dir(n) / "script.json").read_bytes()).hexdigest()
+    except OSError:
+        script_sha = ""
     if not isinstance(script, dict):
         raise WorldError(f"episodes/{n}/script.json: {err or 'not a script'} (tadam new episode {n})")
     if script.get("version") != 2:
@@ -151,6 +158,9 @@ def build(world: World, n: str, lang: str | None = None, link: tts.Link | None =
         sh = Shot(id=sid, remark=resolve.text_of(s.get("remark"), lang), dir=d, seconds=seconds, frames=fr,
                   start=round(start_frames / fps, 4), song=_sound(world, s.get("song")), quiet=bool(s.get("quiet")))
         start_frames += fr
+        own = [c for c in s.get("camera") or [] if isinstance(c, dict)]
+        if isinstance(scene, dict) and isinstance(scene.get("script"), list):
+            sh.lines_from = max(len(scene["script"]) - len(own), 0)
         speaker, talk = resolve.line_phrases(s, steps, lang)
         if speaker:
             sh.speaker, sh.talk = speaker, talk
@@ -181,7 +191,8 @@ def build(world: World, n: str, lang: str | None = None, link: tts.Link | None =
             notes.append(f"music: media/{m.get('file')} is not in the world: the draft has no tune")
         if music is not None and isinstance(m.get("ambience"), dict):
             music["ambience"] = _sound(world, m["ambience"])
-    return Episode(world, n, lang, fps, size, out, music, notes)
+    names = {k: hero_name(world, script, k, lang) for k in (script.get("cast") or {})}
+    return Episode(world, n, lang, fps, size, out, music, notes, names, script_sha)
 
 
 def _card(world: World, c: dict, lang: str, size: tuple[int, int], seconds: float) -> dict:

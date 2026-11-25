@@ -694,6 +694,7 @@ static func _place_action(place: String, side: String) -> Dictionary:
 
 
 func _command(line: Dictionary) -> void:
+	line["_ran"] = step_no                # (the kit's player says which lines of the script are at work)
 	if line.has("focus") or line.has("aperture"):
 		focus.command(line, focus.s_focus)
 		if not line.has("who") and not line.has("camera"):

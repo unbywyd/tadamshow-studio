@@ -22,6 +22,8 @@ static var puppets_root := ""
 static var live_mouth := 0         # the panel's "live mouth": 0 none, 1 the oval (scenes/mouth_demo), 2 the lips alone (scenes/lips_demo)
 
 var _side := "right"
+var _first := ""               # --action=<id>: played as the viewer opens (the kit's player opens it on the action of the moment)
+var _chosen_file := ""         # --chosen=<file.json>: every action pressed is written there, for Claude (tadam play where)
 var _elbow_say := ""           # "" = the engine chooses; else every arm pose of the next action gets this "elbow"
 var _energy := 1.0
 var _speed := 1.0
@@ -35,6 +37,10 @@ func _ready() -> void:
 			hero_name = a.trim_prefix("--hero=")
 		elif a.begins_with("--puppets="):
 			puppets_root = a.trim_prefix("--puppets=")
+		elif a.begins_with("--action="):
+			_first = a.trim_prefix("--action=")
+		elif a.begins_with("--chosen="):
+			_chosen_file = a.trim_prefix("--chosen=")
 	if puppets_root.is_empty() and hero_name.is_absolute_path():
 		# a hero given by its folder: the list beside it is its neighbours (heroes/<slug>/puppet -> heroes/)
 		var d := hero_name.simplify_path()
@@ -47,6 +53,8 @@ func _ready() -> void:
 	super._ready()
 	_elbow_say = OS.get_environment("VIEWER_ELBOW")      # (for checks: the panel's "elbow" choice from outside)
 	_build_panel()
+	if _first != "" and actions().has(_first):
+		_play.call_deferred(_first)
 
 
 ## (for checking the window itself: VIEWER_SHOT=<file.png> saves a picture of it after a second and quits;
@@ -349,6 +357,7 @@ func _play(id: String) -> void:
 		items.remove("item")
 		_command({"who": HERO, "play": act["test_items"][0]["card"], "for": 4.0, "energy": _energy, "speed": _speed})
 		_say("%s  (%s)%s" % [act.get("title", id), id, _missing(act)])
+		_chosen(id)
 		return
 	# the thing the action is about, if it needs one
 	for d: Dictionary in act.get("test_items", []):
@@ -382,6 +391,24 @@ func _play(id: String) -> void:
 				line["duration"] = 2.5
 	_command(line)
 	_say("%s  (%s)%s" % [act.get("title", id), id, _missing(act)])
+	_chosen(id)
+
+
+## The hero's name as the world calls it: heroes/<slug>/puppet -> <slug>.
+func _slug() -> String:
+	var d := hero_name.simplify_path().trim_suffix("/")
+	return d.get_base_dir().get_file() if d.get_file() == "puppet" else d.get_file()
+
+
+## What was chosen last, for Claude: {"action", "title", "hero", "at"} in the --chosen file (when there is one).
+func _chosen(id: String) -> void:
+	if _chosen_file == "":
+		return
+	DirAccess.make_dir_recursive_absolute(_chosen_file.get_base_dir())
+	var f := FileAccess.open(_chosen_file, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify({"action": id, "title": str(actions()[id].get("title", id)), "hero": _slug(),
+			"at": Time.get_datetime_string_from_system(false, true)}, " "))
 
 
 ## The action itself, or (an elbow chosen on the panel) a copy of it with that "elbow" in every arm pose.
