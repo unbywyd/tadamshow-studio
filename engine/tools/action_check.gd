@@ -3,7 +3,9 @@ extends SceneTree
 ## Nothing is fitted to a hero: an action that fails on one hero is a fault of the action or of the engine.
 ##
 ## usage: godot --headless --path engine --script tools/action_check.gd -- [--heroes=a,b] [--actions=a,b]
-##            [--out=<file.json>]
+##            [--out=<file.json>] [--puppets=<folder>]
+##        --puppets: the folder the heroes are in (the studio kit passes a world's heroes/: a hero is then
+##        <folder>/<name>/puppet); a hero named by an absolute path is that puppet folder itself.
 ##        without --headless and with --shots=<dir>: also saves 6 pictures of every action on every hero
 ##        (tools/action_report.py makes the storyboards and the table out of them).
 ##        --pairs[=b1,b2,..]: TRANSITIONS instead: every action A is interrupted by each action B (default: PAIRS)
@@ -41,6 +43,7 @@ var hand_shots := false          # --hand-shots: also a close picture of both ha
 const HAND_BOX := 150
 var shot_side := "right"        # --shot-side=left: the pictures of the left-hand run
 var view: SubViewport
+var puppets_root := ""          # --puppets=<folder>
 
 
 func _initialize() -> void:
@@ -62,6 +65,7 @@ func _run() -> void:
 	if args.has("pins"):                      # --pins=peg: the shared wooden peg on the bends
 		Puppet.pin_style = str(args["pins"])
 	shots_dir = args.get("shots", "")
+	puppets_root = args.get("puppets", "")
 	shot_side = args.get("shot-side", "right")
 	hand_shots = args.has("hand-shots")
 	var out: String = args.get("out", ProjectSettings.globalize_path("res://out/actions.json"))
@@ -161,13 +165,24 @@ func _run() -> void:
 	quit(0)
 
 
-static func _has_profile(name: String) -> bool:
-	var dir: String = ProjectSettings.globalize_path("res://").path_join("../puppets").path_join(name).simplify_path()
-	return FileAccess.file_exists(dir.path_join("side").path_join("rig.json"))
+func _has_profile(name: String) -> bool:
+	return FileAccess.file_exists(_hero_dir(name).path_join("side").path_join("rig.json"))
+
+
+## A hero's puppet folder: <puppets>/<name> (or <puppets>/<name>/puppet in a world folder); an absolute path is the
+## folder itself; without --puppets: ../puppets next to the engine.
+func _hero_dir(name: String) -> String:
+	if name.is_absolute_path():
+		return name.simplify_path()
+	var root_dir: String = puppets_root if not puppets_root.is_empty() else ProjectSettings.globalize_path("res://").path_join("../puppets")
+	var d: String = root_dir.path_join(name)
+	if FileAccess.file_exists(d.path_join("puppet").path_join("rig.json")):
+		d = d.path_join("puppet")
+	return d.simplify_path()
 
 
 func _hero(name: String) -> Puppet:
-	var dir: String = ProjectSettings.globalize_path("res://").path_join("../puppets").path_join(name).simplify_path()
+	var dir: String = _hero_dir(name)
 	var p := Puppet.new()
 	view.add_child(p)
 	if not p.load_rig(dir.path_join("rig.json"), dir.path_join("parts"),

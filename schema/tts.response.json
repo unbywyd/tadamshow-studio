@@ -1,0 +1,76 @@
+{
+  "$id": "https://tadamshow.com/schemas/tts.response.json",
+  "title": "tts.response",
+  "description": "answer of POST /api/studio/tts and GET /api/studio/tts/:jobId",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "done",
+        "pending",
+        "failed"
+      ]
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "cached": {
+      "type": "boolean"
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expiresAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "jobId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "seconds": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "fingerprint",
+    "cached",
+    "url",
+    "expiresAt",
+    "jobId",
+    "seconds",
+    "error"
+  ],
+  "additionalProperties": false
+}

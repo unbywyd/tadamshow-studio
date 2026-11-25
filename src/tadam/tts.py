@@ -2,8 +2,8 @@
 a narration (POST /api/studio/tts: the text and the voice key → an mp3 link and its fingerprint), so nobody has
 to install a TTS. The voice is the one the film will have; the server keeps the file and reuses it.
 
-- Only with a studio key: TADAM_STUDIO_KEY (and TADAM_STUDIO_URL for another server than the default). With no key,
-  the narration stays subtitles and one line says so.
+- Only with a studio key: TADAM_STUDIO_KEY or the one `tadam login` stored (and TADAM_STUDIO_URL for another
+  server than the default). With no key, the narration stays subtitles and one line says so.
 - Only the narration's text and the voice key are sent (and the effect, when it is not "none": it is part of the
   voice). Nothing else of the world ever leaves the computer here.
 - Cached in the world's .tadam/tts/<fingerprint>.mp3 by the fingerprint of text + voice + effect, the very name the
@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import time
 import urllib.error
 import urllib.parse
@@ -57,11 +56,10 @@ class Link:
 
 
 def link_from_env(environ=None) -> Link | None:
-    env = os.environ if environ is None else environ
-    key = (env.get(KEY_ENV) or "").strip()
-    if not key:
-        return None
-    return Link((env.get(URL_ENV) or DEFAULT_URL).strip().rstrip("/"), key)
+    """TADAM_STUDIO_KEY, else the key `tadam login` stored for this server (tadam.link)."""
+    from tadam import link
+    got = link.current(environ)
+    return Link(got.url, got.key) if got else None
 
 
 def fingerprint(text: str, voice: str, fx: str = "none") -> str:

@@ -35,6 +35,10 @@ CODES = {
     "puppet_missing": ("error", "a hero has no puppet yet (tadam hero make)"),
     "puppet_not_passed": ("error", "a hero's puppet did not pass its audit"),
     "puppet_parts_missing": ("error", "a picture of the puppet's parts is missing"),
+    "hero_actions_missing": ("warning", "the hero's actions were never checked in the engine (tadam hero check)"),
+    "hero_actions_stale": ("warning", "the puppet changed after its action check (tadam hero check again)"),
+    "hero_actions_failed": ("error", "the hero fails a stage-1 action: draw it again, never tune it"),
+    "puppet_no_board": ("warning", "the head has no face board: the site shows the recorded head whole"),
     "set_missing": ("error", "the script names a set the world does not have"),
     "set_invalid": ("error", "a set.json is malformed"),
     "set_file_missing": ("error", "a picture a set names does not exist"),
@@ -175,6 +179,23 @@ class _Run:
         if not (isinstance(rep, dict) and rep.get("passed") is True):
             why = "no report.json" if err else "the audit found problems (report.json)"
             self.add("puppet_not_passed", rel, f"{why}: make it again (`tadam hero make {slug} ...`)", level)
+            return
+        head = (rig.get("parts") or {}).get("head")
+        if isinstance(head, dict) and rig.get("view", "front") == "front" and not isinstance(head.get("board"), dict):
+            self.add("puppet_no_board", f"{rel}/rig.json", f"no parts.head.board: cut the puppet again "
+                     f"(`tadam hero make {slug} ...`) so the face gets its oval", "warning" if required else "info")
+        from tadam import actions
+        st, data = actions.state(pdir)
+        if st == "missing":
+            self.add("hero_actions_missing", rel, f"no actions.json: run `tadam hero check {slug}`",
+                     None if required else "info")
+        elif st == "stale":
+            self.add("hero_actions_stale", rel, f"the puppet changed after its action check: `tadam hero check {slug}`",
+                     None if required else "info")
+        elif st == "failed":
+            bad = ", ".join((data or {}).get("stage1_failed") or (data or {}).get("stage1_missing") or []) or "?"
+            self.add("hero_actions_failed", rel, f"fails stage-1 action(s) {bad} (actions.json): draw the hero again "
+                     f"(`tadam hero make {slug} ...`); a hero is never tuned to pass", level)
 
     def sets(self):
         for slug in self.w.sets():

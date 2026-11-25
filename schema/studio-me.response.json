@@ -90,6 +90,41 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 1000
+        },
+        "ttsCharsPerRequest": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "ttsCharsPerDay": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "ttsPerMinute": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "maxFiles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5000
+        },
+        "maxFileMb": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "maxShots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "maxEpisodeSeconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 3600
         }
       },
       "required": [

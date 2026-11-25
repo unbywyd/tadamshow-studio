@@ -1,0 +1,73 @@
+{
+  "$id": "https://tadamshow.com/schemas/episode.json",
+  "title": "episode",
+  "description": "episodes/<n>/episode.json: the texts of an episode",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "title": {
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "en": {
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "ru"
+      ]
+    },
+    "logline": {
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "en": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "ru"
+      ]
+    },
+    "teaser": {
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "en": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "ru"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "title"
+  ],
+  "additionalProperties": false
+}

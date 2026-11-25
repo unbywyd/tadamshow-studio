@@ -1,0 +1,98 @@
+{
+  "$id": "https://tadamshow.com/schemas/pull.response.json",
+  "title": "pull.response",
+  "description": "GET /api/studio/worlds/:slug/pull",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "world": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "soon",
+            "live",
+            "hidden",
+            "archived"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "rev": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "manifest": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300,
+        "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}(?:\\/[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}){0,7}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 209715200
+          }
+        },
+        "required": [
+          "sha256",
+          "bytes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "files": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300,
+        "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}(?:\\/[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}){0,7}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "format": "uri"
+      }
+    },
+    "expiresAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "world",
+    "rev",
+    "manifest",
+    "files",
+    "expiresAt"
+  ],
+  "additionalProperties": false
+}

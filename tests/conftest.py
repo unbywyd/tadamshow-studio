@@ -25,6 +25,14 @@ def png_bytes(size=(64, 64), color=(200, 120, 80, 255), mode="RGBA") -> bytes:
 
 
 @pytest.fixture(autouse=True)
+def own_config(monkeypatch, tmp_path_factory):
+    """No test sees the person's real studio key: the config folder is a fresh temp one, no key in the env."""
+    monkeypatch.setenv("TADAM_CONFIG_DIR", str(tmp_path_factory.mktemp("config")))
+    monkeypatch.delenv("TADAM_STUDIO_KEY", raising=False)
+    monkeypatch.delenv("TADAM_STUDIO_URL", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def no_network(monkeypatch):
     """Every test runs with a client that refuses to be made: a test that wants generation installs its fake."""
     def refuse():
@@ -74,7 +82,17 @@ def mannequin_puppet(tmp_path_factory) -> Path:
     d = tmp_path_factory.mktemp("mannequin") / "puppet"
     report = mannequin.make(d, log=lambda *_: None)
     assert report["passed"], report
+    write_passed_actions(d)
     return d
+
+
+def write_passed_actions(pdir: Path) -> None:
+    """actions.json as `tadam hero check` writes it for a hero that passes every stage-1 action (no engine run:
+    tests/test_actions.py runs the engine itself)."""
+    from tadam import actions
+    raw = {"limits": {}, "runs": [{"action": a, "side": "right", "faults": []} for a in actions.STAGE1]}
+    res = actions.summarise(raw, {}, actions.rig_sha(pdir), 0.0)
+    (Path(pdir) / actions.FILE).write_text(json.dumps(res), encoding="utf-8")
 
 
 @pytest.fixture(scope="session")

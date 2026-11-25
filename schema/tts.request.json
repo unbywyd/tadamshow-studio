@@ -1,0 +1,36 @@
+{
+  "$id": "https://tadamshow.com/schemas/tts.request.json",
+  "title": "tts.request",
+  "description": "POST /api/studio/tts",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 5000
+    },
+    "voice": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "fx": {
+      "default": "none",
+      "type": "string",
+      "enum": [
+        "none",
+        "radio"
+      ]
+    },
+    "wait": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 60
+    }
+  },
+  "required": [
+    "text",
+    "voice"
+  ]
+}

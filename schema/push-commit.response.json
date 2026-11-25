@@ -217,6 +217,93 @@
         }
       ]
     },
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "changeClass": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "staleRoles": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "heroes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "staleRoles",
+                  "heroes",
+                  "steps"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "applied": {
+            "type": "string",
+            "enum": [
+              "live",
+              "draft",
+              "applied",
+              "invalid",
+              "unchanged"
+            ]
+          }
+        },
+        "required": [
+          "number",
+          "changeClass",
+          "reasons",
+          "impact",
+          "applied"
+        ],
+        "additionalProperties": false
+      }
+    },
     "links": {
       "type": "object",
       "properties": {
@@ -260,6 +347,7 @@
     "check",
     "summary",
     "editClass",
+    "episodes",
     "links"
   ],
   "additionalProperties": false

@@ -29,6 +29,7 @@ trusted with one thing: to paint the pieces as separate blobs in the same ARRANG
        from the wrist pin to the fingertips) and pinned by its own wrist;
        if <puppet>/mouth_open.png exists (gen_mouth.py), the head gets the variant "open": its own
        picture with only the mouth taken from the new one (mouth.py);
+       the FACE BOARD: the oval of the head where the site shows the recorded face (board.py, parts.head.board);
        a skirt -> its waistband on the top edge of the pelvis, both on their own centre lines. A skirt is a garment,
        not a body part: the model paints it at its own scale, so it is FITTED as a whole (never stretched): to the
        length its pattern asks for, but big enough to hide the pelvis and small enough to end above the floor;
@@ -48,7 +49,7 @@ from PIL import Image
 from scipy.optimize import linear_sum_assignment
 
 from tadam import imgio
-from tadam.puppet import audit, mouth, rigkit, wear
+from tadam.puppet import audit, board, mouth, rigkit, wear
 from tadam.puppet.audit import axis_x, inscribed
 SPECK = 40            # blobs smaller than this many pixels are noise
 DETAIL = 0.10         # a blob smaller than this share of the median piece is a detached detail
@@ -669,6 +670,9 @@ def cut(pdir, rig_name=None, log=print) -> dict:
     notes, wear_problems = wear.fit_wear(pdir, parts, pad, images)     # what stays on over a recorded face
     repairs += notes
     variant_problems += wear_problems
+    notes, board_problems = board.fit_board(pdir, parts, pad, images, rig.get("view", "front"))   # the face's oval
+    repairs += notes
+    variant_problems += board_problems
     # a hat of its own (gen_prop.paint_prop(..., hat=True)): worn on top of a recorded head, with nothing else of the painted head
     parts["head"].pop("hat", None)
     (pdir / "parts" / "head.hat.png").unlink(missing_ok=True)

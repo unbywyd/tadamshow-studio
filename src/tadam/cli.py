@@ -64,6 +64,10 @@ def build_parser() -> argparse.ArgumentParser:
     hm.add_argument("--attempts", type=int, default=3)
     hm.add_argument("--mannequin", action="store_true",
                     help="no painting: the wooden mannequin drawn by code (free), to block out scenes")
+    hm.add_argument("--no-actions", action="store_true", help="do not run `tadam hero check` after making it")
+    hc = hs.add_parser("check", help="play every action on the hero in the engine: tadam hero check <slug>")
+    hc.add_argument("slug")
+    hc.add_argument("--json", action="store_true", help="print actions.json")
 
     st = sub.add_parser("set", help="sets: paint a set from its kit.json")
     ss = st.add_subparsers(dest="what", metavar="<what>")
@@ -102,6 +106,28 @@ def build_parser() -> argparse.ArgumentParser:
     fm = sub.add_parser("film", help="a draft MP4 of the episode (picture, narration, music, subtitles)")
     show_args(fm)
     fm.add_argument("--out", help="the MP4 (default: .tadam/films/<episode>.mp4)")
+
+    lg = sub.add_parser("login", help="store your studio key (typed hidden, or from TADAM_STUDIO_KEY) after the "
+                                      "server accepts it")
+    lg.add_argument("--json", action="store_true")
+    sub.add_parser("logout", help="forget the stored studio key of this server")
+    sub.add_parser("join", help="become an editor: email, code, the rules (comes with the next kit update)")
+    ps = sub.add_parser("push", help="send the world folder to the server (only what changed)")
+    ps.add_argument("--confirm", action="store_true",
+                    help="accept a breaking change that makes other people's sent roles stale (the project's owner "
+                         "only, after the person said yes to exactly that)")
+    ps.add_argument("--json", action="store_true", help="print the server's answer as JSON")
+    pu = sub.add_parser("pull", help="get the server's last revision: merge it into this folder, or fetch a world "
+                                     "into a new folder")
+    pu.add_argument("slug", nargs="?", help="the world (default: this folder's)")
+    pu.add_argument("--dir", help="where the new folder goes (a first pull; default: here)")
+    pu.add_argument("--json", action="store_true")
+    df = sub.add_parser("diff", help="what changed: server -> this folder; <rev> -> this folder; <rev> <rev>")
+    df.add_argument("revs", nargs="*", help="0, 1 or 2 revisions (revisions this folder pushed or pulled)")
+    df.add_argument("--json", action="store_true")
+    stt = sub.add_parser("status", help="your worlds and episodes on the server, submissions, remarks, what is "
+                                        "missing before a submission")
+    stt.add_argument("--json", action="store_true")
     return ap
 
 
@@ -140,8 +166,10 @@ def cmd_new(a) -> int:
 
 def cmd_hero(a) -> int:
     from tadam import hero
+    if a.what == "check":
+        return _hero_check(_world(a), a.slug, a.json)
     if a.what != "make":
-        _out('tadam hero make <slug> "<description>"')
+        _out('tadam hero make <slug> "<description>"  |  tadam hero check <slug>')
         return 2
     w = _world(a)
     if not a.mannequin:
@@ -149,7 +177,24 @@ def cmd_hero(a) -> int:
     r = hero.make(w, a.slug, a.description, style=a.style, rig=a.rig, quality=a.quality, model=a.model,
                   attempts=a.attempts, mannequin=a.mannequin, log=_out)
     _out(f"{a.slug}: {hero.describe(r)}")
-    return 0 if r["passed"] else 1
+    if not r["passed"]:
+        return 1
+    if a.no_actions:
+        return 0
+    from tadam.engine import EngineError
+    _out(f"checking every action on {a.slug} in the engine ...")
+    try:
+        return _hero_check(w, a.slug, False)
+    except EngineError as e:
+        _out(f"the action check did not run ({e}); run `tadam hero check {a.slug}` when the engine works")
+        return 0
+
+
+def _hero_check(w, slug: str, as_json: bool) -> int:
+    from tadam import actions
+    res = actions.run(w, slug)
+    _out(json.dumps(res, ensure_ascii=False, indent=1) if as_json else (slug + ":" + chr(10) + actions.table(res)))
+    return 0 if res["passed"] else 1
 
 
 def cmd_set(a) -> int:
@@ -272,6 +317,134 @@ def cmd_film(a) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------------------------------ the server
+
+def _api(required: bool = True):
+    from tadam import api, link
+    lk = link.current()
+    if lk is None:
+        if required:
+            raise api.no_key()
+        return None
+    return api.Api(lk)
+
+
+def _read_key() -> str | None:
+    """The key: TADAM_STUDIO_KEY, else typed (hidden) at a real keyboard. Never echoed, never printed."""
+    import getpass
+    import os
+    from tadam import link
+    env = (os.environ.get(link.KEY_ENV) or "").strip()
+    if env:
+        return env
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        _out("tadam login reads the key from a real keyboard (hidden), or from TADAM_STUDIO_KEY:\n"
+             "  run it yourself in a terminal, or: skey run --only TADAM_STUDIO_KEY -- tadam login\n"
+             "Never paste the key into a chat.")
+        return None
+    try:
+        return getpass.getpass("studio key (tds_..., hidden): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return None
+
+
+def cmd_login(a) -> int:
+    from tadam import api, link
+    key = _read_key()
+    if not key:
+        return 2
+    if not link.looks_like_key(key):
+        _out("that is not a studio key (tds_<8 letters>_<secret>): make one in the cabinet (studio.tadamshow.com)")
+        return 2
+    url = link.server_url()
+    try:
+        me = api.Api(link.Link(url, key)).get("/api/studio/me")
+    except api.ApiError as e:
+        _out(f"not stored: {e}")
+        return 1
+    user = me.get("user") or {}
+    who = {"id": user.get("id"), "handle": user.get("handle")}
+    path = link.store(url, key, who)
+    rules = me.get("rules") or {}
+    info = {"server": url, "user": link.mask_email(user.get("email")), "access": bool(me.get("access")),
+            "staff": bool(me.get("staff")), "rulesOutdated": bool(rules.get("outdated")), "stored": str(path)}
+    if a.json:
+        _out(json.dumps(info, ensure_ascii=False, indent=1))
+        return 0
+    _out(f"signed in to {url} as {info['user']}" + (" (the project's owner side)" if info["staff"] else ""))
+    _out(f"the key is stored in {path} (only for you; `tadam logout` removes it)")
+    if not info["access"]:
+        _out("studio access is not on yet: accept the studio's rules first (`tadam join`)")
+    if info["rulesOutdated"]:
+        _out("the studio's rules have a new version: accept it before pushing (`tadam join`)")
+    return 0
+
+
+def cmd_logout(a) -> int:
+    import os
+    from tadam import link
+    url = link.server_url()
+    _out(f"the key of {url} is removed" if link.forget(url) else f"no stored key for {url}")
+    if os.environ.get(link.KEY_ENV):
+        _out(f"({link.KEY_ENV} is still set in this shell: it is used while it is set)")
+    return 0
+
+
+def cmd_join(a) -> int:
+    _out("`tadam join` (email -> code from the letter -> the studio's rules -> you type the agreement yourself -> a "
+         "key) comes with the next kit update, when the server's side of it is open.\n"
+         "Until then: if you already have a studio key from the cabinet, run `tadam login`.")
+    return 2
+
+
+def cmd_push(a) -> int:
+    from tadam import sync
+    w = _world(a)
+    res = sync.push(w.root, _api(), confirm=a.confirm, log=_out)
+    _out(json.dumps(res.response, ensure_ascii=False, indent=1) if a.json else sync.describe_push(res))
+    return 0 if (res.response.get("check") or {}).get("ok", True) else 1
+
+
+def cmd_pull(a) -> int:
+    from tadam import sync
+    root = None if a.dir else sync.find_root(a.world)
+    if root is not None and a.slug and sync.world_slug(root) != a.slug:
+        raise sync.SyncError(f"you are inside the folder of another world: run `tadam pull {a.slug}` outside it, "
+                             f"or add --dir <folder>")
+    res = sync.pull(_api(), a.slug, root, Path(a.dir).resolve() if a.dir else None, log=_out)
+    if a.json:
+        _out(json.dumps({"root": str(res.root), "rev": res.rev, "first": res.first, "taken": res.taken,
+                         "kept": res.kept, "conflicts": [p + ".server" for p in res.conflicts],
+                         "removed": res.removed, "keptRemoved": res.kept_removed,
+                         "movedTo": str(res.moved_to) if res.moved_to else None}, ensure_ascii=False, indent=1))
+    else:
+        _out(sync.describe_pull(res))
+    return 0
+
+
+def cmd_diff(a) -> int:
+    from tadam import sync
+    w = _world(a)
+    if len(a.revs) > 2 or not all(r.isdigit() for r in a.revs):
+        _out("tadam diff [rev [rev]]: revision numbers")
+        return 2
+    sides = ("server", "local") if not a.revs else (a.revs[0], "local") if len(a.revs) == 1 else tuple(a.revs)
+    d = sync.diff(w.root, sides[0], sides[1], _api(required=sides[0] == "server"))
+    _out(json.dumps(d, ensure_ascii=False, indent=1) if a.json else sync.describe_diff(d))
+    return 0
+
+
+def cmd_status(a) -> int:
+    from tadam import sync
+    s = _api().get("/api/studio/status")
+    if a.json:
+        _out(json.dumps(s, ensure_ascii=False, indent=1))
+        return 0
+    root = sync.find_root(a.world)
+    _out(sync.describe_status(s, sync.read_link(root) if root else None))
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     # (piped, as Claude reads it: UTF-8 whatever the console's code page is, so Russian texts come out right)
     if hasattr(sys.stdout, "reconfigure") and not sys.stdout.isatty():
@@ -286,13 +459,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if a.command is None:
         ap.print_help()
         return 0
+    from tadam.api import ApiError
     from tadam.engine import EngineError
     from tadam.mix import MixError
     from tadam.openai_images import GenerationError
+    from tadam.sync import SyncError
     from tadam.world import WorldError
     try:
         return {"new": cmd_new, "hero": cmd_hero, "set": cmd_set, "check": cmd_check, "play": cmd_play,
-                "frames": cmd_frames, "film": cmd_film}[a.command](a)
-    except (WorldError, GenerationError, EngineError, MixError) as e:
+                "frames": cmd_frames, "film": cmd_film, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
+                "push": cmd_push, "pull": cmd_pull, "diff": cmd_diff, "status": cmd_status}[a.command](a)
+    except (WorldError, GenerationError, EngineError, MixError, SyncError, ApiError) as e:
         _out(f"tadam: {e}")
         return 1
