@@ -1,25 +1,9 @@
 {
   "version": 1,
-  "about": "Where every file of this world comes from. 'own': written or made by the editor (texts with Claude Code); 'generated': painted by an image model with the editor's own key through the named tool; 'derived': made by the kit from generated pictures, no new painting.",
-  "files": [
-    {"path": "world.json", "source": "own"},
-    {"path": "sources.json", "source": "own"},
-    {"path": "heroes/*/hero.json", "source": "own"},
-    {"path": "sets/bureau/kit.json", "source": "own"},
-    {"path": "episodes/1/script.json", "source": "own"},
-    {"path": "episodes/1/episode.json", "source": "own"},
-    {"path": "heroes/archivist/puppet/portrait.png", "source": "generated", "tool": "tadam hero make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "heroes/archivist/puppet/sheet.png", "source": "generated", "tool": "tadam hero make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "heroes/visitor/puppet/portrait.png", "source": "generated", "tool": "tadam hero make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "heroes/visitor/puppet/sheet.png", "source": "generated", "tool": "tadam hero make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "heroes/*/puppet/parts/*.png", "source": "derived", "tool": "tadam hero make (cut from sheet.png)"},
-    {"path": "heroes/*/puppet/*.json", "source": "derived", "tool": "tadam hero make / tadam hero check"},
-    {"path": "heroes/*/puppet/check.jpg", "source": "derived", "tool": "tadam hero make (check picture, not sent)"},
-    {"path": "sets/bureau/room.png", "source": "generated", "tool": "tadam set make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "sets/bureau/cabinet.png", "source": "generated", "tool": "tadam set make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "sets/bureau/lamp.png", "source": "generated", "tool": "tadam set make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "sets/bureau/boxes.png", "source": "generated", "tool": "tadam set make", "model": "gpt-image-2.5-flare", "quality": "medium"},
-    {"path": "sets/bureau/set.json", "source": "derived", "tool": "tadam set make (layout)"},
-    {"path": "cover.png", "source": "derived", "tool": "tadam frames 1 --shot sh1 --at 3 (the title card over the generated set), reduced to 256 colours"}
-  ]
+  "files": {
+    "heroes/archivist/puppet/": { "source": "generated", "tool": "OpenAI gpt-image-2.5-flare (medium) via tadam hero make", "note": "portrait and pattern sheet painted; parts cut from the sheet by the kit" },
+    "heroes/visitor/puppet/": { "source": "generated", "tool": "OpenAI gpt-image-2.5-flare (medium) via tadam hero make", "note": "portrait and pattern sheet painted; parts cut from the sheet by the kit" },
+    "sets/bureau/": { "source": "generated", "tool": "OpenAI gpt-image-2.5-flare (medium) via tadam set make" },
+    "cover.png": { "source": "generated", "tool": "tadam frames (a frame of shot sh1 over the generated set)", "note": "reduced to 256 colours" }
+  }
 }
