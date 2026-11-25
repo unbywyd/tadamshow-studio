@@ -1,0 +1,40 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission-return.request.json",
+  "title": "submission-return.request",
+  "description": "POST /api/admin/studio/submissions/:id/return",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "shots": {
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "shot",
+          "text"
+        ]
+      }
+    }
+  },
+  "required": [
+    "text"
+  ]
+}

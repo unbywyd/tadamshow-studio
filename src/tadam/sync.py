@@ -195,7 +195,8 @@ def _push_error(e: ApiError, slug: str) -> SyncError:
     if e.status == 401:
         return SyncError(f"{e}: run `tadam login` with a valid studio key")
     if e.reason == "rules_outdated" or (e.status == 403 and "rules" in e.message):
-        return SyncError(f"{e}: the studio's rules changed; the person accepts them again (`tadam join`)")
+        return SyncError(f"{e}: the studio's rules changed; the person reads and accepts them again, themself, in a "
+                         f"terminal: `tadam login` (or `tadam login --key`)")
     paths = e.issues.get("paths") or e.issues.get("files")
     extra = ""
     if isinstance(paths, list) and paths:

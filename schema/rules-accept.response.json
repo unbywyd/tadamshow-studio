@@ -1,0 +1,85 @@
+{
+  "$id": "https://tadamshow.com/schemas/rules-accept.response.json",
+  "title": "rules-accept.response",
+  "description": "answer of POST /api/studio/rules/accept (the key, once)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "acceptedAt": {
+      "type": "string"
+    },
+    "access": {
+      "type": "boolean"
+    },
+    "key": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "name": {
+                  "type": "string"
+                },
+                "prefix": {
+                  "type": "string"
+                },
+                "lastUsedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "revokedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "prefix",
+                "lastUsedAt",
+                "revokedAt",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            },
+            "secret": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "secret"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "acceptedAt",
+    "access",
+    "key"
+  ],
+  "additionalProperties": false
+}

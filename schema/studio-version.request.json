@@ -1,0 +1,24 @@
+{
+  "$id": "https://tadamshow.com/schemas/studio-version.request.json",
+  "title": "studio-version.request",
+  "description": "POST /api/studio/episodes/:id/studio-version",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "versionId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "versionId"
+  ]
+}

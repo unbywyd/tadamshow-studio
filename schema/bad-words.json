@@ -1,0 +1,245 @@
+{
+  "$id": "https://tadamshow.com/schemas/bad-words.json",
+  "description": "the studio word check: lowercase, ё→е, words = runs of [a-zа-я0-9], a word matches when the whole word matches a pattern; {P} = an optional Russian prefix (prefixes.ru)",
+  "version": 1,
+  "prefixes": {
+    "ru": [
+      "а",
+      "в",
+      "вз",
+      "вы",
+      "до",
+      "за",
+      "из",
+      "на",
+      "не",
+      "недо",
+      "о",
+      "об",
+      "от",
+      "по",
+      "под",
+      "пере",
+      "при",
+      "про",
+      "раз",
+      "рас",
+      "с",
+      "у",
+      "въ",
+      "взъ",
+      "изъ",
+      "объ",
+      "отъ",
+      "подъ",
+      "разъ",
+      "съ"
+    ]
+  },
+  "rules": [
+    {
+      "level": "error",
+      "topic": "swearing",
+      "lang": "ru",
+      "patterns": [
+        "{P}ху[йеияю][а-я]*",
+        "{P}п[иеё]зд[а-я]*",
+        "{P}еб(?:а|у|ал|ан|ат|ет|ен|ну|ыр|ло|ли|ля|ош|ись|ит|ич)[а-я]*",
+        "долбо[её]б[а-я]*",
+        "бля(?:д[а-я]*|ть|ха|хи)?",
+        "сук(?:а|и|е|у|ой|ами|ах|ин[а-я]*)",
+        "муд(?:ак|ил|озвон|ачь|охать)[а-я]*",
+        "гандон[а-я]*",
+        "гондон[а-я]*",
+        "залуп[а-я]*",
+        "шлюх[а-я]*",
+        "манд(?:а|у|ы|ой|ятина)"
+      ]
+    },
+    {
+      "level": "error",
+      "topic": "slur",
+      "lang": "ru",
+      "patterns": [
+        "пид(?:о|а)р[а-я]*",
+        "пидр[а-я]*",
+        "педик[а-я]*",
+        "хохл[а-я]*",
+        "хохол",
+        "жид(?:|ы|а|у|ом|ов|ам|ами|ах|овка|овский|овская|яра)",
+        "чурк[а-я]*",
+        "хач(?:|и|ей|ам|ик[а-я]*)",
+        "нигг?ер[а-я]*",
+        "черножоп[а-я]*",
+        "пиндос[а-я]*",
+        "москал[ья][а-я]*"
+      ]
+    },
+    {
+      "level": "error",
+      "topic": "swearing",
+      "lang": "en",
+      "patterns": [
+        "[a-z]*fuck[a-z]*",
+        "shit[a-z]*",
+        "bullshit[a-z]*",
+        "horseshit",
+        "cunt[a-z]*",
+        "twat[a-z]*",
+        "wank[a-z]*",
+        "asshole[a-z]*",
+        "arsehole[a-z]*",
+        "bitch[a-z]*",
+        "whore[a-z]*",
+        "slut[a-z]*",
+        "dickhead[a-z]*",
+        "cocksucker[a-z]*"
+      ]
+    },
+    {
+      "level": "error",
+      "topic": "slur",
+      "lang": "en",
+      "patterns": [
+        "nigg(?:er|ers|a|as|az)",
+        "faggot[a-z]*",
+        "fags?",
+        "kikes?"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "swearing",
+      "lang": "ru",
+      "patterns": [
+        "жоп[а-я]*",
+        "говн[а-я]*",
+        "дерьм[а-я]*",
+        "{P}сра(?:ть|л|ла|ли|н[а-я]*)",
+        "хер(?:|ня|ню|ни|ней|ов[а-я]*)",
+        "сволоч[а-я]*",
+        "падл[а-я]*"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "insult",
+      "lang": "ru",
+      "patterns": [
+        "идиот[а-я]*",
+        "дебил[а-я]*",
+        "кретин[а-я]*",
+        "тупиц[а-я]*",
+        "дур(?:а|ак[а-я]*|ень|еха|ынд[а-я]*)",
+        "урод(?:|а|у|ом|ы|ов|ина|ище)"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "adult",
+      "lang": "ru",
+      "patterns": [
+        "секс[а-я]*",
+        "порн[а-я]*",
+        "эроти[а-я]*",
+        "трах(?:ать|аться|нуть|ал[а-я]*|ну[а-я]*)"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "drugs",
+      "lang": "ru",
+      "patterns": [
+        "наркот[а-я]*",
+        "героин(?:а|ом|у)?",
+        "кокаин[а-я]*",
+        "марихуан[а-я]*"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "politics",
+      "lang": "ru",
+      "patterns": [
+        "путин[а-я]*",
+        "зеленск[а-я]*",
+        "навальн[а-я]*",
+        "трамп(?:|а|у|ом|е)",
+        "байден[а-я]*",
+        "кремл[а-я]*",
+        "майдан[а-я]*",
+        "нацист[а-я]*",
+        "фашист[а-я]*",
+        "гитлер[а-я]*",
+        "сво"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "swearing",
+      "lang": "en",
+      "patterns": [
+        "damn[a-z]*",
+        "crap[a-z]*",
+        "piss[a-z]*",
+        "bastards?",
+        "dicks?",
+        "ass(?:es)?",
+        "arses?"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "insult",
+      "lang": "en",
+      "patterns": [
+        "idiot[a-z]*",
+        "moron[a-z]*",
+        "stupid",
+        "retard(?:ed|s)?",
+        "dumb(?:ass)?",
+        "chinks?",
+        "spics?"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "adult",
+      "lang": "en",
+      "patterns": [
+        "sex(?:y|ual[a-z]*|ier|iest)?",
+        "porn[a-z]*",
+        "nudes?",
+        "naked",
+        "erotic[a-z]*"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "drugs",
+      "lang": "en",
+      "patterns": [
+        "drugs?",
+        "cocaine",
+        "heroin",
+        "marijuana"
+      ]
+    },
+    {
+      "level": "warning",
+      "topic": "politics",
+      "lang": "en",
+      "patterns": [
+        "nazis?",
+        "nazism",
+        "hitler",
+        "fascis[mt][a-z]*",
+        "putin",
+        "trump",
+        "biden",
+        "zelensk[a-z]*",
+        "kremlin"
+      ]
+    }
+  ]
+}

@@ -9,14 +9,18 @@ episode:  script ──submit──▶ review ──approve──▶ published �
 
 1. `tadam push` — the world and its episodes become a **draft** on the server, seen only by its editor.
 2. On the site the editor records every role (QR on the phone), makes the film and presses «make studio version».
-3. Submission (after the person says «send it»): the owner watches the studio version and approves or returns it
-   with remarks (`tadam status` shows unread remarks; a remark can point at a shot: «sh4: the camera is too close»).
+3. Submission (after the person says «send it»: `tadam submit`, see [submitting](submitting.md)): the owner
+   watches the studio version and approves or returns it with remarks (`tadam status` shows them; a remark can
+   point at a shot: «sh4: the camera is too close»).
 4. A world goes for approval only together with its first episode.
 
 An episode can be submitted when: the card and the bible are filled; every hero of the episode has a puppet that
 passed its check; the script has no errors; the studio version is made from the CURRENT revision; texts exist in
-every language of the world. `tadam status` lists what is missing. While a submission is open, pushing that
-episode is refused: withdraw first.
+every language of the world; every picture and sound has its source (sources.json). `tadam status` lists what
+is missing. While a submission is open, pushing that episode is refused: `tadam withdraw` first.
+
+A published episode's later push is sent as a **revision** (`tadam submit <n>` picks the kind); taking an episode
+or the whole world off the site is `tadam unpublish "<reason>" [--episode <n>]`, also approved by the owner.
 
 ## Changes after publishing: the classes
 

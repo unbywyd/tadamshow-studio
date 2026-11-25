@@ -1,0 +1,22 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission-message.request.json",
+  "title": "submission-message.request",
+  "description": "POST …/submissions/:id/reply",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "shot": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 24
+    }
+  },
+  "required": [
+    "text"
+  ]
+}

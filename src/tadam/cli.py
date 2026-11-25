@@ -107,11 +107,25 @@ def build_parser() -> argparse.ArgumentParser:
     show_args(fm)
     fm.add_argument("--out", help="the MP4 (default: .tadam/films/<episode>.mp4)")
 
-    lg = sub.add_parser("login", help="store your studio key (typed hidden, or from TADAM_STUDIO_KEY) after the "
-                                      "server accepts it")
+    jn = sub.add_parser("join", help="become an editor: your email, the code from the letter, the studio's rules, "
+                                     "the agreement YOU type, a key (run it yourself in your own terminal)")
+    jn.add_argument("email", nargs="?", help="your email (asked when left out)")
+    jn.add_argument("--lang", choices=["ru", "en"], default="ru", help="the language of the rules (ru)")
+    jn.add_argument("--terms", action="store_true", help="also show the full Editor Terms before the question")
+    lg = sub.add_parser("login", help="this computer gets a studio key: by email and code (like join; the rules are "
+                                      "accepted already), or --key (typed hidden, or TADAM_STUDIO_KEY)")
+    lg.add_argument("email", nargs="?", help="your email (asked when left out)")
+    lg.add_argument("--key", action="store_true", help="type an existing studio key (hidden) instead of the email")
+    lg.add_argument("--staff", action="store_true", help="the project's owner: store the staff key (tdm_..., typed "
+                                                          "hidden, or TADAM_STAFF_KEY) for `tadam review`")
+    lg.add_argument("--lang", choices=["ru", "en"], default="ru", help="the language of the rules, if asked (ru)")
+    lg.add_argument("--terms", action="store_true", help="also show the full Editor Terms, if the rules are asked")
     lg.add_argument("--json", action="store_true")
-    sub.add_parser("logout", help="forget the stored studio key of this server")
-    sub.add_parser("join", help="become an editor: email, code, the rules (comes with the next kit update)")
+    lo = sub.add_parser("logout", help="forget the stored keys of this server")
+    lo.add_argument("--staff", action="store_true", help="only the staff key")
+    ru = sub.add_parser("rules", help="read the studio's rules (no sign-in needed)")
+    ru.add_argument("--lang", choices=["ru", "en"], default="ru")
+    ru.add_argument("--terms", action="store_true", help="also the full Editor Terms")
     ps = sub.add_parser("push", help="send the world folder to the server (only what changed)")
     ps.add_argument("--confirm", action="store_true",
                     help="accept a breaking change that makes other people's sent roles stale (the project's owner "
@@ -128,6 +142,69 @@ def build_parser() -> argparse.ArgumentParser:
     stt = sub.add_parser("status", help="your worlds and episodes on the server, submissions, remarks, what is "
                                         "missing before a submission")
     stt.add_argument("--json", action="store_true")
+
+    sb = sub.add_parser("submit", help='send an episode to the owner: tadam submit <episode> "<note>" (only after '
+                                       'the person said to send it)')
+    sb.add_argument("episode", type=int)
+    sb.add_argument("note", nargs="?", default="", help="a word to the owner")
+    sb.add_argument("--kind", choices=["publish", "revision"], help="default: publish, or revision for a published "
+                                                                     "episode")
+    sb.add_argument("--json", action="store_true")
+    wd = sub.add_parser("withdraw", help="take back the open submission of this world")
+    rp = sub.add_parser("reply", help='answer in the thread of the open submission: tadam reply "<text>"')
+    rp.add_argument("text")
+    rp.add_argument("--shot", help="about this shot (sh3)")
+    for x in (wd, rp):
+        x.add_argument("--episode", type=int, help="the submission of this episode")
+        x.add_argument("--id", help="the submission's id (`tadam status` lists them)")
+        x.add_argument("--json", action="store_true")
+    up = sub.add_parser("unpublish", help='ask the owner to take the world (or --episode N) off the site: '
+                                          'tadam unpublish "<reason>"')
+    up.add_argument("reason")
+    up.add_argument("--episode", type=int)
+    up.add_argument("--json", action="store_true")
+    sv = sub.add_parser("studio-version", help="mark a film of your own scene as the episode's studio version: "
+                                               "tadam studio-version <episode> <videoId> (none: unmark)")
+    sv.add_argument("episode", type=int)
+    sv.add_argument("version", help="the video's id from its page on the site, or none")
+    sv.add_argument("--json", action="store_true")
+
+    rv = sub.add_parser("review", help="the project's owner only (staff key): the queue of submissions and the "
+                                       "decisions")
+    rs = rv.add_subparsers(dest="what", metavar="<what>")
+    rl = rs.add_parser("list", help="the queue (pending, oldest first)")
+    rl.add_argument("--status", choices=["pending", "approved", "changes", "rejected", "withdrawn"], default="pending")
+    rl.add_argument("--all", action="store_true", help="every status")
+    rl.add_argument("--kind", choices=["publish", "revision", "unpublish"])
+    rl.add_argument("--of", dest="of_world", metavar="SLUG", help="only this world")
+    rl.add_argument("--json", action="store_true")
+    rsh = rs.add_parser("show", help="one submission: video, world, heroes, script by shots, check, impact, thread")
+    rsh.add_argument("id")
+    rsh.add_argument("--lang", choices=["ru", "en"], default="ru")
+    rsh.add_argument("--json", action="store_true")
+    ra = rs.add_parser("approve", help="approve (you type the id to confirm)")
+    ra.add_argument("id")
+    ra.add_argument("--note", help="a word to the author")
+    ra.add_argument("--stale-version", action="store_true", help="approve although the studio video is older than "
+                                                                 "the current film (you watched it)")
+    ra.add_argument("--confirm-breaking", action="store_true", help="accept a breaking revision that makes other "
+                                                                    "people's sent roles stale")
+    ra.add_argument("--slug", help="a new address for the world (its first publication only)")
+    rr = rs.add_parser("return", help='return with remarks: tadam review return <id> "<remarks>" '
+                                      '[--shot sh3 "<remark>"]...')
+    rr.add_argument("id")
+    rr.add_argument("text")
+    rr.add_argument("--shot", nargs=2, action="append", default=[], metavar=("SHOT", "REMARK"),
+                    help="a remark about one shot (repeat)")
+    rj = rs.add_parser("reject", help="reject with a reason (you type the id to confirm)")
+    rj.add_argument("id")
+    rj.add_argument("reason")
+    ry = rs.add_parser("reply", help="write in the thread as the owner")
+    ry.add_argument("id")
+    ry.add_argument("text")
+    ry.add_argument("--shot")
+    for x in (ra, rr, rj, ry):
+        x.add_argument("--json", action="store_true")
     return ap
 
 
@@ -329,27 +406,57 @@ def _api(required: bool = True):
     return api.Api(lk)
 
 
-def _read_key() -> str | None:
-    """The key: TADAM_STUDIO_KEY, else typed (hidden) at a real keyboard. Never echoed, never printed."""
+def _read_key(env_name: str | None = None, prompt: str = "studio key (tds_..., hidden): ") -> str | None:
+    """The key: from the env, else typed (hidden) at a real keyboard. Never echoed, never printed."""
     import getpass
     import os
     from tadam import link
-    env = (os.environ.get(link.KEY_ENV) or "").strip()
+    env_name = env_name or link.KEY_ENV
+    env = (os.environ.get(env_name) or "").strip()
     if env:
         return env
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        _out("tadam login reads the key from a real keyboard (hidden), or from TADAM_STUDIO_KEY:\n"
-             "  run it yourself in a terminal, or: skey run --only TADAM_STUDIO_KEY -- tadam login\n"
+        flag = "--staff" if env_name == link.STAFF_ENV else "--key"
+        _out(f"tadam login {flag} reads the key from a real keyboard (hidden), or from {env_name}:\n"
+             f"  run it yourself in a terminal, or: skey run --only {env_name} -- tadam login {flag}\n"
              "Never paste the key into a chat.")
         return None
     try:
-        return getpass.getpass("studio key (tds_..., hidden): ").strip()
+        return getpass.getpass(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         return None
 
 
+def cmd_join(a) -> int:
+    from tadam import join, keyboard, link
+    keyboard.require("`tadam join` (your email, the code from the letter and your agreement to the studio's rules)")
+    url = link.server_url()
+    _out(f"joining the studio of {url}: a code goes to your email; then the studio's rules, in full; you accept them "
+         f"by typing the word yourself")
+    _joined(join.email_flow(url, keyboard.ask, _out, a.email, a.lang, a.terms, mode="join"))
+    return 0
+
+
+def _joined(j) -> None:
+    if j.version:
+        _out(f"accepted the studio's rules, version {j.version} (a copy comes by email)")
+    if j.stored:
+        _out(f"signed in as {j.email}; the studio key is stored in {j.stored} (only for you; never shown; "
+             f"`tadam logout` removes it)")
+        _out("next: `tadam new world <slug>`, or `tadam status`")
+    else:
+        _out(f"{j.email}: the rules are accepted, but no key came" + ("" if j.access else " (studio access is off)"))
+
+
 def cmd_login(a) -> int:
-    from tadam import api, link
+    import os
+    from tadam import api, join, keyboard, link
+    if a.staff:
+        return _login_staff(a)
+    if not (a.key or (os.environ.get(link.KEY_ENV) or "").strip()):
+        keyboard.require("`tadam login` (your email and the code from the letter)")
+        _joined(join.email_flow(link.server_url(), keyboard.ask, _out, a.email, a.lang, a.terms, mode="login"))
+        return 0
     key = _read_key()
     if not key:
         return 2
@@ -357,10 +464,11 @@ def cmd_login(a) -> int:
         _out("that is not a studio key (tds_<8 letters>_<secret>): make one in the cabinet (studio.tadamshow.com)")
         return 2
     url = link.server_url()
+    lk = link.Link(url, key)
     try:
-        me = api.Api(link.Link(url, key)).get("/api/studio/me")
+        me = api.Api(lk).get("/api/studio/me")
     except api.ApiError as e:
-        _out(f"not stored: {e}")
+        _out(f"not stored: {join.banned(e) or e}")
         return 1
     user = me.get("user") or {}
     who = {"id": user.get("id"), "handle": user.get("handle")}
@@ -373,10 +481,34 @@ def cmd_login(a) -> int:
         return 0
     _out(f"signed in to {url} as {info['user']}" + (" (the project's owner side)" if info["staff"] else ""))
     _out(f"the key is stored in {path} (only for you; `tadam logout` removes it)")
-    if not info["access"]:
-        _out("studio access is not on yet: accept the studio's rules first (`tadam join`)")
+    if not info["access"] and not rules.get("accepted"):
+        _out("studio access is not on yet: accept the studio's rules first (`tadam join`, yourself, in a terminal)")
     if info["rulesOutdated"]:
-        _out("the studio's rules have a new version: accept it before pushing (`tadam join`)")
+        if keyboard.real():
+            v = join.accept_new_rules(api.Api(lk), keyboard.ask, _out, me, a.lang, a.terms)
+            _out(f"accepted the studio's rules, version {v}")
+        else:
+            _out("the studio's rules have a new version: pushing and voicing wait until you accept it. Run "
+                 "`tadam login --key` yourself in a terminal: it shows the rules and you type the agreement.")
+    return 0
+
+
+def _login_staff(a) -> int:
+    from tadam import api, link
+    key = _read_key(link.STAFF_ENV, "staff key (tdm_..., hidden): ")
+    if not key:
+        return 2
+    if not link.looks_like_staff_key(key):
+        _out("that is not a staff key (tdm_<8 letters>_<secret>): make one in the admin (API keys)")
+        return 2
+    url = link.server_url()
+    try:
+        api.Api(link.Link(url, key)).get("/api/admin/studio/submissions?limit=1")
+    except api.ApiError as e:
+        _out(f"not stored: {e}" + (" (the review needs an admin's key)" if e.status == 403 else ""))
+        return 1
+    path = link.store_staff(url, key)
+    _out(f"the staff key for `tadam review` is stored in {path} (only for you; `tadam logout --staff` removes it)")
     return 0
 
 
@@ -384,17 +516,23 @@ def cmd_logout(a) -> int:
     import os
     from tadam import link
     url = link.server_url()
-    _out(f"the key of {url} is removed" if link.forget(url) else f"no stored key for {url}")
-    if os.environ.get(link.KEY_ENV):
-        _out(f"({link.KEY_ENV} is still set in this shell: it is used while it is set)")
+    if a.staff:
+        _out(f"the staff key of {url} is removed" if link.forget(url, staff_only=True)
+             else f"no stored staff key for {url}")
+        return 0
+    _out(f"the keys of {url} are removed" if link.forget(url) else f"no stored key for {url}")
+    for env in (link.KEY_ENV, link.STAFF_ENV):
+        if os.environ.get(env):
+            _out(f"({env} is still set in this shell: it is used while it is set)")
     return 0
 
 
-def cmd_join(a) -> int:
-    _out("`tadam join` (email -> code from the letter -> the studio's rules -> you type the agreement yourself -> a "
-         "key) comes with the next kit update, when the server's side of it is open.\n"
-         "Until then: if you already have a studio key from the cabinet, run `tadam login`.")
-    return 2
+def cmd_rules(a) -> int:
+    from tadam import api, join, link
+    r = join.get_rules(api.Api(link.Link(link.server_url(), "")), a.lang)
+    join.show_rules(r, _out, a.terms)
+    _out("to accept them: `tadam join` (yourself, in your own terminal)")
+    return 0
 
 
 def cmd_push(a) -> int:
@@ -442,7 +580,125 @@ def cmd_status(a) -> int:
         return 0
     root = sync.find_root(a.world)
     _out(sync.describe_status(s, sync.read_link(root) if root else None))
+    from tadam import submissions
+    lines = submissions.threads(_api(), s)
+    if lines:
+        _out("the open submissions and their threads:")
+        _out("\n".join(lines))
     return 0
+
+
+# ------------------------------------------------------------------------------------------------ submissions
+
+def _slug(a) -> str:
+    from tadam import sync
+    from tadam.world import WorldError
+    root = sync.find_root(a.world)
+    if root is None:
+        raise WorldError("run it inside the world's folder (or name it with --world <folder>)")
+    return sync.world_slug(root)
+
+
+def _decided(a, d: dict) -> int:
+    from tadam import submissions
+    _out(json.dumps(d, ensure_ascii=False, indent=1) if a.json else submissions.describe_decided(d))
+    return 0
+
+
+def cmd_submit(a) -> int:
+    from tadam import submissions
+    slug = _slug(a)
+    d = submissions.submit(_api(), slug, a.episode, a.note, a.kind)
+    if not a.json:
+        _out(f"episode {a.episode} of {slug} is ready and went to the owner: they watch the studio version and "
+             f"approve it or return it with remarks (`tadam status` shows the answer and the thread)")
+    return _decided(a, d)
+
+
+def cmd_withdraw(a) -> int:
+    from tadam import submissions
+    api = _api()
+    x = submissions.pick_open(api, _slug(a), a.episode, a.id)
+    return _decided(a, submissions.withdraw(api, x["id"]))
+
+
+def cmd_reply(a) -> int:
+    from tadam import submissions
+    api = _api()
+    x = submissions.pick_open(api, _slug(a), a.episode, a.id)
+    return _decided(a, submissions.reply(api, x["id"], a.text, a.shot))
+
+
+def cmd_unpublish(a) -> int:
+    from tadam import submissions
+    return _decided(a, submissions.unpublish(_api(), _slug(a), a.reason, a.episode))
+
+
+def cmd_studio_version(a) -> int:
+    from tadam import submissions
+    vid = None if a.version.strip().lower() in ("none", "null", "-") else a.version.strip()
+    d = submissions.studio_version(_api(), _slug(a), a.episode, vid)
+    _out(json.dumps(d, ensure_ascii=False, indent=1) if a.json else submissions.describe_marked(d))
+    return 0
+
+
+# ------------------------------------------------------------------------------------------------ the owner's review
+
+def _staff_api():
+    from tadam import api, link
+    lk = link.staff()
+    if lk is None:
+        raise api.ApiError(0, "no_key", f"`tadam review` is for the project's owner: it needs a staff key "
+                                        f"(`tadam login --staff`, or set {link.STAFF_ENV})")
+    return api.Api(lk)
+
+
+def _confirm_id(sid: str, verb: str, api) -> bool:
+    """The person types the submission's id at their own keyboard; anything else stops, nothing is sent."""
+    from tadam import keyboard, submissions
+    keyboard.require(f"the confirmation to {verb} a submission")
+    r = submissions.review(api, sid)
+    s, w, e = r.get("submission") or {}, r.get("world") or {}, r.get("episode")
+    _out(f"to {verb}: {s.get('kind')} of {w.get('slug')}" + (f" episode {e.get('number')}" if e else " (the world)")
+         + f", now {s.get('status')}")
+    try:
+        typed = keyboard.ask(f"type the submission id to {verb} it ({sid}): ", f"the confirmation to {verb}")
+    except (EOFError, KeyboardInterrupt):
+        typed = ""
+    if typed.strip() != sid:
+        _out(f"not {verb}d: the id was not typed (nothing was sent)".replace("rejectd", "rejected"))
+        return False
+    return True
+
+
+def cmd_review(a) -> int:
+    from tadam import submissions
+    if a.what is None:
+        _out('tadam review list | show <id> | approve <id> | return <id> "<remarks>" [--shot sh3 "<remark>"] | '
+             'reject <id> "<reason>" | reply <id> "<text>"')
+        return 2
+    api = _staff_api()
+    if a.what == "list":
+        rows = submissions.queue(api, None if a.all else a.status, a.kind, a.of_world)
+        _out(json.dumps(rows, ensure_ascii=False, indent=1) if a.json else submissions.describe_queue(rows))
+        return 0
+    if a.what == "show":
+        r = submissions.review(api, a.id, a.lang)
+        _out(json.dumps(r, ensure_ascii=False, indent=1) if a.json else submissions.describe_review(r))
+        return 0
+    if a.what == "approve":
+        if not _confirm_id(a.id, "approve", api):
+            return 2
+        return _decided(a, submissions.approve(api, a.id, a.note, a.confirm_breaking, a.stale_version, a.slug))
+    if a.what == "reject":
+        if not _confirm_id(a.id, "reject", api):
+            return 2
+        return _decided(a, submissions.reject(api, a.id, a.reason))
+    if a.what == "return":
+        return _decided(a, submissions.return_(api, a.id, a.text, [(sh, t) for sh, t in a.shot]))
+    if a.what == "reply":
+        return _decided(a, submissions.reply(api, a.id, a.text, a.shot, owner=True))
+    return 2
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -465,10 +721,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     from tadam.openai_images import GenerationError
     from tadam.sync import SyncError
     from tadam.world import WorldError
+    from tadam.join import Stop, banned
+    from tadam.keyboard import NoKeyboard
+    from tadam.submissions import Refused, missing_lines
     try:
         return {"new": cmd_new, "hero": cmd_hero, "set": cmd_set, "check": cmd_check, "play": cmd_play,
                 "frames": cmd_frames, "film": cmd_film, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
-                "push": cmd_push, "pull": cmd_pull, "diff": cmd_diff, "status": cmd_status}[a.command](a)
-    except (WorldError, GenerationError, EngineError, MixError, SyncError, ApiError) as e:
+                "rules": cmd_rules, "push": cmd_push, "pull": cmd_pull, "diff": cmd_diff, "status": cmd_status,
+                "submit": cmd_submit, "withdraw": cmd_withdraw, "reply": cmd_reply, "unpublish": cmd_unpublish,
+                "studio-version": cmd_studio_version, "review": cmd_review}[a.command](a)
+    except Refused as e:
+        _out(f"tadam: {e}" + ("\n" + "\n".join(missing_lines(e.missing)) if e.missing else ""))
+        return 1
+    except Stop as e:
+        _out(f"tadam: {e}")
+        return e.code
+    except NoKeyboard as e:
+        _out(f"tadam: {e}")
+        return 2
+    except ApiError as e:
+        _out(f"tadam: {banned(e) or e}")
+        return 1
+    except (WorldError, GenerationError, EngineError, MixError, SyncError) as e:
         _out(f"tadam: {e}")
         return 1

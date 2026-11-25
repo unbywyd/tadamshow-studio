@@ -2,7 +2,8 @@
 (studio-tz 6.3), as far as it can be done on the editor's computer: the schemas, the references inside a script, that
 every name exists in the world (heroes, sets, media, exact case), that the puppets passed their audit, the texts in
 every language of the world, the studio's filming rules, and every scene check of tadam.scenecheck on the scenes the
-script turns into. The server checks again and does not trust this one.
+script turns into, and the server's content checks: the word list on every text (tadam.words) and the source of
+every picture and sound in sources.json (tadam.sources). The server checks again and does not trust this one.
 
     issues = check_world(Path("my-world"), episode="1")
 Exit code of the command: 1 when there is an error. Codes: CODES here and tadam.scenecheck.CODES.
@@ -11,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tadam import resolve, schema, scenecheck
+from tadam import resolve, schema, scenecheck, sources, words
 from tadam.issues import Issue
 from tadam.paths import engine_dir
 from tadam.world import EPISODE, SLUG, World, exact, is_safe_name, read_json
@@ -66,6 +67,12 @@ CODES = {
     "line_long": ("warning", "a long line with no maxSeconds"),
     "episode_too_long": ("error", "the episode is longer than the limit"),
     "stage_option_unknown": ("warning", "a stage option the engine does not take (it is dropped)"),
+    # the server's content checks (tadam.words, tadam.sources; services/studio/content.ts), same codes and levels
+    "bad_word": ("error", "swearing or a slur in a text (the house rules, 2. clean content)"),
+    "borderline_word": ("warning", "a borderline word (an insult, adult content, politics, drugs): the owner looks"),
+    "no_sources": ("error", "the folder has no sources.json"),
+    "no_source": ("error", "a picture or a sound without its source in sources.json"),
+    "source_unused": ("warning", "a key of sources.json names nothing in the folder"),
 }
 # scene checks reported once, at their source, by the world checks above
 _SOURCE = {"puppet_missing", "background_missing"}
@@ -469,4 +476,6 @@ def check_world(root: Path | str, episode: str | None = None) -> list[Issue]:
     r.sets()
     for n in episodes:
         r.episode(str(n))
+    r.out += words.check_words(r.w.root, [str(n) for n in episodes])
+    r.out += sources.check(r.w.root)
     return r.out

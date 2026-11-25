@@ -4,6 +4,7 @@ One folder per world (a series). Everything about the world is here; the server 
 
 ```
 world.json                 the card and the bible (schema/world.json)
+sources.json               where every picture and sound comes from (schema/sources.json; below)
 cover.png                  the world's cover, vertical
 heroes/<slug>/hero.json    name, trait (ru/en), about (for you), height (schema/hero.json)
 heroes/<slug>/puppet/      the puppet: meta.json, rig.json, parts/*.png, portrait.png, sheet.png, report.json,
@@ -50,8 +51,35 @@ episodes/<n>/cover.png     optional
 `tadam push` sends only files of the layout above whose names are latin letters, digits, `- _ .` with a known
 type (png, webp, jpg, mp3, wav, ogg, json). Everything else stays home and push lists it (notes, check pictures,
 logs). Empty files, names that differ only in letter case and unmerged `<file>.server` copies stop a push.
-Coming with the server's next step: `sources.json` at the root, saying where every picture and sound comes from
-(`own`, `generated` with the tool, or `licensed` with the licence and a link) — the house rules already ask it.
+
+## sources.json: where every picture and sound comes from
+
+Every png / webp / jpg / mp3 / wav / ogg that is sent needs a source (house rules 1). `tadam check` and the
+server's check give `no_source` (an error, per file) or `no_sources` (no sources.json at all); a key that names
+nothing is a `source_unused` warning. A key is a file, or a folder ending with `/`; the **longest key that covers
+a file wins**, so a folder can say one thing and a file in it another.
+
+```json
+{
+  "version": 1,
+  "files": {
+    "heroes/cow/puppet/": {"source": "generated", "tool": "gpt-image-2.5-flare"},
+    "sets/barn/": {"source": "generated", "tool": "gpt-image-2.5-flare"},
+    "sets/barn/clock.png": {"source": "own", "author": "the editor", "note": "drawn by hand"},
+    "cover.png": {"source": "own"},
+    "media/theme.mp3": {"source": "licensed", "licence": "CC BY 4.0", "url": "https://example.com/theme",
+                        "author": "the composer"}
+  }
+}
+```
+
+- `own`: the person made it (optional `author`, `note`). `generated`: name the `tool` (service or model).
+  `licensed`: the `licence` and a `url` (http/https) where it is stated; `author` when the licence asks credit.
+- **Declare a file the moment it appears.** `tadam new world` writes an empty list; `tadam hero make` and `tadam
+  set make` record their folders themselves (`--mannequin` / `--placeholder`: `own`, drawn by the kit). Anything
+  else (a cover, music, a picture the person brings): ask where it comes from and write it down. Not sure the
+  person may use it? Do not add the file.
+- The owner sees every file with its source in the submission.
 
 ## The server link (.tadam/)
 

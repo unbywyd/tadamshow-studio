@@ -1,0 +1,83 @@
+{
+  "$id": "https://tadamshow.com/schemas/studio-version.response.json",
+  "title": "studio-version.response",
+  "description": "answer of POST …/studio-version",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "episode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "number": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "id",
+        "number"
+      ],
+      "additionalProperties": false
+    },
+    "version": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "lang": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "videoUrl": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uri"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "current": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "lang",
+            "createdAt",
+            "videoUrl",
+            "current"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "episode",
+    "version"
+  ],
+  "additionalProperties": false
+}

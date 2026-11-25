@@ -13,11 +13,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tadam import new
+from tadam import new, sources
+from tadam import openai_images as oi
 from tadam.puppet import cut_skin, gen_skin
 from tadam.world import World
 
 ATTEMPTS = 3
+
+
+def _declare(w: World, slug: str, source: dict, log) -> None:
+    """The puppet's folder in sources.json: what made its pictures."""
+    if sources.declare(w.root, f"heroes/{slug}/puppet/", source, replace=True):
+        log(f"sources.json: heroes/{slug}/puppet/ = {source['source']}" + (f" ({source['tool']})" if "tool" in source else ""))
 
 
 def make(w: World, slug: str, description: str, *, style: str | None = None, rig: str = "humanoid-a",
@@ -33,6 +40,7 @@ def make(w: World, slug: str, description: str, *, style: str | None = None, rig
     if mannequin:
         from tadam.puppet import mannequin as mq
         report = mq.make(pdir, rig, character=description, log=log)
+        _declare(w, slug, {"source": "own", "note": "the kit's wooden mannequin, drawn by code"}, log)
         return {"passed": bool(report.get("passed")), "attempts": 1, "report": report, "dir": pdir}
     logfile = pdir / "make.log"
     lines: list[str] = []
@@ -49,6 +57,7 @@ def make(w: World, slug: str, description: str, *, style: str | None = None, rig
     tried = 0
     try:
         gen_skin.paint(pdir, description, log=say, **kw)
+        _declare(w, slug, {"source": "generated", "tool": model or oi.DEFAULT_MODEL}, say)
         for tried in range(1, attempts + 1):
             report = cut_skin.cut(pdir, rig, log=say)
             if report.get("passed"):

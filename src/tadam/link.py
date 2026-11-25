@@ -10,6 +10,9 @@
   (TADAM_CONFIG_DIR moves it, for tests). On macOS and Linux the file is readable by its owner only (0600) and its
   folder 0700. `tadam logout` removes the key.
 - The key is never printed, never logged, never written anywhere else; it goes only to the studio server.
+- The project's owner also keeps a STAFF key (`tdm_…`, `tadam login --staff`, or TADAM_STAFF_KEY) for `tadam review`:
+  the owner's queue lives on /api/admin/studio/*, where a studio key does not work. Stored next to the studio key,
+  the same way.
 """
 from __future__ import annotations
 
@@ -22,6 +25,7 @@ from pathlib import Path
 
 DEFAULT_URL = "https://api.tadamshow.com"
 KEY_ENV, URL_ENV, CONFIG_ENV = "TADAM_STUDIO_KEY", "TADAM_STUDIO_URL", "TADAM_CONFIG_DIR"
+STAFF_ENV = "TADAM_STAFF_KEY"      # the project owner's staff key (tdm_…) for `tadam review` (the admin routes)
 FILE = "credentials.json"
 
 
@@ -68,7 +72,7 @@ def _read(environ=None) -> dict:
 
 
 def stored_key(url: str, environ=None) -> str | None:
-    s = (_read(environ).get("servers") or {}).get(url) or {}
+    s = _servers(environ).get(url) or {}
     k = s.get("key") if isinstance(s, dict) else None
     return k.strip() if isinstance(k, str) and k.strip() else None
 
@@ -101,28 +105,60 @@ def _write_private(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
-def store(url: str, key: str, who: dict | None = None, environ=None) -> Path:
-    """Keep the key for this server (replacing the one before)."""
+def _servers(environ=None) -> dict:
     data = _read(environ)
-    servers = data.get("servers") if isinstance(data.get("servers"), dict) else {}
-    servers[url] = {"key": key, **({"user": who} if who else {})}
-    data = {"version": 1, "servers": servers}
+    return data.get("servers") if isinstance(data.get("servers"), dict) else {}
+
+
+def _save(servers: dict, environ=None) -> Path:
     f = config_dir(environ) / FILE
-    _write_private(f, json.dumps(data, ensure_ascii=False, indent=1) + "\n")
+    servers = {u: s for u, s in servers.items() if isinstance(s, dict) and s}
+    if not servers:
+        f.unlink(missing_ok=True)
+    else:
+        _write_private(f, json.dumps({"version": 1, "servers": servers}, ensure_ascii=False, indent=1) + "\n")
     return f
 
 
-def forget(url: str, environ=None) -> bool:
-    """Remove the stored key of this server. True when there was one."""
-    data = _read(environ)
-    servers = data.get("servers") if isinstance(data.get("servers"), dict) else {}
-    had = servers.pop(url, None) is not None
-    f = config_dir(environ) / FILE
-    if not servers:
-        f.unlink(missing_ok=True)
-    elif had:
-        _write_private(f, json.dumps({"version": 1, "servers": servers}, ensure_ascii=False, indent=1) + "\n")
+def store(url: str, key: str, who: dict | None = None, environ=None) -> Path:
+    """Keep the studio key for this server (replacing the one before; a stored staff key stays)."""
+    servers = _servers(environ)
+    old = servers.get(url) if isinstance(servers.get(url), dict) else {}
+    servers[url] = {**({"staffKey": old["staffKey"]} if old.get("staffKey") else {}), "key": key,
+                    **({"user": who} if who else {})}
+    return _save(servers, environ)
+
+
+def store_staff(url: str, key: str, environ=None) -> Path:
+    """Keep the project owner's staff key for this server (next to the studio key)."""
+    servers = _servers(environ)
+    old = servers.get(url) if isinstance(servers.get(url), dict) else {}
+    servers[url] = {**old, "staffKey": key}
+    return _save(servers, environ)
+
+
+def forget(url: str, environ=None, staff_only: bool = False) -> bool:
+    """Remove the stored keys of this server (only the staff key with staff_only). True when there was one."""
+    servers = _servers(environ)
+    s = servers.get(url) if isinstance(servers.get(url), dict) else None
+    if s is None:
+        return False
+    had = (s.pop("staffKey", None) is not None) if staff_only else servers.pop(url, None) is not None
+    if had:
+        _save(servers, environ)
     return had
+
+
+def staff(environ=None) -> Link | None:
+    """The owner's staff key: TADAM_STAFF_KEY, else the stored one for this server; None when there is neither."""
+    env = os.environ if environ is None else environ
+    url = server_url(env)
+    key = (env.get(STAFF_ENV) or "").strip()
+    if key:
+        return Link(url, key, "env")
+    s = _servers(env).get(url) or {}
+    k = s.get("staffKey") if isinstance(s, dict) else None
+    return Link(url, k.strip(), "stored") if isinstance(k, str) and k.strip() else None
 
 
 def mask_email(email: object) -> str:
@@ -136,5 +172,12 @@ def mask_email(email: object) -> str:
 KEY_SHAPE = re.compile(r"^tds_[a-z0-9]{8}_[A-Za-z0-9_-]{20,200}$")     # the server's studio key (services/auth.ts)
 
 
+STAFF_SHAPE = re.compile(r"^tdm_[a-z0-9]{8}_[A-Za-z0-9_-]{20,200}$")   # the server's staff key
+
+
 def looks_like_key(key: str) -> bool:
     return bool(KEY_SHAPE.match(key.strip()))
+
+
+def looks_like_staff_key(key: str) -> bool:
+    return bool(STAFF_SHAPE.match(key.strip()))

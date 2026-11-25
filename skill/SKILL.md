@@ -1,6 +1,6 @@
 ---
 name: tadamshow-studio
-description: Make a world (a series) and its episodes for TadamShow with the `tadam` kit — puppet-theatre cartoons in which real people later record the roles on their phones. Use when the person wants to make, change or send a TadamShow world, hero (puppet), set or episode script, look at frames, play an episode, push or pull a world folder, or check its status on the server. Triggers include tadam, TadamShow, ТадамШоу, рубрика, серия, кукла, декорация, сценарий, world folder, script.json, push, pull.
+description: Make a world (a series) and its episodes for TadamShow with the `tadam` kit — puppet-theatre cartoons in which real people later record the roles on their phones. Use when the person wants to make, change or send a TadamShow world, hero (puppet), set or episode script, look at frames, play an episode, push or pull a world folder, submit an episode, answer the owner's remarks, or check its status on the server; and when the project's owner reviews submissions. Triggers include tadam, TadamShow, ТадамШоу, рубрика, серия, кукла, декорация, сценарий, world folder, script.json, sources.json, push, pull, submit, заявка, замечания, review.
 ---
 
 # TadamShow Studio
@@ -15,7 +15,11 @@ edit files there, the server keeps the last pushed copy, the owner approves what
 2. Read the references you need, once per session: [world folder](reference/world-folder.md),
    [script](reference/script.md), [shots and camera](reference/shots-and-camera.md),
    [recording steps](reference/recording-steps.md), [puppets and sets](reference/puppets-and-sets.md),
-   [after publishing](reference/after-publishing.md), [house rules](reference/house-rules.md).
+   [submitting](reference/submitting.md), [after publishing](reference/after-publishing.md),
+   [house rules](reference/house-rules.md); the project's owner also [owner review](reference/owner-review.md).
+3. Not an editor yet? The person runs **`tadam join` themself**, in their own terminal window (it asks the
+   email, the code from the letter, shows the rules and they type «согласен» / "I agree"). Another computer:
+   `tadam login` the same way. Tell them the command; never run it for them.
 
 ## The work order
 
@@ -30,20 +34,28 @@ edit files there, the server keeps the last pushed copy, the owner approves what
    **drawn again, never tuned**. Look at `heroes/<slug>/puppet/check.jpg` yourself.
 4. **The set**: `tadam new set <slug>`, describe the room and the pieces in `kit.json`, then `tadam set make
    <slug>` (price first) or `--placeholder` (free).
+   **Every picture and sound has its source in `sources.json`** at the world root, declared the moment the file
+   appears: `own` (the person made it), `generated` + `tool`, `licensed` + `licence` + `url`. `hero make` and
+   `set make` write their own entries; you add the rest (cover, media, anything the person brings — ask where
+   it comes from; no source, no file). `tadam check` errors on any file without one.
 5. **The script**: `tadam new episode 1 --cast key=hero`, then write `episodes/1/script.json`.
 6. **After EVERY change**: `tadam check [episode]` (fix every error) and `tadam frames <episode> --sheet`, then
    **open the sheet PNG and look at it** — heroes in the picture, not on each other, facing us, the framing
    right. Use `--board-preview` to see where the recorded face will be. Fix and look again.
 7. **Show the person**: `tadam play <episode>` (a window with sound; `--shot sh3` to start there). Change what
    they ask, by their words, then check and look again.
-8. **Send**: `tadam login` once (the person types the key; never in chat), then `tadam push`. Read its answer:
+8. **Send**: signed in once (`tadam join` / `tadam login`, by the person), then `tadam push`. Read its answer:
    the revision, the server's check, the change class, the draft links. A 409 "pull first" → `tadam pull`, merge
    every `<file>.server` into its file, delete the copy, check, push again.
 9. **Remind the person** to open the draft on the site (the link from push), record every role through the QR
-   code (alone or with friends), make the film and press «make studio version». `tadam status` says what is
-   still missing.
-10. **Submit only after the person explicitly says to send it** («отправляй», "send it"). (`tadam submit` comes
-    with the next kit update; until then the person submits on the site.)
+   code (alone or with friends), make the film and press «make studio version» (or `tadam studio-version
+   <episode> <videoId>`).
+   `tadam status` says what is still missing.
+10. **Submit only after the person explicitly says to send it** («отправляй», "send it"): `tadam submit
+    <episode> "<note>"` (it refuses with the list while anything is missing). Then `tadam status` shows the
+    owner's answer: remarks point at shots (`remark on sh3: …`) — fix them, check, push, mark the new film,
+    `tadam submit` again (the same submission reopens); `tadam reply "<text>"` answers in the thread. Details:
+    [submitting](reference/submitting.md).
 
 ## Money
 
@@ -60,8 +72,9 @@ Paid generation runs on the **person's own OpenAI key**. Before `hero make` or `
 
 ## Never
 
-- Never type «согласен» / "I agree" or accept any rules for the person, and never run `tadam join` for them: the
-  agreement is theirs, typed at their own keyboard.
+- Never type «согласен» / "I agree" or accept any rules for the person, and never run `tadam join` or `tadam
+  login` for them: the agreement is theirs, typed at their own keyboard. Never type a submission id into
+  `tadam review approve` / `reject`: that confirmation is the owner's own.
 - Never bypass a check or a refusal: no editing `.tadam/`, no hand-made requests to the API, no `--confirm` on a
   push unless the person said yes to exactly that breaking change. A failing hero is redrawn, not tuned.
 - Never ask for, print, or write a key: `OPENAI_API_KEY` and `TADAM_STUDIO_KEY` live in the environment (suggest
