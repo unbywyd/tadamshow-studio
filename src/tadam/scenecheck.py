@@ -12,7 +12,7 @@ What is checked (the codes are in CODES):
   1. the file: an unknown command, a hero, action, point, thing, instrument, view, sound or picture that does not
      exist, a time that cannot be worked out ("after" something nobody does, a phrase the voice does not have, a beat
      without the music's tempo), two actions at once that take the same part of the body;
-  2. the picture (studio rules, docs: shooting): a vertical film, 1-3 heroes, every hero in the frame and not standing
+  2. the picture (studio rules, docs: shooting): a vertical film, at most 3 heroes (a shot of a place or a thing has none), every hero in the frame and not standing
      on another one at the same depth, always facing us (no profile, no back, no walking sideways), the camera from
      the catalogue of framings.
 What only the engine can tell (a hero that talks off the picture, a recorded face too small) is the engine's own
@@ -57,7 +57,8 @@ CODES = {
     "background_missing": ("error", "the scene's background picture does not exist"),
     "sound_missing": ("error", "a music, ambience or sound file does not exist"),
     "item_missing": ("error", "a thing of the scene has no card in the engine or the scene"),
-    "no_actors": ("error", "the scene has no hero"),
+    "no_actors": ("info", "a shot with no hero: a place or a thing (allowed)"),
+    "scene_invalid": ("error", "the scene is not a JSON object"),
     "actor_duplicate": ("error", "two heroes with one id"),
     "puppet_missing": ("error", "a hero's puppet (rig.json) does not exist"),
     "clip_missing": ("error", "a hero's recording does not exist"),
@@ -308,9 +309,9 @@ class _Check:
         self.heroes = {}
         actors = [a for a in s.get("actors", []) if isinstance(a, dict)]
         if not actors:
-            self.add("no_actors", "actors", "the scene has no hero")
+            self.add("no_actors", "actors", "no hero in this shot: a place or a thing")
         if len(actors) > MAX_HEROES:
-            self.add("too_many_heroes", "actors", f"{len(actors)} heroes in one shot: 1 to {MAX_HEROES}")
+            self.add("too_many_heroes", "actors", f"{len(actors)} heroes in one shot: at most {MAX_HEROES}")
         for a in actors:
             hid = a.get("id", a.get("puppet", "?"))
             w = f"hero {hid}"
@@ -576,7 +577,7 @@ class _Check:
 def check_scene(spec: dict, ctx: Context, where: str = "") -> list[Issue]:
     """Every finding of one engine scene. `where` prefixes each finding's place (a shot's name)."""
     if not isinstance(spec, dict):
-        return [Issue("error", where or "scene", "no_actors", "the scene is not a JSON object")]
+        return [Issue("error", where or "scene", "scene_invalid", "the scene is not a JSON object")]
     return _Check(spec, ctx, where).run()
 
 

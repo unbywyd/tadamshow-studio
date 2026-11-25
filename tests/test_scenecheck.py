@@ -142,7 +142,19 @@ def test_clean_scene_has_no_findings():
 
 
 def test_every_scene_code_has_a_case():
-    assert set(SPOIL) == set(sc.CODES)
+    # scene_invalid cannot be made by spoiling a scene: it is the scene not being an object (test below)
+    assert set(SPOIL) | {"scene_invalid"} == set(sc.CODES)
+
+
+def test_scene_that_is_not_an_object():
+    found = sc.check_scene(["not", "a", "scene"], sc.Context(), "sh1")
+    assert [i.code for i in found] == ["scene_invalid"] and found[0].level == "error"
+
+
+def test_a_shot_with_no_hero_is_allowed():
+    # the first episode opens on the city at night, the desk, the clock: places and things, nobody in them
+    found = run(SPOIL["no_actors"])
+    assert not [i for i in found if i.level == "error"], [i.as_dict() for i in found]
 
 
 @pytest.mark.parametrize("code", sorted(SPOIL))
