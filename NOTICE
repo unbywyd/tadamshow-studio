@@ -38,7 +38,9 @@ not open source: non-commercial use is free; commercial use needs a separate lic
    PT_Serif-Web-Italic.ttf, PTM55FT.ttf. Copyright (c) 2010-2011 ParaType Ltd., with Reserved Font Names
    "PT Sans", "PT Serif", "PT Mono" and "ParaType". Licensed under the SIL Open Font License, Version 1.1:
    the full texts are next to the fonts (OFL-PT-Serif.txt, OFL-PT-Mono.txt), and at
-   https://openfontlicense.org. Used unmodified for the title cards (tadam/titlecard.py); taken from the
+   https://openfontlicense.org. Used unmodified for the title cards (tadam/titlecard.py), the contact sheets
+   (tadam/render.py) and the engine's speech bubbles and subtitles (engine/fx.gd, engine/player.gd, which read
+   the files from src/tadam/data/fonts); taken from the
    Google Fonts repository (https://github.com/google/fonts, ofl/ptserif and ofl/ptmono).
 
    4.2 Not included: installed separately by the user

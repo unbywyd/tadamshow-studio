@@ -258,6 +258,53 @@ static func wear(part: Object, neck_r: float, stream_path: String, host: Node, s
 	return me
 
 
+## THE SITE'S LOOK BEFORE A FACE IS RECORDED (stage --board-preview, the kit's local player): the head as wear()
+## will set it on the site, with a flat placeholder where the recorded face will show, so the framing matches.
+##   a board (scene "faces": "board" and rig parts.head.board): the painted head grows as wear() grows it
+##     (BOARD_BODY, at most BOARD_GROW), and the oval of the hole is filled with the placeholder;
+##   no board: the site shows the recorded head whole, sized as wear() sizes it: the painted head is hidden and a
+##     placeholder of that head (hair top to chin) stands on the neck.
+## Nothing plays. Returns the placeholder (a child of the head part, named "face_preview").
+const PREVIEW_FACE := Color(0.93, 0.81, 0.69)
+const PREVIEW_SHADE := Color(0.84, 0.70, 0.58)       # the faint shadow of the hole's upper edge (as the shader's)
+
+
+static func preview(part: Object, neck_r: float, body: float, board: Dictionary) -> Node2D:
+	var root := Node2D.new()
+	root.name = "face_preview"
+	root.z_index = part.z + 1
+	var c: Vector2
+	var r: Vector2
+	if not board.is_empty():
+		c = part.skins[""]["position"] + Vector2(board["center"][0], board["center"][1])
+		r = Vector2(board["size"][0], board["size"][1]) * 0.5
+		var q: float = BOARD_FILL * 2.0 * r.y / FACE_H
+		part.node.scale = Vector2.ONE * clampf(BOARD_BODY * body / (FACE_H * q), 1.0, BOARD_GROW)
+		root.add_child(_oval(c + Vector2(0.0, -r.y * 0.06), r, PREVIEW_SHADE))
+		root.add_child(_oval(c + Vector2(0.0, r.y * 0.05), r * Vector2(1.0, 0.95), PREVIEW_FACE))
+	else:
+		var need: float = FACE_BODY * body / FACE_H
+		var painted: Rect2 = part.painted
+		var chin_y: float = 0.3 * neck_r
+		var q: float = maxf(minf((chin_y - painted.position.y) / HEAD_H, 1.3 * painted.size.x / HEAD_W), need)
+		r = Vector2(HEAD_W * q * 0.5 * 0.86, HEAD_H * q * 0.5)
+		c = Vector2(0.0, chin_y - r.y)
+		part.sprite.visible = false
+		root.add_child(_oval(c, r, PREVIEW_FACE))
+	part.node.add_child(root)
+	return root
+
+
+static func _oval(c: Vector2, r: Vector2, color: Color) -> Polygon2D:
+	var o := Polygon2D.new()
+	var pts := PackedVector2Array()
+	for i in 64:
+		pts.append(c + Vector2(cos(TAU * i / 64.0) * r.x, sin(TAU * i / 64.0) * r.y))
+	o.polygon = pts
+	o.color = color
+	return o
+
+
 ## `keep_player`: the clip goes on playing (it is handed to the head of another view).
 static func take_off(me, part: Object, keep_player := false) -> void:
 	var sprite: Sprite2D = part.sprite

@@ -79,6 +79,29 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("episode", nargs="?", help="one episode (default: all)")
     ck.add_argument("--json", action="store_true", help="print the check-result JSON")
     ck.add_argument("--engine", action="store_true", help="also play every shot through in the engine, unseen")
+
+    def show_args(x, shot_help=None):
+        x.add_argument("episode")
+        if shot_help:
+            x.add_argument("--shot", help=shot_help)
+        x.add_argument("--lang", help="the language of the texts (default: the world's first)")
+        x.add_argument("--board-preview", action="store_true",
+                       help="the site's look: a placeholder where the recorded face will be, the head as the site "
+                            "enlarges it")
+        x.add_argument("--no-voice", action="store_true", help="narration as subtitles, without asking the server")
+
+    pl = sub.add_parser("play", help="play the episode in a window: tadam play <episode> [--shot sh3]")
+    show_args(pl, "begin at this shot")
+    pl.add_argument("--size", default="450x800", help="the window, WxH (450x800)")
+    fr = sub.add_parser("frames", help="PNG frames: --shot sh3 --at 1.5, or --sheet (a frame from every shot)")
+    show_args(fr, "the shot of the frame")
+    fr.add_argument("--at", type=float, help="seconds into the shot (default: its middle)")
+    fr.add_argument("--sheet", action="store_true", help="one contact sheet: the middle of every shot, labelled")
+    fr.add_argument("--out", help="the PNG to write (default: .tadam/frames/<episode>/...)")
+    fr.add_argument("--json", action="store_true", help="print the paths as JSON")
+    fm = sub.add_parser("film", help="a draft MP4 of the episode (picture, narration, music, subtitles)")
+    show_args(fm)
+    fm.add_argument("--out", help="the MP4 (default: .tadam/films/<episode>.mp4)")
     return ap
 
 
@@ -179,7 +202,83 @@ def _engine_checks(w, episode) -> list:
     return out
 
 
+def _episode(a):
+    from tadam import episode, tts
+    w = _world(a)
+    ep = episode.build(w, a.episode, lang=a.lang, link=None if a.no_voice else tts.link_from_env(),
+                       voice=not a.no_voice)
+    for note in ep.notes:
+        _out(note)
+    return ep
+
+
+def cmd_play(a) -> int:
+    from tadam import render
+    ep = _episode(a)
+    start = ep.index(a.shot) if a.shot else 0
+    try:
+        win = tuple(int(x) for x in a.size.lower().split("x"))
+        assert len(win) == 2 and min(win) > 0
+    except (ValueError, AssertionError):
+        _out(f"--size {a.size}: write WxH, like 450x800")
+        return 2
+    _out(f"playing episode {ep.n} from {ep.shots[start].id} ({ep.seconds - ep.shots[start].start:.1f} s); "
+         f"Esc closes the window")
+    render.play(ep, start, a.board_preview, win, log=_out)
+    return 0
+
+
+def cmd_frames(a) -> int:
+    from tadam import render
+    clock = render.Clock()
+    ep = _episode(a)
+    if a.sheet:
+        out = Path(a.out).resolve() if a.out else None
+        path, _ = render.sheet(ep, out, a.board_preview)
+        res = {"sheet": path.as_posix(), "shots": [{"shot": s.id, "at": round(s.seconds / 2, 2),
+                                                   "seconds": s.seconds, "remark": s.remark} for s in ep.shots]}
+    else:
+        if not a.shot:
+            _out("tadam frames <episode> --shot <id> [--at seconds], or --sheet")
+            return 2
+        i = ep.index(a.shot)
+        s = ep.shots[i]
+        at = s.seconds / 2 if a.at is None else a.at
+        if at < 0 or at > s.seconds:
+            _out(f"--at {at:g}: shot {s.id} lasts {s.seconds:g} s")
+            return 2
+        out = Path(a.out).resolve() if a.out else render.frames_dir(ep) / f"{s.id}@{at:.2f}.png"
+        render.snaps(ep, [(i, at, out)], a.board_preview)
+        res = {"frames": [{"shot": s.id, "at": round(at, 2), "png": out.as_posix()}]}
+    res["seconds"] = clock()
+    if a.json:
+        _out(json.dumps(res, ensure_ascii=False, indent=1))
+    else:
+        for f in res.get("frames", []):
+            _out(f["png"])
+        if "sheet" in res:
+            _out(res["sheet"])
+    return 0
+
+
+def cmd_film(a) -> int:
+    from tadam import render
+    clock = render.Clock()
+    ep = _episode(a)
+    out = Path(a.out).resolve() if a.out else ep.world.work_dir() / "films" / f"{ep.n}.mp4"
+    _out(f"filming episode {ep.n}: {len(ep.shots)} shots, {ep.seconds:.1f} s ...")
+    render.film(ep, out, a.board_preview, log=_out)
+    _out(f"{out.as_posix()}  ({clock():g} s)")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    # (piped, as Claude reads it: UTF-8 whatever the console's code page is, so Russian texts come out right)
+    if hasattr(sys.stdout, "reconfigure") and not sys.stdout.isatty():
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
     ap = build_parser()
     a = ap.parse_args(argv)
     if a.command == "doctor":
@@ -187,10 +286,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if a.command is None:
         ap.print_help()
         return 0
+    from tadam.engine import EngineError
+    from tadam.mix import MixError
     from tadam.openai_images import GenerationError
     from tadam.world import WorldError
     try:
-        return {"new": cmd_new, "hero": cmd_hero, "set": cmd_set, "check": cmd_check}[a.command](a)
-    except (WorldError, GenerationError) as e:
+        return {"new": cmd_new, "hero": cmd_hero, "set": cmd_set, "check": cmd_check, "play": cmd_play,
+                "frames": cmd_frames, "film": cmd_film}[a.command](a)
+    except (WorldError, GenerationError, EngineError, MixError) as e:
         _out(f"tadam: {e}")
         return 1

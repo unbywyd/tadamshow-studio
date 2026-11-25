@@ -494,13 +494,19 @@ class _Check:
         elif self.spec.get("time") != "share" and at > self.seconds:
             self.add("at_after_end", where, f"at = {at} s, but the scene lasts {self.seconds:g} s")
         if "phrase" in ln:
+            # a voice: a recorded clip, or a line with no recording yet ("speech": the phrases the kit estimated)
             voice = ln.get("voice", ln.get("who"))
-            clips = [self.heroes[voice]["clip"]] if voice in self.heroes and self.heroes[voice]["clip"] else \
-                [h["clip"] for h in self.heroes.values() if h["clip"]]
+
+            def said(h):
+                sp = h["def"].get("speech")
+                return h["clip"] or (sp if isinstance(sp, list) and sp else None)
+            clips = [said(self.heroes[voice])] if voice in self.heroes and said(self.heroes[voice]) else \
+                [said(h) for h in self.heroes.values() if said(h)]
             if not clips:
-                self.add("phrase_no_voice", where, "'phrase', but no hero has a recorded voice ('clip')")
+                self.add("phrase_no_voice", where, "'phrase', but no hero has a recorded voice ('clip') or says a "
+                                                   "line in this shot")
             else:
-                count = self.ctx.phrases(clips[0])
+                count = len(clips[0]) if isinstance(clips[0], list) else self.ctx.phrases(clips[0])
                 if count is None:
                     self.add("phrase_unknown", where, f"the phrases of {clips[0]} are not known (tadam.phrases)")
                 elif not isinstance(ln["phrase"], int) or not 1 <= ln["phrase"] <= count:

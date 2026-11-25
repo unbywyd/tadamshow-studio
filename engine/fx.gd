@@ -9,10 +9,17 @@ extends RefCounted
 ##                                                   blow: the action "get_hit")
 ## All of it is drawn over the picture, after the colour grade: titles and bubbles keep their own colours. Flat and
 ## matte: no outlines, no drop shadows; the type big enough to read on a phone.
+## The letters are the kit's own OFL font (PT Serif Bold, ParaType, SIL Open Font License 1.1; the kit's
+## src/tadam/data/fonts, its licence beside it): the same on every computer. `font_path` (stage --font=) names
+## another file; only when neither can be read does it fall back to a font of the system.
 
 const INK := Color(0.16, 0.14, 0.12)
 const PAPER := Color(0.99, 0.97, 0.92)
 const FONT_NAMES := ["Segoe UI", "Arial", "Helvetica", "Noto Sans", "DejaVu Sans"]
+const KIT_FONT := "../src/tadam/data/fonts/PT_Serif-Web-Bold.ttf"     # from the engine folder, in a clone of the kit
+
+static var font_path := ""
+static var _font: Font = null
 
 var layer: CanvasLayer
 var size := Vector2(720, 1280)
@@ -28,16 +35,31 @@ func setup(host: Node, screen: Vector2) -> void:
 	layer = CanvasLayer.new()
 	layer.layer = 60                   # (over the colour grade, layer 50)
 	host.add_child(layer)
-	var sf := SystemFont.new()
-	sf.font_names = PackedStringArray(FONT_NAMES)
-	sf.font_weight = 600
-	font = sf
+	font = letters()
 	_flash = ColorRect.new()
 	_flash.size = screen
 	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)      # (the whole window, however it is resized)
 	_flash.color = Color(1, 1, 1, 0)
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_flash)
+
+
+## The font of bubbles and titles (read once): font_path, else the kit's own, else the system's.
+static func letters() -> Font:
+	if _font != null:
+		return _font
+	for f: String in [font_path, ProjectSettings.globalize_path("res://").path_join(KIT_FONT).simplify_path()]:
+		if f.is_empty() or not FileAccess.file_exists(f):
+			continue
+		var ff := FontFile.new()
+		if ff.load_dynamic_font(f) == OK:
+			_font = ff
+			return _font
+	var sf := SystemFont.new()
+	sf.font_names = PackedStringArray(FONT_NAMES)
+	sf.font_weight = 600
+	_font = sf
+	return _font
 
 
 ## A bubble or a label: a flat rounded panel with text in it.

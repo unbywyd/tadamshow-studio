@@ -28,13 +28,42 @@ def sheet(rig_name: str = "humanoid-a") -> Image.Image:
     return out
 
 
-def make(pdir: Path, rig_name: str = "humanoid-a", character: str = "a wooden mannequin", log=print) -> dict:
-    """A puppet from the mannequin: sheet.png, meta.json, then the usual cut and check. Returns the report."""
+def make(pdir: Path, rig_name: str = "humanoid-a", character: str = "a wooden mannequin", log=print,
+         talking: bool = True) -> dict:
+    """A puppet from the mannequin: sheet.png, meta.json, then the usual cut and check. Returns the report.
+    `talking`: its head also gets an open mouth (the "open" drawing), so it moves its mouth when it says a line."""
     from tadam.puppet import cut_skin
     pdir = Path(pdir)
     pdir.mkdir(parents=True, exist_ok=True)
     sheet(rig_name).save(pdir / "sheet.png")
+    (pdir / "mouth_open.png").unlink(missing_ok=True)
     meta = {"name": pdir.name, "character": character, "style": "mannequin (drawn by code)", "rig": rig_name,
             "model": "none", "calls": []}
     (pdir / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    if not talking:
+        return cut_skin.cut(pdir, rig_name, log=log)
+    report = cut_skin.cut(pdir, rig_name, log=lambda *_: None)
+    if not report.get("passed"):
+        return report
+    # a mouth that opens (drawn by code too): the engine swaps the two heads while the mannequin says a line
+    mouth_open(pdir)
     return cut_skin.cut(pdir, rig_name, log=log)
+
+
+def mouth_open(pdir: Path) -> Path:
+    """<puppet>/mouth_open.png as tadam.puppet.gen_mouth would paint it: the same head on the same picture, with a
+    dark open mouth in the lower part of the face (cut_skin keeps only the mouth: the head's "open" drawing)."""
+    from PIL import ImageDraw
+
+    from tadam.puppet import gen_mouth
+    im, _, x, y, w, h = gen_mouth.layout(Path(pdir))
+    out = Image.new("RGBA", (gen_mouth.SIZE, gen_mouth.SIZE), (0, 0, 0, 0))
+    big = im.resize((w, h), Image.LANCZOS)
+    out.alpha_composite(big, (x, y))
+    # the round head is the upper part of the piece (the neck below it): the mouth sits low on the round
+    cx, cy = x + w * 0.5, y + h * 0.56
+    rx, ry = w * 0.13, h * 0.055
+    ImageDraw.Draw(out).ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=(70, 34, 24, 255))
+    f = Path(pdir) / "mouth_open.png"
+    out.save(f)
+    return f

@@ -84,8 +84,11 @@ def test_near_true_is_a_number_for_the_engine(world):
 def test_shot_lengths():
     steps = {"a-1": ("a", {"key": "a-1", "kind": "read", "text": {"ru": "раз два три четыре"}})}
     assert resolve.shot_seconds({"seconds": 2.5}, steps) == 2.5
-    assert resolve.shot_seconds({"say": "a-1"}, steps) == round(0.3 + 0.4 + 4 / 2.3 + 0.4, 2)
-    assert resolve.shot_seconds({"narration": {"text": {"ru": "раз"}, "at": 1}}, {}) == round(1 + 0.4 + 1 / 2.3 + 0.7, 2)
+    # (tadam.timing: lead 0.4 + words / 2.3 + trail 0.25 + tail 0.4; a line wins over "seconds", as on the server)
+    assert resolve.shot_seconds({"say": "a-1"}, steps) == round(0.4 + 4 / 2.3 + 0.25 + 0.4, 2)
+    assert resolve.shot_seconds({"say": "a-1", "seconds": 9}, steps) == round(0.4 + 4 / 2.3 + 0.25 + 0.4, 2)
+    assert resolve.shot_seconds({"narration": {"text": {"ru": "раз"}, "at": 1}}, {}) == round(1 + 0.6 + 0.7, 2)
+    assert resolve.shot_seconds({"narration": {"text": {"ru": "раз"}, "at": 1}}, {}, narration_seconds=2.5) == 4.2
     assert resolve.shot_seconds({}, {}) == resolve.DEFAULT_SECONDS
 
 

@@ -13,11 +13,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tadam import timing
 from tadam.world import World, is_safe_name, read_json
 
-WORDS_PER_SECOND = 2.3          # a calm line, Russian or English: words a second
-LEAD, TAIL, NARR_TAIL = 0.3, 0.4, 0.7
-DEFAULT_SECONDS = 4.0
+DEFAULT_SECONDS = timing.DEFAULT_SECONDS
 DEFAULT_HEIGHT = 0.42           # a hero's height (neck to sole) against the picture's, when hero.json has none
 NEAR = 2.0                      # "near": true -> this many times the size at the front edge (over the shoulder)
 # stage options a film or a shot may set (plain values; engine/stage.gd reads them from the scene's top level)
@@ -26,16 +25,16 @@ STAGE_OPTIONS = {"faces", "hands", "walk", "parallax", "vignette", "grade", "clo
 # what a set.json may pass on to the scene besides its pictures
 SET_KEYS = {"floor", "ground", "points", "life", "light", "grade", "haze", "vignette", "tint", "world", "parallax"}
 # actor keys the script may not set (the kit fills them from the world's own files)
-ACTOR_FIXED = {"puppet", "clip", "mouth", "props", "sound", "prop"}
+ACTOR_FIXED = {"puppet", "clip", "mouth", "props", "sound", "prop", "speech"}
 
 
 def words(text: str) -> int:
-    return len([w for w in str(text).split() if any(c.isalnum() for c in w)])
+    return timing.words(text)
 
 
 def line_seconds(text: str) -> float:
-    """How long a line takes to say, roughly."""
-    return round(0.4 + words(text) / WORDS_PER_SECOND, 2)
+    """How long a line takes to say, roughly: the speaker's piece of the take (tadam.timing)."""
+    return timing.piece_seconds(text)
 
 
 def steps_by_key(script: dict) -> dict:
@@ -53,23 +52,29 @@ def text_of(loc: object, lang: str = "ru") -> str:
     return ""
 
 
-def shot_seconds(shot: dict, steps: dict, lang: str = "ru") -> float:
-    """A shot lasts its "seconds", or as long as its line (or the narration over it) with a little air around."""
-    if isinstance(shot.get("seconds"), (int, float)):
-        return float(shot["seconds"])
+def shot_seconds(shot: dict, steps: dict, lang: str = "ru", narration_seconds: float | None = None) -> float:
+    """A shot lasts as long as its line (or the narration over it) with a little air around, else its "seconds"
+    (tadam.timing has the formula). `narration_seconds`: the narration file's own length, when there is one."""
     say = shot.get("say")
     if say in steps:
         st = steps[say][1]
-        n = line_seconds(text_of(st.get("text"), lang))
-        if isinstance(st.get("maxSeconds"), (int, float)):
-            n = min(n, float(st["maxSeconds"]))
-        return round(float(shot.get("lead", LEAD)) + n + float(shot.get("tail", shot.get("trail", TAIL))), 2)
+        return timing.line_shot_seconds(text_of(st.get("text"), lang), shot, st.get("maxSeconds"))
+    if isinstance(shot.get("seconds"), (int, float)):
+        return float(shot["seconds"])
     narr = shot.get("narration")
     if isinstance(narr, dict):
-        at = narr.get("at", 0.5)
-        at = float(at) if isinstance(at, (int, float)) else 0.5
-        return round(at + line_seconds(text_of(narr.get("text"), lang)) + float(shot.get("tail", NARR_TAIL)), 2)
+        voice = narration_seconds if narration_seconds else timing.speech_seconds(text_of(narr.get("text"), lang))
+        return timing.narration_shot_seconds(narr.get("at"), voice, shot)
     return DEFAULT_SECONDS
+
+
+def line_phrases(shot: dict, steps: dict, lang: str = "ru") -> tuple[str | None, list]:
+    """(the speaker's cast key, [[start, end], ...]) of a shot's line with no recording; (None, []) without a line."""
+    say = shot.get("say")
+    if say not in steps:
+        return None, []
+    hero, st = steps[say]
+    return hero, timing.line_phrases(text_of(st.get("text"), lang), st.get("phrases", 1), shot, st.get("maxSeconds"))
 
 
 def _set_part(world: World, slug: str) -> tuple[dict, list[str]]:
@@ -107,7 +112,8 @@ def _set_part(world: World, slug: str) -> tuple[dict, list[str]]:
     return out, bad
 
 
-def shot_scene(world: World, script: dict, shot: dict, lang: str = "ru") -> dict:
+def shot_scene(world: World, script: dict, shot: dict, lang: str = "ru",
+               narration_seconds: float | None = None) -> dict:
     """The engine scene of one shot."""
     film = script.get("film") or {}
     cast = script.get("cast") or {}
@@ -122,6 +128,7 @@ def shot_scene(world: World, script: dict, shot: dict, lang: str = "ru") -> dict
             if k in STAGE_OPTIONS:
                 scene[k] = v
     actors, lines = [], []
+    speaker, speech = line_phrases(shot, steps, lang)
     for a in shot.get("actors") or []:
         if not isinstance(a, dict):
             continue
@@ -143,30 +150,36 @@ def shot_scene(world: World, script: dict, shot: dict, lang: str = "ru") -> dict
             d["props"] = {"prop": {"image": world.media(a["prop"]).as_posix(), "hand": "right", "length": 1.0,
                                    "grip": 0.7}}
             lines.append({"at": 0, "who": hid, "show": "prop"})
+        if hid == speaker and speech:
+            d["speech"] = speech        # a line with no recording: the painted mouth moves in these phrases
         actors.append(d)
     scene["actors"] = actors
-    scene["seconds"] = shot_seconds(shot, steps, lang)
+    scene["seconds"] = shot_seconds(shot, steps, lang, narration_seconds)
     if isinstance(shot.get("focus"), dict):
         scene["focus"] = shot["focus"]
     for c in shot.get("camera") or []:
         if isinstance(c, dict):
-            # (every key goes on: one the engine does not know is reported by the scene check, not dropped silently)
-            lines.append({k: v for k, v in c.items() if k != "who"})
+            # (every key goes on, "who" too as on the server: one the engine does not know is reported by the
+            # scene check, not dropped silently)
+            lines.append(dict(c))
     scene["script"] = lines
     return scene
 
 
-def film_scenes(world: World, script: dict, lang: str = "ru") -> list[tuple[str, dict]]:
-    """(shot id, engine scene) for every shot, in order."""
-    return [(str(s.get("id", i + 1)), shot_scene(world, script, s, lang))
+def film_scenes(world: World, script: dict, lang: str = "ru",
+                narration: dict | None = None) -> list[tuple[str, dict]]:
+    """(shot id, engine scene) for every shot, in order. `narration`: shot id -> the narration file's seconds."""
+    narration = narration or {}
+    return [(str(s.get("id", i + 1)), shot_scene(world, script, s, lang, narration.get(str(s.get("id", i + 1)))))
             for i, s in enumerate(script.get("shots") or []) if isinstance(s, dict)]
 
 
-def write_scenes(world: World, episode: str, script: dict, lang: str = "ru") -> list[Path]:
+def write_scenes(world: World, episode: str, script: dict, lang: str = "ru",
+                 narration: dict | None = None) -> list[Path]:
     """.tadam/scenes/<episode>/<shot>/scene.json for every shot; returns the folders."""
     from tadam.world import write_json
     out = []
-    for sid, scene in film_scenes(world, script, lang):
+    for sid, scene in film_scenes(world, script, lang, narration):
         d = world.work_dir() / "scenes" / str(episode) / sid
         write_json(d / "scene.json", scene)
         out.append(d)

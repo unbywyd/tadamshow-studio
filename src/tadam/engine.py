@@ -1,7 +1,7 @@
 """Running the kit's engine (Godot 4.7) without a window: the scene's own check (stage.gd --check).
 
 Godot is found the way `tadam doctor` finds it (TADAM_GODOT, PATH, the macOS app). The engine project is imported
-once (engine/.godot, never committed). Playing, frames and films come in stage 1V (`tadam play/frames/film`).
+once (engine/.godot, never committed). Playing, frames and films: tadam.render (engine/player.tscn).
 """
 from __future__ import annotations
 

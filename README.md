@@ -5,8 +5,8 @@ Tools for making puppet-theatre cartoons for [TadamShow](https://tadamshow.com):
 the script, makes the puppets and the sets, looks at the frames itself and shows you the scene in a local
 player. When it is ready, one command sends it to TadamShow for review.
 
-> Status: early. Working: `tadam doctor`, `new`, `hero make`, `set make`, `check` and the engine. Coming: the
-> local player and frames (`play`, `frames`, `film`), sending to TadamShow (`login`, `push`, ...), the skill.
+> Status: early. Working: `tadam doctor`, `new`, `hero make`, `set make`, `check`, the local player and frames
+> (`play`, `frames`, `film`) and the engine. Coming: sending to TadamShow (`login`, `push`, ...), the skill.
 
 Русская версия: [README.ru.md](README.ru.md).
 
@@ -29,7 +29,8 @@ You need:
 4. **Your own OpenAI API key** in the environment variable `OPENAI_API_KEY` — https://platform.openai.com/api-keys
    It pays for the pictures of your puppets and sets. Nothing paid comes from us. Keep it out of files you
    commit; a secret manager is best.
-5. A **studio key** from your TadamShow studio page — later, only to send your work (`tadam login`).
+5. A **studio key** from your TadamShow studio page — to send your work (`tadam login`, coming) and to hear
+   the narration in the local player: set it in `TADAM_STUDIO_KEY`. Without it the narration is shown as subtitles.
 
 Then:
 
@@ -57,15 +58,27 @@ tadam new set barn                                # sets/barn/kit.json: describe
 tadam set make barn                               # paints the set with YOUR key, writes set.json
 tadam new episode 1 --cast cow=cow                # episodes/1/script.json (script version 2)
 tadam check 1                                     # what is wrong, in plain words; exit 1 on errors; --json
+tadam frames 1 --sheet                            # one PNG: the middle of every shot, labelled (Claude looks at it)
+tadam frames 1 --shot sh3 --at 1.5                # one frame of one shot; --json prints the paths as JSON
+tadam play 1 [--shot sh3]                         # a window plays the episode with its sound; Esc closes it
+tadam film 1                                      # a draft MP4 (picture, narration, music, subtitles)
 ```
 
 `hero make --mannequin` and `set make --placeholder` draw free stand-ins by code (a wooden mannequin, a plain
 room) to block out scenes before anything is painted. `tadam check --engine` also plays every shot through in
-the engine, unseen. A world folder:
+the engine, unseen.
+
+Nothing is recorded locally: heroes keep their painted heads, their mouths move while they say a line, and the
+line shows as a subtitle with the hero's name. A line with no recording lasts what a calm reader takes to say it
+(`tadam.timing`: lead 0.4 s + words / 2.3 a second + trail 0.25 s, then 0.4 s of the shot after it).
+`--board-preview` draws what the site will show once a face is recorded (a placeholder where the face goes, the
+head as large as the site makes it), so the framing matches. The narration is voiced by the TadamShow server
+(`POST /api/studio/tts`: only the text and the voice key are sent) and kept in `.tadam/tts/`; `--no-voice` keeps
+it as subtitles. On Linux without a screen, frames and films run under `xvfb-run`. A world folder:
 
 ```
 world.json   cover.png   heroes/<slug>/hero.json + puppet/   sets/<slug>/   media/   episodes/<n>/script.json
-.tadam/      the kit's working files (engine scenes, caches): never committed, never sent
+.tadam/      the kit's working files (engine scenes, cards, narration, frames, films): never committed, never sent
 ```
 
 ## Layout

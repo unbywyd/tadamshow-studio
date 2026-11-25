@@ -30,6 +30,9 @@ extends Node2D
 ##         at = a point's name,
 ##         clip = a recorded head (lab/head_clip.py), in the scene's folder or an absolute path
 ##         mouth = a recorded MOUTH only (lab/mouth_clip.py): the hero stays painted, a real mouth talks on its face
+##         speech = [[from, to], ...] seconds: a line with NO recording (the kit's local player): the painted mouth
+##                  (the head's "open" drawing, if the puppet has one) opens and shuts in these phrases, and
+##                  { "phrase": N } lines wait for them as for a recorded voice's
 ##   "life": [...]                     the LIVING background: behaviours on set pieces and places (engine/life.gd)
 ##   "light": {"at": [x, y]}           a light: heroes cast shadows of their shape away from it and get a lit edge
 ##   "grade": "evening", "vignette": 0.3   the colour of the whole picture (engine/light.gd)
@@ -80,6 +83,10 @@ extends Node2D
 ##   "show": prop id   "hide": prop id
 ##
 ## run:   godot --path engine res://stage.tscn -- --scene=<folder> [--clip=<file>] [--seconds=<n>]
+##        [--font=<file.ttf>]   the letters of bubbles and titles (the kit passes its own OFL font; engine/fx.gd)
+##        [--board-preview]     the site's look before a face is recorded: the head as the site enlarges it and a
+##                              flat placeholder where the face will be (engine/video_head.gd preview)
+## a whole episode, shot after shot (the kit's `tadam play / frames / film`): res://player.tscn (engine/player.gd)
 ## live:  ... -- --scene=<folder> --live=9080 [--live-host=0.0.0.0]   driven from outside (engine/live.gd)
 ## check: ... -- --scene=<folder> --check   plays it through as fast as it can, unseen, and prints one line
 ##        "CHECK {json}": where a hero talks off the picture, with its back to us, or with its recorded face too
@@ -156,6 +163,7 @@ class Actor:
 	var mouth_clip := ""              # a recorded MOUTH (lab/mouth_clip.py): the painted face keeps everything else
 	var mouth: Node2D
 	var mouth_player: VideoStreamPlayer
+	var speech: Array = []            # [[from s, to s], ...]: a line with no recording; the painted mouth talks
 	var turning: Dictionary = {}      # a turn under way: {t, to}
 	var after: Array = []             # what to do once the turn is over: [command lines]
 	var going: Dictionary = {}        # a "go" under way: {stage, dx, then, speed}
@@ -235,6 +243,7 @@ var camera_on := true                 # (the viewer shows the world as it is)
 var _cam_line: Dictionary = {"camera": "wide"}
 var focus: Focus                      # depth of field: what is sharp, what is soft (engine/focus.gd)
 var parallax := false                 # "parallax": true: nearer layers slide faster when the camera moves
+var board_preview := false            # --board-preview: the site's face-in-a-board look, a placeholder face
 
 
 ## A file the scene names (background, pieces, backdrops, props, item cards): an absolute path (also res:// and
@@ -259,6 +268,10 @@ func _ready() -> void:
 			seconds_arg = float(a.trim_prefix("--seconds="))
 		elif a == "--check":
 			checking = true
+		elif a.begins_with("--font="):
+			Fx.font_path = a.trim_prefix("--font=")
+		elif a == "--board-preview":
+			board_preview = true
 		elif a.begins_with("--live="):
 			_live_port = int(a.trim_prefix("--live="))
 		elif a.begins_with("--live-host="):
@@ -428,6 +441,9 @@ func _make_actor(def: Dictionary, layer: CanvasLayer, clip_arg: String) -> Actor
 	if not a.clip.is_empty() and not a.clip.is_absolute_path() and not a.clip.begins_with("res://"):
 		a.clip = scene_dir.path_join(a.clip)
 	a.sound = bool(def.get("sound", true))
+	for sp: Variant in def.get("speech", []):
+		if sp is Array and (sp as Array).size() >= 2:
+			a.speech.append([float(sp[0]), float(sp[1])])
 	a.mouth_clip = def.get("mouth", "")
 	if not a.mouth_clip.is_empty() and not a.mouth_clip.is_absolute_path() and not a.mouth_clip.begins_with("res://"):
 		a.mouth_clip = scene_dir.path_join(a.mouth_clip)
@@ -543,6 +559,10 @@ func _enter(a: Actor, view: String, x: float) -> bool:
 				hp.get("face", {}), float(p.rig["body_height"]), old_player,
 				hp.get("board", {}) if spec.get("faces", "") == "board" else {})
 		a.player = a.head.player
+	elif board_preview and view != "back" and not p.parts["head"].node.has_node("face_preview"):
+		var hb: Dictionary = p.rig["parts"]["head"]
+		VideoHead.preview(p.parts["head"], hb["joint"].get("radius", 28.0), float(p.rig["body_height"]),
+				hb.get("board", {}) if spec.get("faces", "") == "board" else {})
 	# the recorded mouth: onto this view's painted face, where its mouth is drawn (the back of a head has none; the
 	# clip plays on, for the voice)
 	if a.mouth != null and is_instance_valid(a.mouth):
@@ -960,6 +980,7 @@ func _physics_process(_delta: float) -> void:
 			_turn(a, v)
 		a.motion.measuring = a.turning.is_empty()
 		a.motion.step()
+		_mouth_step(a)
 	items.step(1.0 / 60.0)
 	life.step(step_no)
 	light.step(step_no)
@@ -1014,6 +1035,44 @@ func _physics_process(_delta: float) -> void:
 					m["slide"], m["floor"], m["face"]])
 
 
+## SPEECH WITH NO SOUND, for the eye (a line not recorded yet: the kit's local player): in each phrase of the
+## line the painted mouth is open and shut for the step counts of TALK, in a loop (even places open), as the
+## lab's demo did; between the phrases and after them it is shut. A head with no "open" drawing stays as it is.
+const TALK: Array[int] = [6, 4, 7, 5, 5, 4, 9, 16, 6, 5, 6, 4, 8, 5, 10, 26]   # steps open, shut, open, ...
+static var _talk_total := 0
+
+
+func _speaking(a: Actor, t: float) -> bool:
+	for sp: Array in a.speech:
+		if t >= float(sp[0]) and t < float(sp[1]):
+			return true
+	return false
+
+
+func _mouth_step(a: Actor) -> void:
+	if a.speech.is_empty() or board_preview or a.puppet == null or not a.puppet.parts.has("head"):
+		return              # (--board-preview: a recorded face will talk there, not the painted mouth)
+	if _talk_total == 0:
+		for n: int in TALK:
+			_talk_total += n
+	var t: float = step_no / 60.0
+	var open := false
+	if a.view != "back":
+		for sp: Array in a.speech:
+			if t >= float(sp[0]) and t < float(sp[1]):
+				var k: int = (step_no - int(round(float(sp[0]) * 60.0))) % _talk_total
+				for i in TALK.size():
+					if k < TALK[i]:
+						open = i % 2 == 0
+						break
+					k -= TALK[i]
+				break
+	var want := "open" if open else ""
+	var head: Variant = a.puppet.parts["head"]
+	if head.skin != want and head.skins.has(want):
+		a.puppet.set_skin("head", want, false)
+
+
 ## Two measurements together: counts and lengths add up, worst cases stay the worst.
 static func _sum(x: Dictionary, y: Dictionary) -> Dictionary:
 	if x.is_empty():
@@ -1051,6 +1110,8 @@ func _check_step() -> void:
 				if t >= float(ph[0]) and t < float(ph[1]):
 					talking = true
 					voiced = true
+		elif _speaking(a, t):
+			talking = true              # (a line with no recording: it must be seen saying it)
 		if not talking:
 			continue
 		var head: Variant = _head_screen(a.id)
@@ -1109,8 +1170,13 @@ func _music_beat() -> Vector2:
 	return Vector2.ZERO
 
 
-## The phrases of a hero's recorded voice (tools/phrases.py), or of the first hero that has one.
+## The phrases of a hero's recorded voice (tools/phrases.py), or of the first hero that has one. A hero with no
+## recording that says a line ("speech") has the phrases of that line.
 func _phrases(who: String) -> Array:
+	if actors.has(who):
+		var w: Actor = actors[who]
+		if w.clip == "" and w.mouth_clip == "" and not w.speech.is_empty():
+			return w.speech
 	var order: Array = []
 	if actors.has(who):
 		order.append(actors[who])
