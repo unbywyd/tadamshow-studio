@@ -49,8 +49,19 @@ FILE = "actions.json"
 
 
 def rig_sha(pdir: Path) -> str:
-    """The fingerprint of the puppet's rig.json: of its content, never of its bytes (CRLF/LF, indentation)."""
-    return file_content_sha(Path(pdir) / "rig.json")
+    """The fingerprint of the puppet's rig.json: the sha-256 of its bytes with LF line endings, so a checkout that
+    turns LF into CRLF (or back) does not make the table stale. The server computes exactly this form (Python and
+    JavaScript write some numbers differently, e.g. 120.0 / 120, so a fingerprint of re-serialised JSON would not
+    match there)."""
+    return hashlib.sha256(file_lf((Path(pdir) / "rig.json").read_bytes())).hexdigest()
+
+
+def _content_sha(pdir: Path) -> str | None:
+    """The form kit 0.0.2 wrote for a short while (re-serialised JSON): still accepted locally."""
+    try:
+        return file_content_sha(Path(pdir) / "rig.json")
+    except (OSError, ValueError):
+        return None
 
 
 def _raw_shas(pdir: Path) -> set[str]:
@@ -152,7 +163,7 @@ def state(pdir: Path) -> tuple[str, dict | None]:
     if not isinstance(data, dict):
         return "missing", None
     try:
-        if data.get("rig") != rig_sha(pdir) and data.get("rig") not in _raw_shas(pdir):
+        if data.get("rig") not in {rig_sha(pdir), _content_sha(pdir), *_raw_shas(pdir)}:
             return "stale", data
     except OSError:
         return "missing", None

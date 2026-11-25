@@ -46,10 +46,12 @@ def test_a_checkout_that_changes_line_endings_keeps_the_action_check(world):
     assert actions.state(pdir)[0] == "passed"
     crlf(pdir / "rig.json")                                         # what git or an editor may do on Windows
     assert actions.state(pdir)[0] == "passed"
-    rig = json.loads((pdir / "rig.json").read_text(encoding="utf-8"))
-    (pdir / "rig.json").write_text(json.dumps(rig, indent=4, sort_keys=True), encoding="utf-8")   # reformatted
-    assert actions.state(pdir)[0] == "passed"
     assert "hero_actions_stale" not in {i.code for i in check.check_world(world)}
+    rig = json.loads((pdir / "rig.json").read_text(encoding="utf-8"))
+    # the fingerprint is of the bytes with LF (what the server computes too): a checkout only changes line endings,
+    # so that is all it forgives; a reformatted rig is a new rig for the server as well
+    (pdir / "rig.json").write_text(json.dumps(rig, indent=4, sort_keys=True), encoding="utf-8")
+    assert actions.state(pdir)[0] == "stale"
     rig["body_height"] = rig["body_height"] + 1                     # the content changed: a new check is needed
     write_json(pdir / "rig.json", rig)
     assert actions.state(pdir)[0] == "stale"
