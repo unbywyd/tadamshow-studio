@@ -116,13 +116,21 @@ def build_parser() -> argparse.ArgumentParser:
                             "enlarges it")
         x.add_argument("--no-voice", action="store_true", help="narration as subtitles, without asking the server")
 
-    pl = sub.add_parser("play", help="play the episode in a window: tadam play <episode> [--shot sh3]")
+    pl = sub.add_parser("play", help="play the episode in a window: tadam play <episode> [--shot sh3 --at 1.5 "
+                                     "--paused]; Space pauses it; `tadam play where` says where it stands")
     show_args(pl, "begin at this shot")
     pl.add_argument("--size", default="450x800", help="the window, WxH (450x800)")
+    pl.add_argument("--at", type=float, default=0.0, help="seconds into the shot to begin at")
+    pl.add_argument("--paused", action="store_true", help="open paused there")
+    pl.add_argument("--json", action="store_true", help="(tadam play where) the state as JSON")
     fr = sub.add_parser("frames", help="PNG frames: --shot sh3 --at 1.5, or --sheet (a frame from every shot)")
     show_args(fr, "the shot of the frame")
     fr.add_argument("--at", type=float, help="seconds into the shot (default: its middle)")
     fr.add_argument("--sheet", action="store_true", help="one contact sheet: the middle of every shot, labelled")
+    fr.add_argument("--around", type=float, help="seconds into the shot: several frames round that moment, and a "
+                                                  "strip of them (the motion, not one pose)")
+    fr.add_argument("--frames", type=int, default=6, help="(--around) how many frames (6)")
+    fr.add_argument("--span", type=float, default=1.0, help="(--around) over how many seconds (1.0)")
     fr.add_argument("--out", help="the PNG to write (default: .tadam/frames/<episode>/...)")
     fr.add_argument("--json", action="store_true", help="print the paths as JSON")
     fm = sub.add_parser("film", help="a draft MP4 of the episode (picture, narration, music, subtitles)")
@@ -367,24 +375,75 @@ def _episode(a):
 
 def cmd_play(a) -> int:
     from tadam import render
-    ep = _episode(a)
-    start = ep.index(a.shot) if a.shot else 0
+    if a.episode == "where":
+        return cmd_play_where(a)
     try:
         win = tuple(int(x) for x in a.size.lower().split("x"))
         assert len(win) == 2 and min(win) > 0
     except (ValueError, AssertionError):
         _out(f"--size {a.size}: write WxH, like 450x800")
         return 2
-    _out(f"playing episode {ep.n} from {ep.shots[start].id} ({ep.seconds - ep.shots[start].start:.1f} s); "
-         f"Esc closes the window")
-    render.play(ep, start, a.board_preview, win, log=_out)
+    ep = _episode(a)
+    start = ep.index(a.shot) if a.shot else 0
+    if a.at < 0 or a.at > ep.shots[start].seconds:
+        _out(f"--at {a.at:g}: shot {ep.shots[start].id} lasts {ep.shots[start].seconds:g} s")
+        return 2
+    _out(f"playing episode {ep.n} from {ep.shots[start].id} ({ep.seconds - ep.shots[start].start:.1f} s). "
+         f"Space pauses, arrows step, M marks, B opens the action library, Esc closes; `tadam play where` tells "
+         f"Claude where it stands. Changes in the world are played at once.")
+
+    def again():
+        from tadam import episode, tts
+        e = episode.build(ep.world, a.episode, lang=a.lang, link=None if a.no_voice else tts.link_from_env(),
+                          voice=not a.no_voice)
+        for note in e.notes:
+            _out(note)
+        return e
+
+    render.play(ep, start, a.board_preview, win, log=_out, start_at=a.at, paused=a.paused, rebuild=again)
     return 0
+
+
+def cmd_play_where(a) -> int:
+    from tadam import where
+    w = _world(a)
+    rep = where.report(w, where.read_state(w))
+    if a.json:
+        _out(json.dumps(rep, ensure_ascii=False, indent=1))
+    else:
+        _out(where.text(rep))
+    return 0 if rep.get("found") else 1
 
 
 def cmd_frames(a) -> int:
     from tadam import render
     clock = render.Clock()
     ep = _episode(a)
+    if a.around is not None:
+        if not a.shot:
+            _out("tadam frames <episode> --shot <id> --around <seconds> [--frames 6] [--span 1.0]")
+            return 2
+        i = ep.index(a.shot)
+        s = ep.shots[i]
+        if a.around < 0 or a.around > s.seconds:
+            _out(f"--around {a.around:g}: shot {s.id} lasts {s.seconds:g} s")
+            return 2
+        if a.frames < 1 or a.frames > 24 or a.span <= 0:
+            _out("--frames: 1 to 24; --span: more than 0 seconds")
+            return 2
+        times = render.around_times(a.around, s.seconds, a.frames, a.span)
+        d = render.frames_dir(ep)
+        pngs = render.snaps(ep, [(i, t, d / f"{s.id}@{t:.2f}.png") for t in times], a.board_preview)
+        out = Path(a.out).resolve() if a.out else d / f"{s.id}~{a.around:.2f}.png"
+        strip = render.make_strip(ep, s.id, pngs, times, out, at=a.around)
+        res = {"strip": strip.as_posix(), "frames": [{"shot": s.id, "at": t, "png": p.as_posix()}
+                                                     for t, p in zip(times, pngs)]}
+        res["seconds"] = clock()
+        if a.json:
+            _out(json.dumps(res, ensure_ascii=False, indent=1))
+        else:
+            _out(res["strip"])
+        return 0
     if a.sheet:
         out = Path(a.out).resolve() if a.out else None
         path, _ = render.sheet(ep, out, a.board_preview)

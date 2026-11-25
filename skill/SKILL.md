@@ -45,8 +45,9 @@ edit files there, the server keeps the last pushed copy, the owner approves what
 6. **After EVERY change**: `tadam check [episode]` (fix every error) and `tadam frames <episode> --sheet`, then
    **open the sheet PNG and look at it** — heroes in the picture, not on each other, facing us, the framing
    right. Use `--board-preview` to see where the recorded face will be. Fix and look again.
-7. **Show the person**: `tadam play <episode>` (a window with sound; `--shot sh3` to start there). Change what
-   they ask, by their words, then check and look again.
+7. **Show the person**: `tadam play <episode>` **in the background** (a window with sound; `--shot sh3 --at 1.5`).
+   They pause it (Space) and say «вот тут»: run `tadam play where`, open its picture, fix THAT line by their
+   words; the open window re-reads it by itself. Details: [watching together](reference/watching.md).
 8. **Send**: signed in once (`tadam join` / `tadam login`, by the person), then `tadam push`. Read its answer:
    the revision, the server's check, the change class, the draft links. A 409 "pull first" → `tadam pull`, merge
    every `<file>.server` into its file, delete the copy, check, push again.

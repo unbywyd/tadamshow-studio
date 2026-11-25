@@ -95,7 +95,12 @@ tadam check 1                                     # what is wrong, in plain word
                                                   # exit 1 on errors; --json; --verbose adds the info notes
 tadam frames 1 --sheet                            # one PNG: the middle of every shot, labelled (Claude looks at it)
 tadam frames 1 --shot sh3 --at 1.5                # one frame of one shot; --json prints the paths as JSON
-tadam play 1 [--shot sh3]                         # a window plays the episode with its sound; Esc closes it
+tadam frames 1 --shot sh3 --around 1.5            # six frames round that moment in one strip: the motion
+tadam play 1 [--shot sh3 --at 1.5 --paused]       # a window plays the episode with its sound; Space pauses, arrows
+                                                  # step, M marks, B opens the action library, Esc closes;
+                                                  # it plays changes to the world at once
+tadam play where                                  # where the window stopped: shot, second, picture, what every
+                                                  # hero plays, the script lines at work (skill: watching.md)
 tadam film 1                                      # a draft MP4 (picture, narration, music, subtitles)
 tadam hero check cow                              # every action of the engine on the hero (hero make runs it;
                                                   # ~30 s, a hero in a skirt 1-2 min)

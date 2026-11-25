@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,16 +80,30 @@ def command(godot: str, mode: str, playlist: Path, size: tuple[int, int], fps: i
     return cmd
 
 
-def playlist(ep: Episode, mode: str, start: int = 0, snaps: list | None = None, audio: Path | None = None) -> dict:
-    """What engine/player.gd plays (pure)."""
+def playlist(ep: Episode, mode: str, start: int = 0, snaps: list | None = None, audio: Path | None = None,
+             start_at: float = 0.0, paused: bool = False, rev_file: Path | None = None, rev: int = 0) -> dict:
+    """What engine/player.gd plays (pure). The window (play) also gets what it needs to stop and say where it
+    stands: the names, where every shot begins, where its own script lines begin, the folder for its state."""
     shots = []
     for s in ep.shots:
         shots.append({"id": s.id, "scene": s.dir.as_posix(), "seconds": s.seconds, "frames": s.frames,
-                      "card": s.card, "subs": s.subs})
-    return {"mode": mode, "fps": ep.fps, "size": list(ep.size), "start": start,
-            "audio": audio.as_posix() if audio else "", "audio_from": ep.shots[start].start if ep.shots else 0.0,
-            "fonts": {"text": TEXT_FONT.as_posix(), "italic": ITALIC_FONT.as_posix()},
-            "shots": shots, "snaps": snaps or []}
+                      "card": s.card, "subs": s.subs, "start": s.start, "remark": s.remark,
+                      "lines_from": s.lines_from})
+    pl = {"mode": mode, "fps": ep.fps, "size": list(ep.size), "start": start,
+          "audio": audio.as_posix() if audio else "", "audio_from": ep.shots[start].start if ep.shots else 0.0,
+          "fonts": {"text": TEXT_FONT.as_posix(), "italic": ITALIC_FONT.as_posix(), "mono": MONO_FONT.as_posix()},
+          "shots": shots, "snaps": snaps or []}
+    if mode == "play":
+        pl.update({"lang": ep.lang, "names": ep.names, "episode": ep.n, "script_sha": ep.script_sha, "rev": rev,
+                   "state_dir": state_dir(ep.world).as_posix(),
+                   "start_step": int(round(max(start_at, 0.0) * 60)), "start_paused": bool(paused),
+                   "rev_file": rev_file.as_posix() if rev_file else ""})
+    return pl
+
+
+def state_dir(world) -> Path:
+    """Where the window writes its pause: state.json, pause.png, mark-<n>.png (and the viewer's library.json)."""
+    return world.work_dir() / "player"
 
 
 def snap_frame(at: float) -> int:
@@ -249,19 +264,160 @@ def _sound(ep: Episode, run: Run, log=print) -> Path | None:
     return mix.render(sounds(ep), ep.music, ep.seconds, run.dir / "sound.wav", log=log)
 
 
+def _replace(src: Path, dst: Path, tries: int = 20) -> None:
+    """src over dst at once (the engine may be reading dst that moment on Windows: a few more tries)."""
+    for i in range(tries):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if i == tries - 1:
+                raise
+            time.sleep(0.05)
+
+
+def world_stamp(world) -> tuple:
+    """What changes when the world does: every file's path, size and time, .tadam/ and hidden ones left out."""
+    root = Path(world.root)
+    out = []
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
+        for name in files:
+            if name.startswith("."):
+                continue
+            p = Path(dirpath) / name
+            try:
+                st = p.stat()
+            except OSError:
+                continue
+            out.append((p.relative_to(root).as_posix(), st.st_size, st.st_mtime_ns))
+    return tuple(sorted(out))
+
+
+def clear_state(world) -> None:
+    """A new window starts with no pause and no marks (the pictures of the last one go)."""
+    d = state_dir(world)
+    if not d.is_dir():
+        return
+    for f in [d / "state.json", d / "pause.png", d / "library.json", *d.glob("mark-*.png")]:
+        f.unlink(missing_ok=True)
+
+
+class Watch:
+    """While the window is open: the world changed (Claude edited the script) -> the episode built again, its
+    sound mixed again, the playlist written anew and a new number in rev.txt; the window reads it and stands on
+    the same shot and second, paused."""
+
+    def __init__(self, ep: Episode, run: Run, rebuild, log=print, every: float = 0.7):
+        self.ep, self.run, self.rebuild, self.log, self.every = ep, run, rebuild, log, every
+        self.rev = 0
+        self.stop = threading.Event()
+        self.stamp = world_stamp(ep.world)
+        self.thread = threading.Thread(target=self._loop, daemon=True)
+
+    def write(self, ep: Episode, audio: Path | None, start: int = 0, start_at: float = 0.0,
+              paused: bool = False) -> Path:
+        f = self.run.dir / "playlist.json"
+        part = self.run.dir / "playlist.json.part"
+        write_json(part, playlist(ep, "play", start=start, audio=audio, start_at=start_at, paused=paused,
+                                  rev_file=self.run.dir / "rev.txt", rev=self.rev), indent=None)
+        _replace(part, f)
+        rv = self.run.dir / "rev.txt.part"
+        rv.write_text(str(self.rev), encoding="utf-8")
+        _replace(rv, self.run.dir / "rev.txt")
+        return f
+
+    def check(self) -> bool:
+        """One look at the world; True when the window was given the episode anew."""
+        now = world_stamp(self.ep.world)
+        if now == self.stamp:
+            return False
+        if self.stop.wait(0.4) or world_stamp(self.ep.world) != now:
+            return False                       # (still being written: next time)
+        self.stamp = now
+        try:
+            ep = self.rebuild()
+            audio = mix.render(sounds(ep), ep.music, ep.seconds, self.run.dir / f"sound-{self.rev + 1}.wav",
+                               log=lambda *_: None)
+        except Exception as e:               # noqa: BLE001 (a script half-written: told, the window keeps on)
+            self.log(f"the world changed but cannot be played yet: {e}")
+            return False
+        self.rev += 1
+        self.ep = ep
+        self.write(ep, audio)
+        self.log(f"the world changed: the window reads episode {ep.n} again (edit {self.rev})")
+        return True
+
+    def _loop(self) -> None:
+        while not self.stop.wait(self.every):
+            self.check()
+
+
 def play(ep: Episode, start: int = 0, board_preview: bool = False, window: tuple[int, int] = PLAY_WINDOW,
-         log=print) -> str:
+         log=print, start_at: float = 0.0, paused: bool = False, rebuild=None) -> str:
+    """The window. `rebuild`: builds the episode again (the window then follows changes in the world)."""
     run = _new_run()
+    watch = Watch(ep, run, rebuild or (lambda: ep), log)
     try:
+        clear_state(ep.world)
         audio = _sound(ep, run, log)
-        pl = playlist(ep, "play", start=start, audio=audio)
-        f = run.dir / "playlist.json"
-        write_json(f, pl, indent=None)
+        f = watch.write(ep, audio, start=start, start_at=start_at, paused=paused)
         cmd = command(engine.godot(), "play", f, ep.size, board_preview=board_preview, window=window,
                       prefix=display_prefix("play"))
+        if rebuild is not None:
+            watch.thread.start()
         return _go(cmd, 24 * 3600, echo=True)
     finally:
+        watch.stop.set()
+        if watch.thread.is_alive():
+            watch.thread.join(5)
         shutil.rmtree(run.dir, ignore_errors=True)
+
+
+# ------------------------------------------------------------------------------------------------ around a moment
+
+def around_times(at: float, seconds: float, n: int = 6, span: float = 1.0) -> list[float]:
+    """`n` moments of a shot `span` seconds long all told, evenly apart, the moment `at` one of them (a little more
+    of what comes after it than before), moved by whole steps to stay inside the shot (pure)."""
+    n = max(int(n), 1)
+    at = min(max(float(at), 0.0), seconds)
+    if n == 1 or span <= 0:
+        return [round(at, 3)]
+    step = min(float(span), seconds) / (n - 1)
+    if step <= 0:
+        return [round(at, 3)]
+    c = (n - 1) // 2
+    first = at - c * step
+    while first < -1e-9:
+        first += step
+    while first + (n - 1) * step > seconds + 1e-9 and first - step >= -1e-9:
+        first -= step
+    out = []
+    for i in range(n):
+        t = round(first + i * step, 3) + 0.0      # (never -0.0)
+        if 0 <= t <= seconds + 1e-9 and (not out or t > out[-1]):
+            out.append(min(t, round(seconds, 3)))
+    return out
+
+
+def make_strip(ep: Episode, shot_id: str, pngs: list[Path], times: list[float], out: Path, at: float | None = None,
+               thumb_w: int = 220) -> Path:
+    """The frames in a row, each with its second; the one nearest `at` framed."""
+    thumb = (thumb_w, int(round(thumb_w * ep.size[1] / ep.size[0])))
+    size, corners = sheet_layout(len(pngs), thumb, cols=len(pngs), label=40)
+    img = Image.new("RGB", size, BG)
+    d = ImageDraw.Draw(img)
+    f_sec = ImageFont.truetype(str(MONO_FONT), 17)
+    near = min(range(len(times)), key=lambda i: abs(times[i] - at)) if at is not None and times else -1
+    for i, (png, t, (x, y)) in enumerate(zip(pngs, times, corners)):
+        with Image.open(png) as im:
+            img.paste(im.convert("RGB").resize(thumb, Image.LANCZOS), (x, y))
+        if i == near:
+            d.rectangle([x - 4, y - 4, x + thumb[0] + 3, y + thumb[1] + 3], outline=ACCENT, width=4)
+        d.text((x, y + thumb[1] + 8), f"{shot_id} {t:.2f} s", font=f_sec, fill=ACCENT if i == near else INK)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out)
+    return out
 
 
 def film(ep: Episode, out: Path, board_preview: bool = False, timeout: float = 3600, log=print) -> Path:
