@@ -158,6 +158,7 @@ def test_rules_outdated_at_login_by_email(fake, person, capsys):
 
 def test_rules_outdated_at_login_with_a_key(fake, person, monkeypatch, capsys):
     fake.rules_version = "2"
+    fake.staff = False
     monkeypatch.setenv(link.KEY_ENV, KEY)
     person.answers += ["I agree"]
     code, out = run(capsys, "login", "--key")
@@ -169,10 +170,21 @@ def test_rules_outdated_at_login_with_a_key(fake, person, monkeypatch, capsys):
 
 def test_rules_outdated_without_a_terminal_only_says_so(fake, monkeypatch, capsys):
     fake.rules_version = "2"
+    fake.staff = False
     monkeypatch.setenv(link.KEY_ENV, KEY)
     code, out = run(capsys, "login")
     assert code == 0 and "tadam login --key` yourself in a terminal" in out
     assert fake.accepted == "1" and not fake.accepts
+
+
+def test_the_owner_side_is_not_asked_for_new_rules_at_login(fake, person, monkeypatch, capsys):
+    # staff admin+ are not asked by the server (rules.ts needRules): login must not tell them pushing waits
+    fake.rules_version = "2"
+    monkeypatch.setenv(link.KEY_ENV, KEY)
+    code, out = run(capsys, "login", "--key")
+    assert code == 0, out
+    assert "not asked to accept" in out and "pushing and voicing wait" not in out
+    assert not person.prompts and fake.accepted == "1" and not fake.accepts
 
 
 def test_push_says_the_rules_changed(fake, monkeypatch, capsys, world):

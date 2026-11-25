@@ -354,7 +354,9 @@ class _Check:
             near = isinstance(nv, (int, float)) and not isinstance(nv, bool) and nv > 1   # (over the shoulder: exempt)
             k = (1.0 + (far_scale - 1.0) * max(0.0, min(depth, 1.0)))
             half = h["info"].width * height * STAGE_H * k / STAGE_W / 2        # shares of the picture's width
-            cx = 0.5 + (float(x) - 0.5) * k if not near else float(x)
+            # x is where the hero is SEEN, at any depth (engine/stage.gd _ground_place: space.frame_x(x, z)); depth
+            # only makes it smaller
+            cx = float(x)
             if not near and (cx - half < -OFF_FRAME * 2 * half or cx + half > 1 + OFF_FRAME * 2 * half):
                 self.add("off_frame", f"hero {hid}",
                          f"at x = {x} its body reaches {cx - half:.2f}..{cx + half:.2f} of the picture's width: "

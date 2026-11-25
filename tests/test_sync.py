@@ -163,6 +163,15 @@ def test_push_sends_only_what_the_server_lacks(keyed, world, capsys):
     assert keyed.worlds["moon-cow"]["revs"][-1]["manifest"] == folder.scan(world).manifest
 
 
+def test_push_calls_only_a_draft_world_a_draft(keyed, world, capsys):
+    code, out = run(capsys, "--world", str(world), "push")
+    assert code == 0 and "draft on the site (only you see it): https://tadamshow.com/ru/w/moon-cow" in out
+    # a live world (the owner adopting a published one, or a world after approval) is on the site for everyone
+    keyed.worlds["moon-cow"]["status"] = "live"
+    code, out = run(capsys, "--world", str(world), "push")
+    assert code == 0 and "on the site: https://tadamshow.com/ru/w/moon-cow" in out and "only you see it" not in out
+
+
 def test_push_refuses_a_stale_base(keyed, world, tmp_path, capsys):
     assert run(capsys, "--world", str(world), "push")[0] == 0
     assert run(capsys, "pull", "moon-cow", "--dir", str(tmp_path / "b"))[0] == 0

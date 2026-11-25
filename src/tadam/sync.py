@@ -238,7 +238,9 @@ def describe_push(p: Pushed) -> str:
         lines.append(f"  {mark.get(i.get('level'), '?')} {i.get('where')}: {i.get('message')} [{i.get('code')}]")
     links = r.get("links") or {}
     if links.get("world"):
-        lines.append(f"draft on the site (only you see it): {links['world']}")
+        # a world that is out (live) is on the site for everyone; only a draft is seen by its editor alone
+        out = (r.get("world") or {}).get("status") in ("soon", "live", "hidden", "archived")
+        lines.append(f"on the site: {links['world']}" if out else f"draft on the site (only you see it): {links['world']}")
     for e in links.get("episodes") or []:
         lines.append(f"  episode {e.get('number')}: {e.get('url')}")
     if p.local_only:

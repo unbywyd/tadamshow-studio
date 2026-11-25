@@ -174,6 +174,22 @@ def test_heroes_at_different_depths_may_overlap():
     assert "heroes_overlap" not in {i.code for i in sc.check_scene(s, ctx())}
 
 
+def test_x_is_where_a_deep_hero_is_seen():
+    # the engine draws a hero at depth where x says on the screen (stage.gd _ground_place -> space.frame_x), only
+    # smaller: two far heroes side by side (shot a4 of the detective: x 0.56 and 0.74, depth 0.85 and 0.95) do not
+    # stand on each other, and two far heroes at one x do
+    s = copy.deepcopy(BASE)
+    s["ground"] = {"far": 0.675, "far_scale": 0.55, "tilt": 0.7}
+    s["actors"][0].update(x=0.56, depth=0.85, height=0.28)
+    s["actors"][1].update(x=0.74, depth=0.95, height=0.27)
+    assert "heroes_overlap" not in {i.code for i in sc.check_scene(s, ctx())}
+    s["actors"][1].update(x=0.58)
+    assert "heroes_overlap" in {i.code for i in sc.check_scene(s, ctx())}
+    # and a deep hero near the edge is off the picture where it is seen, not pulled to the middle
+    s["actors"][1].update(x=0.99, depth=0.9)
+    assert "off_frame" in {i.code for i in sc.check_scene(s, ctx())}
+
+
 def test_over_the_shoulder_hero_is_exempt():
     s = copy.deepcopy(BASE)
     s["actors"][0].update(x=0.05, near=2.3)

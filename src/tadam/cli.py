@@ -539,7 +539,10 @@ def cmd_login(a) -> int:
     _out(f"the key is stored in {path} (only for you; `tadam logout` removes it)")
     if not info["access"] and not rules.get("accepted"):
         _out("studio access is not on yet: accept the studio's rules first (`tadam join`, yourself, in a terminal)")
-    if info["rulesOutdated"]:
+    if info["rulesOutdated"] and info["staff"]:
+        # the server does not ask the project's owner side (staff admin+) to accept the editors' rules
+        _out("the studio's rules have a new version (the project's owner side is not asked to accept it)")
+    elif info["rulesOutdated"]:
         if keyboard.real():
             v = join.accept_new_rules(api.Api(lk), keyboard.ask, _out, me, a.lang, a.terms)
             _out(f"accepted the studio's rules, version {v}")

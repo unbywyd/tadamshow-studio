@@ -20,8 +20,9 @@ DEFAULT_SECONDS = timing.DEFAULT_SECONDS
 DEFAULT_HEIGHT = 0.42           # a hero's height (neck to sole) against the picture's, when hero.json has none
 NEAR = 2.0                      # "near": true -> this many times the size at the front edge (over the shoulder)
 # stage options a film or a shot may set (plain values; engine/stage.gd reads them from the scene's top level)
+# ("format" as the server takes it: "9:16" only, the scene check says not_vertical otherwise; services/studio/resolve.ts)
 STAGE_OPTIONS = {"faces", "hands", "walk", "parallax", "vignette", "grade", "closest", "pins", "gloves", "clip_loop",
-                 "sfx", "turn_style"}
+                 "sfx", "turn_style", "format"}
 # what a set.json may pass on to the scene besides its pictures
 SET_KEYS = {"floor", "ground", "points", "life", "light", "grade", "haze", "vignette", "tint", "world", "parallax"}
 # actor keys the script may not set (the kit fills them from the world's own files)

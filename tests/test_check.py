@@ -123,6 +123,16 @@ def test_scene_checks_run_on_every_shot(world):
     assert found and "sh1" in found[0].where
 
 
+def test_the_format_is_a_stage_option_as_on_the_server(world):
+    # the server passes film.stage.format "9:16" to the engine (resolve.ts stageOf): the kit takes it too, and a
+    # landscape format is the scene check's not_vertical, not an unknown option
+    script(lambda s: s["film"].update(stage={**(s["film"].get("stage") or {}), "format": "9:16"}))(world)
+    assert not {"stage_option_unknown", "not_vertical"} & codes(world, "1")
+    script(lambda s: s["film"]["stage"].update(format="16:9"))(world)
+    found = codes(world, "1")
+    assert "not_vertical" in found and "stage_option_unknown" not in found
+
+
 def test_heroes_overlap_through_check(world):
     edit(world, "episodes/1/script.json", lambda s: shot(s, "sh1").update(
         actors=[{"id": "cow", "x": 0.5}, {"id": "det", "x": 0.52}]))
