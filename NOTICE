@@ -1,0 +1,37 @@
+TadamShow Studio
+Required Notice: Copyright 2026 unbywyd (https://github.com/unbywyd/tadamshow-studio)
+
+The software in this repository is licensed under the PolyForm Noncommercial License 1.0.0
+(see LICENSE, or https://polyformproject.org/licenses/noncommercial/1.0.0). It is source-available,
+not open source: non-commercial use is free; commercial use needs a separate licence.
+
+1. What the licence does not cover
+
+   The licence covers the software only. It does not cover:
+   - the content of worlds and episodes made with it or published on TadamShow: heroes, puppets,
+     pictures, sets, music, sounds, scripts and texts. Their rights belong to whoever made them, under
+     the terms they agreed with TadamShow;
+   - the name "ТадамШоу" / "TadamShow" and its logo. They may be used to say truthfully that something
+     works with or was made for TadamShow, but not as the name or logo of another product or service.
+
+2. Additional permission: making content for TadamShow
+
+   In addition to the rights in LICENSE, you may use this software to create worlds, heroes, sets and
+   episodes and to submit them to TadamShow (https://tadamshow.com), including when you do it with the
+   intention of having them published there, even though TadamShow is a commercial service. This
+   permission covers submitting to TadamShow only; any other commercial use still needs a commercial
+   licence.
+
+3. Commercial licences
+
+   To use the software commercially in any other way (for example, making cartoons or videos to sell or
+   to publish for profit elsewhere, or building a product on it), ask the copyright holder: open an issue
+   in https://github.com/unbywyd/tadamshow-studio/issues titled "Commercial licence".
+
+4. Third-party parts
+
+   Third-party parts keep their own licences. Each one is listed here with its licence when it is added.
+   None yet.
+
+   (The Godot Engine, which the kit runs on, is installed separately by the user and is licensed under the
+   MIT licence; it will be listed here if any part of it is ever included.)

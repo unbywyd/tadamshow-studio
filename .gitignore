@@ -1,0 +1,36 @@
+# kit and world working data
+.tadam/
+out/
+build/
+dist/
+takes/
+uploads/
+recordings/
+
+# secrets
+.env
+.env*
+*.pem
+*.key
+*.har
+
+# video (recordings and renders never go into git)
+*.ogv
+*.mp4
+*.avi
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+
+# Godot
+.godot/
+engine/override.cfg
+
+# tooling
+node_modules/
+.DS_Store
+Thumbs.db
