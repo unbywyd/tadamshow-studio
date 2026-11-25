@@ -50,12 +50,13 @@ edit files there, the server keeps the last pushed copy, the owner approves what
 Paid generation runs on the **person's own OpenAI key**. Before `hero make` or `set make` (without `--mannequin` /
 `--placeholder`) say how many pictures it paints and roughly what that costs, and wait for a yes:
 
-- `hero make`: 2 pictures (portrait 1024×1536 + pattern sheet 1024×1536), +1 per repainted sheet (at most 2
-  more). At `--quality medium` that is about $0.06–0.07 a picture with gpt-image-1 prices: **≈ $0.13, at most
-  ≈ $0.26**. `high` costs about 4× more, `low` about 4× less.
-- `set make`: 1 room (1024×1536) + 1 per piece (1024×1024, ≈ $0.04 at medium): a room with 5 pieces ≈ $0.27.
-- These are estimates from OpenAI's published per-picture prices; the kit's default model may be priced
-  differently — say so, and point to the person's OpenAI pricing page.
+- `hero make`: 2 pictures (portrait + pattern sheet, 1024×1536), +1 per repainted sheet (at most 2 more):
+  2–4 pictures.
+- `set make`: 1 room (1024×1536) + 1 picture per piece (1024×1024).
+- The kit's default model is `gpt-image-2.5-flare`. For a rough figure: one high-quality picture cost about
+  **$0.25** in November 2026 (so a hero ≈ $0.5, at most ≈ $1; a room with 5 pieces ≈ $1.5); medium and low are
+  cheaper. Prices change: check https://openai.com/api/pricing before the first generation, give the person the
+  estimate in pictures and dollars, and wait for a yes.
 
 ## Never
 
