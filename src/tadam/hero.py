@@ -5,18 +5,24 @@
     -> the independent audit of the assembled puppet (audit, inside cut_skin)
     -> a failed sheet is repainted from the same portrait, up to 3 attempts in all.
 
-Writes heroes/<slug>/puppet/ (meta.json, sheet.png, portrait.png, rig.json, parts/*.png, report.json, check.jpg) and
-heroes/<slug>/puppet/make.log. Cost: 2 pictures (portrait + sheet), one more per repainted sheet.
+Writes heroes/<slug>/puppet/ (meta.json with every paid call and its usage, sheet.png, portrait.png, rig.json,
+parts/*.png, report.json); the working files (make.log, the check pictures check.jpg, _poses.jpg, _sheet_check.jpg)
+go to .tadam/heroes/<slug>/puppet/ (never sent). Cost: 2 pictures (portrait + sheet) at medium quality by default,
+one more per repainted sheet (tadam.prices: about $0.05 a hero at medium).
+
+portrait.png stays in the puppet folder and is sent: the site shows it as the hero's picture (the owner's review and
+the hero cards: portraitUrl, like sheetUrl for sheet.png), and a repainted sheet or a side / back view is painted
+from it.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from tadam import new, sources
+from tadam import new, prices, sources
 from tadam import openai_images as oi
 from tadam.puppet import cut_skin, gen_skin
-from tadam.world import World
+from tadam.world import World, read_json, work_place
 
 ATTEMPTS = 3
 
@@ -28,7 +34,7 @@ def _declare(w: World, slug: str, source: dict, log) -> None:
 
 
 def make(w: World, slug: str, description: str, *, style: str | None = None, rig: str = "humanoid-a",
-         quality: str = "medium", model: str | None = None, attempts: int = ATTEMPTS, mannequin: bool = False,
+         quality: str = prices.DEFAULT_QUALITY, model: str | None = None, attempts: int = ATTEMPTS, mannequin: bool = False,
          log=print) -> dict:
     """Make the hero's puppet. Returns {"passed", "attempts", "report", "dir"}.
     mannequin=True: the rig's wooden mannequin, drawn by code (free, offline): a stand-in to block out scenes."""
@@ -42,7 +48,8 @@ def make(w: World, slug: str, description: str, *, style: str | None = None, rig
         report = mq.make(pdir, rig, character=description, log=log)
         _declare(w, slug, {"source": "own", "note": "the kit's wooden mannequin, drawn by code"}, log)
         return {"passed": bool(report.get("passed")), "attempts": 1, "report": report, "dir": pdir}
-    logfile = pdir / "make.log"
+    logfile = work_place(pdir) / "make.log"
+    (pdir / "make.log").unlink(missing_ok=True)          # (written there by an older kit)
     lines: list[str] = []
 
     def say(msg: str):
@@ -69,8 +76,12 @@ def make(w: World, slug: str, description: str, *, style: str | None = None, rig
             say(f"--- attempt {tried} failed, repainting the sheet")
             gen_skin.paint(pdir, description, reuse_portrait=True, log=say, **kw)
     finally:
+        meta, _ = read_json(pdir / "meta.json")
+        calls = meta.get("calls") if isinstance(meta, dict) and isinstance(meta.get("calls"), list) else []
+        say(prices.describe(calls, quality))
         logfile.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
-    return {"passed": bool(report.get("passed")), "attempts": tried, "report": report, "dir": pdir}
+    return {"passed": bool(report.get("passed")), "attempts": tried, "report": report, "dir": pdir,
+            "calls": calls, "log": logfile}
 
 
 def status(w: World, slug: str) -> dict:

@@ -610,24 +610,26 @@ func step(dt: float, floor_y_world: float) -> void:
 ## cloth ABOVE the hem (the worst, in leg thicknesses: the cloth should be over it), y = 1 if the rows are out of
 ## order (the picture would be torn or folded over itself).
 func exposed() -> Vector2:
-	var got: Vector2 = _exposed_grid()
-	# (seen from the front the skirt is a bell, and a leg set wide aside is MEANT to show from under it)
-	return got if side else Vector2(0.0, got.y)
+	# (seen from the front the skirt is a bell, and a leg set wide aside is MEANT to show from under it: "draped" is
+	# not measured then at all. It was measured and thrown away, and it is the dear part: every step, a dozen points
+	# of the thighs against every cell of the grid. A front hero in a skirt checked in minutes; now as fast as one
+	# in trousers, with the same results.)
+	return _exposed_grid(side)
 
 
-## Draped: the thighs' middle lines (hip to knee) must be inside the grid's outline; how far the worst point is
-## outside, in thigh thicknesses. Torn: a grid cell turned inside out (its corners in the wrong order).
-func _exposed_grid() -> Vector2:
+## Draped (only when `draped`): the thighs' middle lines (hip to knee) must be inside the grid's outline; how far the
+## worst point is outside, in thigh thicknesses. Torn: a grid cell turned inside out (its corners in the wrong order).
+func _exposed_grid(draped := true) -> Vector2:
 	var poly: PackedVector2Array = mesh.polygon
 	# every cell of the grid as its own little polygon: a point is covered if it is inside any of them (the outline
 	# of a folded grid crosses itself, and "inside the outline" then says nonsense)
 	var cells: Array = []
-	for r2 in range(1, _gr):
+	for r2 in (range(1, _gr) if draped else []):
 		for c in range(1, _gc):
 			var a2: int = (r2 - 1) * _gc + (c - 1)
 			cells.append(PackedVector2Array([poly[a2], poly[a2 + 1], poly[a2 + 1 + _gc], poly[a2 + _gc]]))
 	var worst := 0.0
-	for sfx in ["_l", "_r"]:
+	for sfx in (["_l", "_r"] if draped else []):
 		var th: Object = puppet.parts["thigh" + sfx]
 		var r: float = 0.5 * minf(th.painted.size.x, th.painted.size.y)
 		var a: Vector2 = th.xf.origin

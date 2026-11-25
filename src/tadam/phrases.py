@@ -14,6 +14,8 @@ from pathlib import Path
 
 import numpy as np
 
+from tadam.jsonfile import write_json
+
 SR = 16000
 FRAME = 0.02          # seconds
 GAP = 0.35            # a pause this long ends a phrase
@@ -65,7 +67,7 @@ def write(clip) -> list:
     """<clip>.phrases.json next to the clip; returns the phrases."""
     clip = Path(clip)
     ph = phrases(audio(clip))
-    clip.with_name(clip.name + ".phrases.json").write_text(json.dumps(ph), encoding="utf-8")
+    write_json(clip.with_name(clip.name + ".phrases.json"), ph, indent=None)
     return ph
 
 

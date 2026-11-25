@@ -76,7 +76,7 @@ def _save(root: Path, url: str, slug: str, world_id: str | None, rev: int, manif
 
 
 def _local_jsons(root: Path, manifest: dict) -> dict[str, bytes]:
-    return {p: (Path(root) / p).read_bytes() for p, m in manifest.items() if p.endswith(".json") and m["bytes"] <= SNAP_MAX}
+    return {p: folder.payload(Path(root) / p) for p, m in manifest.items() if p.endswith(".json") and m["bytes"] <= SNAP_MAX}
 
 
 def world_slug(root: Path) -> str:
@@ -148,7 +148,7 @@ def push(root: Path, api: Api, confirm: bool = False, log=print) -> Pushed:
 
     def send(u: dict) -> str:
         p = u["path"]
-        data = (root / p).read_bytes()
+        data = folder.payload(root / p)          # (exactly the bytes the manifest fingerprints)
         if hashlib.sha256(data).hexdigest() != sc.manifest[p]["sha256"]:
             raise SyncError(f"{p} changed while it was being sent: push again")
         api.upload(u["url"], data, u.get("headers") or {})
@@ -394,7 +394,7 @@ def pull(api: Api, slug: str | None, root: Path | None, into: Path | None = None
         if p in got:
             snap[p] = got[p]
         elif (root / p).is_file() and local.get(p, {}).get("sha256") == m["sha256"]:
-            snap[p] = (root / p).read_bytes()
+            snap[p] = folder.payload(root / p)
     _save(root, api.link.url, slug, wid, rev, server, snap)
     return out
 

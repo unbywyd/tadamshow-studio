@@ -1,5 +1,5 @@
 {
-  "name": "puppet",
+  "name": "visitor",
   "passed": true,
   "parts_ok": 16,
   "parts_total": 16,
@@ -17,8 +17,10 @@
     "shin_r": 143
   },
   "repairs": [
-    "the pelvis was trimmed to the skirt's outline (2% of it)",
-    "the head has a face board (oval 86x111 px at 91,160)"
+    "the pelvis was trimmed to the skirt's outline (2% of it)"
+  ],
+  "made": [
+    "face board placed (oval 86x111 px at 91,160)"
   ],
   "variant_problems": [],
   "measured": {

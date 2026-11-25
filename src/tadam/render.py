@@ -28,6 +28,7 @@ from tadam import engine, mix
 from tadam.engine import EngineError
 from tadam.episode import Episode, sounds
 from tadam.paths import FONTS, engine_dir
+from tadam.jsonfile import write_json
 
 SNAP_FPS = 60                    # frames are taken one engine step apart
 OFF_SCREEN = "6000,0"            # where an unseen window goes (the old make_scene.sh did the same)
@@ -149,7 +150,7 @@ def snaps(ep: Episode, wants: list[tuple[int, float, Path]], board_preview: bool
         pl = playlist(ep, "snap", snaps=[{"shot": i, "frame": snap_frame(min(t, ep.shots[i].seconds)),
                                           "out": Path(o).resolve().as_posix()} for i, t, o in wants])
         f = run.dir / "playlist.json"
-        f.write_text(json.dumps(pl, ensure_ascii=False), encoding="utf-8")
+        write_json(f, pl, indent=None)
         cmd = command(engine.godot(), "snap", f, ep.size, board_preview=board_preview,
                       prefix=display_prefix("snap", size=ep.size))
         out = _go(cmd, timeout)
@@ -255,7 +256,7 @@ def play(ep: Episode, start: int = 0, board_preview: bool = False, window: tuple
         audio = _sound(ep, run, log)
         pl = playlist(ep, "play", start=start, audio=audio)
         f = run.dir / "playlist.json"
-        f.write_text(json.dumps(pl, ensure_ascii=False), encoding="utf-8")
+        write_json(f, pl, indent=None)
         cmd = command(engine.godot(), "play", f, ep.size, board_preview=board_preview, window=window,
                       prefix=display_prefix("play"))
         return _go(cmd, 24 * 3600, echo=True)
@@ -270,7 +271,7 @@ def film(ep: Episode, out: Path, board_preview: bool = False, timeout: float = 3
         audio = _sound(ep, run, log)
         pl = playlist(ep, "film", audio=audio)
         f = run.dir / "playlist.json"
-        f.write_text(json.dumps(pl, ensure_ascii=False), encoding="utf-8")
+        write_json(f, pl, indent=None)
         avi = run.dir / "film.avi"
         cmd = command(engine.godot(), "film", f, ep.size, fps=ep.fps, movie=avi, board_preview=board_preview,
                       prefix=display_prefix("film", size=ep.size))

@@ -24,6 +24,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from tadam.paths import RIGS
+from tadam.jsonfile import write_json
 
 OUT = RIGS                # where build() writes; main() may point it elsewhere
 SKIRT_K = 0.85  # the skirt variant draws the body smaller, so a floor-length skirt has room in the corner
@@ -294,7 +295,7 @@ def build(name, parts, scale, extra=None):
         },
         "parts": {n: {k: v for k, v in p.items() if k not in ("shape", "draw")} | {"kind": p["shape"]} for n, p in parts.items()},
     } | (extra or {})
-    (out / "rig.json").write_text(json.dumps(rig, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(out / "rig.json", rig, indent=2)
     print(name, "parts:", len(parts), "rest bbox:", bbox)
 
 

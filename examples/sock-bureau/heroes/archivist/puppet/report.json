@@ -1,5 +1,5 @@
 {
-  "name": "puppet",
+  "name": "archivist",
   "passed": true,
   "parts_ok": 15,
   "parts_total": 15,
@@ -16,8 +16,9 @@
     "thigh_r": 148,
     "shin_r": 153
   },
-  "repairs": [
-    "the head has a face board (oval 94x99 px at 150,144)"
+  "repairs": [],
+  "made": [
+    "face board placed (oval 94x99 px at 150,144)"
   ],
   "variant_problems": [],
   "measured": {

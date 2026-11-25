@@ -10,7 +10,9 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from tadam import imgio
 from tadam.puppet import gen_mouth
+from tadam.world import work_place
 
 AREA = (0.003, 0.40)      # the mouth patch is this share of the painted head (a frog or a pumpkin is mostly mouth)
 
@@ -87,12 +89,12 @@ def fit_mouth(pdir, parts, pad, images):
     check = np.hstack([mine, theirs, _on_white(out)]).astype(np.uint8)
     cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(check, [c + np.array([[[2 * W0, 0]]]) for c in cnts], -1, (220, 40, 40), 1)
-    Image.fromarray(check).save(pdir / "_mouth_check.jpg", quality=88)
+    Image.fromarray(check).save(work_place(pdir) / "_mouth_check.jpg", quality=88)
 
     if not AREA[0] <= share <= AREA[1]:
         return [], [f"mouth: the changed place is {share:.1%} of the head (alignment {cc:.2f}); not used"]
     images["head.open"] = Image.fromarray(out, "RGBA")
-    images["head.open"].save(pdir / "parts" / "head.open.png")
+    imgio.save_png(images["head.open"], pdir / "parts" / "head.open.png")
     at = head["joint"]["at"]
     head.setdefault("variants", {})["open"] = {"size": [box[2], box[3]], "at": [round(at[0] - box[0], 1), round(at[1] - box[1], 1)]}
     head["mouth"] = {"center": centre, "size": mouth_size}

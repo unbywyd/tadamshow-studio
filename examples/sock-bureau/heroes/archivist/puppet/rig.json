@@ -494,7 +494,7 @@
       "kind": "foot"
     }
   },
-  "puppet": "puppet",
+  "puppet": "archivist",
   "body_height": 737.0,
   "rest": {
     "upper_arm_l": 4,

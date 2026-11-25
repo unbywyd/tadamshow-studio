@@ -71,9 +71,24 @@ def read_json(path: Path) -> tuple[object | None, str | None]:
         return None, f"not valid JSON ({e})"
 
 
-def write_json(path: Path, data: object) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+def write_json(path: Path, data: object, indent: int | None = 2) -> None:
+    """Every JSON file of the kit: UTF-8, LF on every system (tadam.jsonfile)."""
+    from tadam.jsonfile import write_json as _write
+    _write(path, data, indent)
+
+
+def work_place(folder: Path | str) -> Path:
+    """Where the kit's working files of a folder of a world go (check pictures, logs, raw downloads): the same path
+    under the world's .tadam/ (never sent, never committed): heroes/cow/puppet -> .tadam/heroes/cow/puppet. A folder
+    that is not inside a world (a puppet made on its own) keeps them itself."""
+    p = Path(folder).resolve()
+    for d in p.parents:
+        if (d / "world.json").is_file():
+            out = d / ".tadam" / p.relative_to(d)
+            out.mkdir(parents=True, exist_ok=True)
+            return out
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
 class World:

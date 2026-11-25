@@ -12,7 +12,9 @@ from pathlib import Path
 from PIL import Image
 
 from tadam.paths import RIGS
-from tadam.puppet import rigkit
+from tadam import imgio
+from tadam.puppet import puppet_name, rigkit
+from tadam.jsonfile import write_json
 
 
 def sheet(rig_name: str = "humanoid-a") -> Image.Image:
@@ -35,11 +37,11 @@ def make(pdir: Path, rig_name: str = "humanoid-a", character: str = "a wooden ma
     from tadam.puppet import cut_skin
     pdir = Path(pdir)
     pdir.mkdir(parents=True, exist_ok=True)
-    sheet(rig_name).save(pdir / "sheet.png")
+    imgio.save_png(sheet(rig_name), pdir / "sheet.png")
     (pdir / "mouth_open.png").unlink(missing_ok=True)
-    meta = {"name": pdir.name, "character": character, "style": "mannequin (drawn by code)", "rig": rig_name,
+    meta = {"name": puppet_name(pdir), "character": character, "style": "mannequin (drawn by code)", "rig": rig_name,
             "model": "none", "calls": []}
-    (pdir / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(pdir / "meta.json", meta, indent=2)
     if not talking:
         return cut_skin.cut(pdir, rig_name, log=log)
     report = cut_skin.cut(pdir, rig_name, log=lambda *_: None)

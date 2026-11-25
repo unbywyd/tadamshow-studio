@@ -15,12 +15,17 @@ up to 24 latin small letters, digits, `_`.
 
 | kind | what the person does | needs |
 |---|---|---|
-| `read` | says a line | `text`, `hint`, `look`; `maxSeconds` (how long it may take) |
+| `read` | says a line | `text`, `hint`, `look`; `maxSeconds` (how long it may take); `phrases` (below) |
 | `pause` | listens silently (the reaction while another speaks) | `hint`, `look` |
 | `look` | a look without words | `hint`, `look` |
 | `info`, `wait_ok` | an instruction screen / "press OK when ready" | `hint` |
 
 How to write good hints and gaze marks: [recording-steps.md](recording-steps.md).
+
+`phrases` (1–12, default 1) says in how many breaths the line is said. A camera line `{ "phrase": 2, ... }`
+waits for the 2nd one. On the site the phrases are found in the person's recording; in the kit, with nothing
+recorded, the line is timed like a calm reader (0.4 s, then 2.3 words a second, then 0.25 s; a shot with a line
+lasts that plus 0.4 s) and cut into `phrases` parts by its sentences (or evenly by words), 0.3 s apart.
 
 **shots** — the film, in order. A shot is what the viewer sees between two cuts:
 - `id` (`sh1`), `remark` (one short line for the viewer: «Корова спрашивает»), `about` (for you: how it is shot).

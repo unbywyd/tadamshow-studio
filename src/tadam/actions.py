@@ -15,8 +15,9 @@ hands, music, actions of two) is reported too but does not fail the hero: many o
 second hero and are checked on the stage, in the scene. "out" (a part leaves the test picture: a hop of a tall hero)
 is the camera's business in a scene and is reported without failing.
 
-Writes heroes/<slug>/puppet/actions.json: {passed, stage1, seconds, rig (sha-256 of rig.json: a re-cut puppet needs
-a new check), limits, actions: {id: {group, stage1, pass, runs: [{side, pass, faults: {measure: value}}]}}}.
+Writes heroes/<slug>/puppet/actions.json: {passed, stage1, seconds, rig (the sha-256 of rig.json's CONTENT,
+tadam.jsonfile.content_sha: a re-cut puppet needs a new check, a checkout that only changed line endings does not),
+limits, actions: {id: {group, stage1, pass, runs: [{side, pass, faults: {measure: value}}]}}}.
 """
 from __future__ import annotations
 
@@ -29,6 +30,8 @@ from pathlib import Path
 
 from tadam import engine
 from tadam.engine import EngineError
+from tadam.jsonfile import file_content_sha, write_json
+from tadam.jsonfile import lf as file_lf
 from tadam.paths import engine_dir
 from tadam.world import World, read_json
 
@@ -46,7 +49,15 @@ FILE = "actions.json"
 
 
 def rig_sha(pdir: Path) -> str:
-    return hashlib.sha256((Path(pdir) / "rig.json").read_bytes()).hexdigest()
+    """The fingerprint of the puppet's rig.json: of its content, never of its bytes (CRLF/LF, indentation)."""
+    return file_content_sha(Path(pdir) / "rig.json")
+
+
+def _raw_shas(pdir: Path) -> set[str]:
+    """What kits before 0.0.2 wrote: the sha-256 of the raw bytes, made on a system that may have used CRLF. Still
+    accepted (with either line ending), so a check made before stays good after a checkout changed them."""
+    lf = file_lf((Path(pdir) / "rig.json").read_bytes())
+    return {hashlib.sha256(b).hexdigest() for b in (lf, lf.replace(b"\n", b"\r\n"))}
 
 
 def _groups() -> dict[str, str]:
@@ -103,7 +114,7 @@ def run(w: World, slug: str, timeout: float = 900) -> dict:
         res = summarise(raw, _groups(), rig_sha(pdir), time.monotonic() - started)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    (pdir / FILE).write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+    write_json(pdir / FILE, res, indent=1)
     return res
 
 
@@ -141,8 +152,10 @@ def state(pdir: Path) -> tuple[str, dict | None]:
     if not isinstance(data, dict):
         return "missing", None
     try:
-        if data.get("rig") != rig_sha(pdir):
+        if data.get("rig") != rig_sha(pdir) and data.get("rig") not in _raw_shas(pdir):
             return "stale", data
     except OSError:
         return "missing", None
+    except ValueError:                          # (rig.json is not JSON: the check says so on its own)
+        return "stale", data
     return ("passed" if data.get("passed") else "failed"), data

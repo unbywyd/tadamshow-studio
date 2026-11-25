@@ -54,28 +54,42 @@ def build_parser() -> argparse.ArgumentParser:
 
     hero = sub.add_parser("hero", help="heroes: make a puppet")
     hs = hero.add_subparsers(dest="what", metavar="<what>")
-    hm = hs.add_parser("make", help='paint, cut and check a puppet: tadam hero make <slug> "<description>"')
+    hm = hs.add_parser("make", help='paint, cut and check a puppet: tadam hero make <slug> "<description>"',
+                       description="PAID: paints 2 pictures with YOUR OpenAI key (portrait + pattern sheet; one more "
+                                   "per repainted sheet, at most 2) at medium quality unless --quality says otherwise: "
+                                   "about $0.05 a hero at medium (Nov 2026), several times more at high. Prints the "
+                                   "pictures painted and their cost from the API's usage.",
+                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     hm.add_argument("slug")
     hm.add_argument("description")
     hm.add_argument("--style", help="the look (default: the world's bible style)")
     hm.add_argument("--rig", default="humanoid-a", help="the pattern: humanoid-a, humanoid-a-skirt-knee, ...")
-    hm.add_argument("--quality", default="medium", choices=["low", "medium", "high"])
-    hm.add_argument("--model", default=None)
-    hm.add_argument("--attempts", type=int, default=3)
+    hm.add_argument("--quality", default="medium", choices=["low", "medium", "high"],
+                    help="the image model's quality: high costs several times more")
+    hm.add_argument("--model", default=None, help="the image model (default: the kit's, gpt-image-2.5-flare)")
+    hm.add_argument("--attempts", type=int, default=3, help="sheets painted at most (the first + repaints)")
     hm.add_argument("--mannequin", action="store_true",
                     help="no painting: the wooden mannequin drawn by code (free), to block out scenes")
     hm.add_argument("--no-actions", action="store_true", help="do not run `tadam hero check` after making it")
-    hc = hs.add_parser("check", help="play every action on the hero in the engine: tadam hero check <slug>")
+    hc = hs.add_parser("check", help="play every action on the hero in the engine (free; ~30 s, a hero in a skirt "
+                                     "longer): tadam hero check <slug>")
     hc.add_argument("slug")
     hc.add_argument("--json", action="store_true", help="print actions.json")
 
     st = sub.add_parser("set", help="sets: paint a set from its kit.json")
     ss = st.add_subparsers(dest="what", metavar="<what>")
-    sm = ss.add_parser("make", help="paint the room and the pieces, write set.json: tadam set make <slug>")
+    sm = ss.add_parser("make", help="paint the room and the pieces, write set.json: tadam set make <slug>",
+                       description="PAID (unless --placeholder or --layout-only): paints 1 picture for the room and 1 "
+                                   "per piece with YOUR OpenAI key at medium quality unless --quality says otherwise: "
+                                   "about $0.04-0.1 a set at medium (Nov 2026), several times more at high. Prints the "
+                                   "pictures painted and their cost from the API's usage; sets/<slug>/meta.json keeps "
+                                   "them.",
+                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     sm.add_argument("slug")
-    sm.add_argument("--only", default="", help="only these parts: room,desk")
+    sm.add_argument("--only", default="", help="only these parts: room,desk (default: all)")
     sm.add_argument("--layout-only", action="store_true", help="no painting: only lay out set.json again")
-    sm.add_argument("--quality", default="medium", choices=["low", "medium", "high"])
+    sm.add_argument("--quality", default="medium", choices=["low", "medium", "high"],
+                    help="the image model's quality: high costs several times more")
     sm.add_argument("--placeholder", action="store_true",
                     help="no painting: a plain room and flat shapes drawn by code (free), to block out scenes")
 
@@ -83,6 +97,14 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("episode", nargs="?", help="one episode (default: all)")
     ck.add_argument("--json", action="store_true", help="print the check-result JSON")
     ck.add_argument("--engine", action="store_true", help="also play every shot through in the engine, unseen")
+    ck.add_argument("--verbose", "-v", action="store_true", help="also the info-level notes (a shot with no hero, ...)")
+
+    cv = sub.add_parser("cover", help="the world's cover from a frame: tadam cover [episode] [--shot sh2 --at 1.5]")
+    cv.add_argument("episode", nargs="?", default=None, help="the episode (default: the first)")
+    cv.add_argument("--shot", help="the shot (default: the first, usually the title card)")
+    cv.add_argument("--at", type=float, help="seconds into the shot (default: its middle)")
+    cv.add_argument("--lang", help="the language of the texts (default: the world's first)")
+    cv.add_argument("--board-preview", action="store_true", help="the site's look of the faces (see frames)")
 
     def show_args(x, shot_help=None):
         x.add_argument("episode")
@@ -250,7 +272,9 @@ def cmd_hero(a) -> int:
         return 2
     w = _world(a)
     if not a.mannequin:
-        _out("Paints 2 pictures with YOUR OpenAI key (portrait + pattern sheet; one more per repainted sheet).")
+        _out(f"Paints 2 pictures with YOUR OpenAI key at {a.quality} quality (portrait + pattern sheet; one more per "
+             f"repainted sheet, at most {max(a.attempts - 1, 0)}): about $0.05 a hero at medium, several times more "
+             f"at high.")
     r = hero.make(w, a.slug, a.description, style=a.style, rig=a.rig, quality=a.quality, model=a.model,
                   attempts=a.attempts, mannequin=a.mannequin, log=_out)
     _out(f"{a.slug}: {hero.describe(r)}")
@@ -281,7 +305,8 @@ def cmd_set(a) -> int:
         return 2
     w = _world(a)
     if not (a.layout_only or a.placeholder):
-        _out("Paints the room and every piece with YOUR OpenAI key (one picture each).")
+        _out(f"Paints the room and every piece with YOUR OpenAI key at {a.quality} quality (one picture each): "
+             f"about $0.04-0.1 a set at medium, several times more at high.")
     setmake.make(w, a.slug, set(filter(None, a.only.split(","))), a.layout_only, log=_out, quality=a.quality,
                  plain=a.placeholder)
     return 0
@@ -296,7 +321,13 @@ def cmd_check(a) -> int:
     if a.json:
         _out(json.dumps(issues.result(found), ensure_ascii=False, indent=1))
     else:
-        _out(issues.format_text(found))
+        shown = found if a.verbose else [i for i in found if i.level != "info"]
+        _out(issues.format_text(shown))
+        hidden = len(found) - len(shown)
+        if hidden:
+            _out(f"({hidden} info note(s) not shown: --verbose shows them)")
+        for line in check.lengths(w.root, a.episode):
+            _out(line)
     return 1 if any(i.level == "error" for i in found) else 0
 
 
@@ -390,8 +421,33 @@ def cmd_film(a) -> int:
     out = Path(a.out).resolve() if a.out else ep.world.work_dir() / "films" / f"{ep.n}.mp4"
     _out(f"filming episode {ep.n}: {len(ep.shots)} shots, {ep.seconds:.1f} s ...")
     render.film(ep, out, a.board_preview, log=_out)
-    _out(f"{out.as_posix()}  ({clock():g} s)")
+    _out(f"{out.as_posix()}\nfilm {ep.seconds:.1f} s, rendered in {clock():.0f} s")
     return 0
+
+
+def cmd_cover(a) -> int:
+    from tadam import cover
+    ep = _episode_of(a, a.episode)
+    res = cover.make(ep, a.shot, a.at, a.board_preview)
+    _out(f"cover: {res['path']} ({res['size'][0]}x{res['size'][1]}, a frame of shot {res['shot']} at {res['at']:g} s)")
+    if res.get("moved"):
+        _out(f"the old cover is kept in {res['moved']}")
+    if res.get("declared"):
+        _out(f"sources.json: {res['rel']} = generated by tadam cover (a frame of the world's own pictures)")
+    return 0
+
+
+def _episode_of(a, n):
+    """The episode `n` (default: the world's first) for a command that needs one built, with no narration voice."""
+    from tadam import episode
+    from tadam.world import WorldError
+    w = _world(a)
+    eps = w.episodes()
+    n = n or (eps[0] if eps else None)
+    if not n:
+        raise WorldError("the world has no episode yet: a cover is a frame of one (`tadam new episode 1`)")
+    ep = episode.build(w, n, lang=a.lang, link=None, voice=False)
+    return ep
 
 
 # ------------------------------------------------------------------------------------------------ the server
@@ -726,7 +782,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     from tadam.submissions import Refused, missing_lines
     try:
         return {"new": cmd_new, "hero": cmd_hero, "set": cmd_set, "check": cmd_check, "play": cmd_play,
-                "frames": cmd_frames, "film": cmd_film, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
+                "frames": cmd_frames, "film": cmd_film, "cover": cmd_cover, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
                 "rules": cmd_rules, "push": cmd_push, "pull": cmd_pull, "diff": cmd_diff, "status": cmd_status,
                 "submit": cmd_submit, "withdraw": cmd_withdraw, "reply": cmd_reply, "unpublish": cmd_unpublish,
                 "studio-version": cmd_studio_version, "review": cmd_review}[a.command](a)

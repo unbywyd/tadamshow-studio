@@ -524,7 +524,7 @@
     }
   },
   "skirt_length": 0.5,
-  "puppet": "puppet",
+  "puppet": "visitor",
   "body_height": 745.1,
   "rest": {
     "upper_arm_l": 6,

@@ -114,4 +114,4 @@ def fit_board(pdir, parts: dict, pad: int, images: dict, view: str = "front") ->
     if b is None:
         return [], ["board: the head has no paint over its neck pin"]
     head["board"] = b
-    return [f"the head has a face board (oval {b['size'][0]}x{b['size'][1]} px at {b['center'][0]},{b['center'][1]})"], []
+    return [f"face board placed (oval {b['size'][0]}x{b['size'][1]} px at {b['center'][0]},{b['center'][1]})"], []

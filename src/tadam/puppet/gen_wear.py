@@ -18,6 +18,7 @@ from pathlib import Path
 from tadam import openai_images as oi
 from tadam.puppet import gen_mouth
 from tadam.puppet import gen_skin as G
+from tadam.jsonfile import write_json
 SIZE = gen_mouth.SIZE
 
 PROMPT = """The image shows the head piece of a flat jointed puppet.
@@ -53,6 +54,6 @@ def paint_wear(pdir, keep=KEEP_DEFAULT, hat="", model=oi.DEFAULT_MODEL, quality=
     target = out / ("hat.png" if hat else "wear.png")
     target.write_bytes(png)
     meta["calls"].append({"step": "hat" if hat else "wear", "seconds": sec, "usage": usage})
-    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(out / "meta.json", meta, indent=2)
     log(f"wear {sec} s")
     return target

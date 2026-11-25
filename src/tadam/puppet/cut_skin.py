@@ -2,7 +2,9 @@
 
 usage: tadam.puppet.cut_skin.cut(<puppet folder>, rig=None)   (rig defaults to the pattern the sheet was painted
 on: meta.json); also python -m tadam.puppet.cut_skin <puppet folder> [--rig R].
-Reads <puppet>/sheet.png, writes <puppet>/{parts/<part>.png, rig.json, report.json, check.jpg}.
+Reads <puppet>/sheet.png, writes <puppet>/{parts/<part>.png, rig.json, report.json} and the check pictures
+(check.jpg, _sheet_check.jpg, _poses.jpg: for the eye, never sent) into the world's .tadam/ (the same path under
+it: tadam.world.work_place; a puppet folder outside a world keeps them itself).
 
 No AI here, and no stretching: every piece keeps its painted size, so a fat chef stays fat. The image model is
 trusted with one thing: to paint the pieces as separate blobs in the same ARRANGEMENT as the pattern.
@@ -49,8 +51,10 @@ from PIL import Image
 from scipy.optimize import linear_sum_assignment
 
 from tadam import imgio
-from tadam.puppet import audit, board, mouth, rigkit, wear
+from tadam.world import work_place
+from tadam.puppet import audit, board, mouth, puppet_name, rigkit, wear
 from tadam.puppet.audit import axis_x, inscribed
+from tadam.jsonfile import write_json
 SPECK = 40            # blobs smaller than this many pixels are noise
 DETAIL = 0.10         # a blob smaller than this share of the median piece is a detached detail
 R_MIN = 11            # a joint needs at least this much paint around it (pixels), or the limb is too thin there
@@ -385,7 +389,7 @@ def hand_variants(pdir, parts, pad, images):
             frame = np.zeros((crop.shape[0] + 2 * pad, crop.shape[1] + 2 * pad, 4), np.uint8)
             frame[pad:pad + crop.shape[0], pad:pad + crop.shape[1]] = crop
             images[f"{hand}.{kind}"] = Image.fromarray(frame, "RGBA")
-            images[f"{hand}.{kind}"].save(pdir / "parts" / f"{hand}.{kind}.png")
+            imgio.save_png(images[f"{hand}.{kind}"], pdir / "parts" / f"{hand}.{kind}.png")
             parts[hand].setdefault("variants", {})[kind] = {"size": [crop.shape[1], crop.shape[0]], "at": [round(cx, 1), round(cy, 1)]}
         notes.append("the hands have a palm side" if kind == "palm" else "the hands can close into a fist")
     return notes, problems
@@ -449,7 +453,7 @@ WAIST_BAND = 0.2          # the waist edge is read over this share of the block'
 def cut(pdir, rig_name=None, log=print) -> dict:
     """Cut <pdir>/sheet.png into a puppet; returns the report (also written to <pdir>/report.json)."""
     pdir = Path(pdir)
-    name = pdir.name if audit.front_of(pdir) is None else f"{pdir.parent.name}/{pdir.name}"
+    name = puppet_name(pdir)          # (the hero's slug in a world: the server keys puppets by it)
     meta = json.loads((pdir / "meta.json").read_text(encoding="utf-8")) if (pdir / "meta.json").exists() else {}
     base = rigkit.load_rig(rig_name or meta.get("rig") or "humanoid-a")
     sheet = Image.open(pdir / "sheet.png").convert("RGBA")
@@ -481,12 +485,12 @@ def cut(pdir, rig_name=None, log=print) -> dict:
             sheet_problems = []
     if len(masks) != len(names):
         summary = {"name": name, "passed": False, "sheet_problems": sheet_problems, "parts": {}}
-        (pdir / "report.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        write_json(pdir / "report.json", summary, indent=2)
         al = rgba[..., 3:4].astype(float) / 255
         vis = cv2.cvtColor((rgba[..., :3] * al + np.array([236, 236, 236]) * (1 - al)).astype(np.uint8), cv2.COLOR_RGB2BGR)
         for x0, y0, x1, y1 in boxes:
             cv2.rectangle(vis, (x0, y0), (x1, y1), (40, 40, 220), 2)
-        imgio.imwrite(str(pdir / "check.jpg"), vis, [cv2.IMWRITE_JPEG_QUALITY, 86])
+        imgio.imwrite(str(work_place(pdir) / "check.jpg"), vis, [cv2.IMWRITE_JPEG_QUALITY, 86])
         log(f"{name}: FAIL - {note}")
         return summary
     pairing, residual = match(boxes, slot_boxes)
@@ -512,7 +516,7 @@ def cut(pdir, rig_name=None, log=print) -> dict:
         frame = np.zeros((crop.shape[0] + 2 * pad, crop.shape[1] + 2 * pad, 4), np.uint8)
         frame[pad:pad + crop.shape[0], pad:pad + crop.shape[1]] = crop
         images[n] = Image.fromarray(frame, "RGBA")
-        images[n].save(pdir / "parts" / f"{n}.png")
+        imgio.save_png(images[n], pdir / "parts" / f"{n}.png")
 
     for n in names:
         m = masks[blob_of[n]]
@@ -662,16 +666,16 @@ def cut(pdir, rig_name=None, log=print) -> dict:
     rig["joint_radius"] = round(float(np.median([p["joint"]["radius"] for p in parts.values() if p.get("joint")])), 1)
     rig.pop("rest_bbox", None)
     # second drawings: the palm side of the hands, if it was painted
-    notes, variant_problems = hand_variants(pdir, parts, pad, images)
-    repairs += notes
+    # what was MADE from the drawing (not a repair: nothing was wrong): second drawings, the mouth, the face board
+    made, variant_problems = hand_variants(pdir, parts, pad, images)
     notes, mouth_problems = mouth.fit_mouth(pdir, parts, pad, images)
-    repairs += notes
+    made += notes
     variant_problems += mouth_problems
     notes, wear_problems = wear.fit_wear(pdir, parts, pad, images)     # what stays on over a recorded face
-    repairs += notes
+    made += notes
     variant_problems += wear_problems
     notes, board_problems = board.fit_board(pdir, parts, pad, images, rig.get("view", "front"))   # the face's oval
-    repairs += notes
+    made += notes
     variant_problems += board_problems
     # a hat of its own (gen_prop.paint_prop(..., hat=True)): worn on top of a recorded head, with nothing else of the painted head
     parts["head"].pop("hat", None)
@@ -680,9 +684,9 @@ def cut(pdir, rig_name=None, log=print) -> dict:
         hat = Image.open(pdir / "hat.png").convert("RGBA")
         hat.putalpha(hat.split()[3].point(lambda v: max(0, (v - 40) * 255 // 215)))     # no faint glow around it
         hat = hat.crop(hat.split()[3].getbbox())
-        hat.save(pdir / "parts" / "head.hat.png")
+        imgio.save_png(hat, pdir / "parts" / "head.hat.png")
         parts["head"]["hat"] = {"size": list(hat.size)}
-        repairs.append("the head has a hat to wear on a recorded head")
+        made.append("the head has a hat to wear on a recorded head")
 
     # the rest stance: the arms ALONG the body, the same on both sides: from turned inward (a jacket wider than the
     # trousers would leave the hands hanging in the air beside the legs) to outward, the first angle at which the
@@ -693,7 +697,7 @@ def cut(pdir, rig_name=None, log=print) -> dict:
     if spread and rig.get("view") != "side":       # in profile an arm hangs across the body, and that is right
         rig["rest"] = {"upper_arm_l": spread, "upper_arm_r": -spread}
 
-    (pdir / "rig.json").write_text(json.dumps(rig, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(pdir / "rig.json", rig, indent=2)
 
     # the independent check of the assembled puppet
     measured = audit.measure(rig, {n: solids[n] for n in names})
@@ -707,9 +711,9 @@ def cut(pdir, rig_name=None, log=print) -> dict:
     passed = ok == len(names) and not sheet_problems
     bones = {n: round(bone(n)) for n in names if bone(n)}
     summary = {"name": name, "passed": passed, "parts_ok": ok, "parts_total": len(names), "sheet_problems": sheet_problems,
-               "body_height": rig["body_height"], "bones": bones, "repairs": repairs, "variant_problems": variant_problems,
+               "body_height": rig["body_height"], "bones": bones, "repairs": repairs, "made": made, "variant_problems": variant_problems,
                "measured": measured, "parts": report}
-    (pdir / "report.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(pdir / "report.json", summary, indent=2)
 
     # check image: the sheet with the pieces, their names and joints, next to four poses
     al = rgba[..., 3:4].astype(float) / 255
@@ -723,20 +727,26 @@ def cut(pdir, rig_name=None, log=print) -> dict:
             for pt, col in ((j["at"], (200, 60, 20)), (j["parent_at"], (20, 60, 200))):
                 cv2.circle(vis, (int(pt[0]), int(pt[1])), int(j["radius"]), col, 1, cv2.LINE_AA)
                 cv2.circle(vis, (int(pt[0]), int(pt[1])), 3, col, -1, cv2.LINE_AA)
-    imgio.imwrite(str(pdir / "_sheet_check.jpg"), vis, [cv2.IMWRITE_JPEG_QUALITY, 88])
-    rigkit.contact_sheet(rig, images, pdir / "_poses.jpg")
-    left, right = Image.open(pdir / "_sheet_check.jpg"), Image.open(pdir / "_poses.jpg")
+    work = work_place(pdir)              # (for the eye only: never part of the puppet, never sent)
+    for old in ("check.jpg", "_sheet_check.jpg", "_poses.jpg", "_mouth_check.jpg"):
+        if work != pdir.resolve():
+            (pdir / old).unlink(missing_ok=True)     # (left in the puppet folder by an older kit)
+    imgio.imwrite(str(work / "_sheet_check.jpg"), vis, [cv2.IMWRITE_JPEG_QUALITY, 88])
+    rigkit.contact_sheet(rig, images, work / "_poses.jpg")
+    left, right = Image.open(work / "_sheet_check.jpg"), Image.open(work / "_poses.jpg")
     hgt = 1000
     l2 = left.resize((int(left.width * hgt / left.height), hgt))
     r2 = right.resize((int(right.width * hgt / right.height), hgt))
     both = Image.new("RGB", (l2.width + r2.width + 20, hgt), (255, 255, 255))
     both.paste(l2, (0, 0))
     both.paste(r2, (l2.width + 20, 0))
-    both.save(pdir / "check.jpg", quality=86)
+    both.save(work / "check.jpg", quality=86)
 
     log(f"{name}: {'PASS' if passed else 'FAIL'} {ok}/{len(names)} parts ok, body height {rig['body_height']:.0f} px")
     for s in repairs:
         log(f"  + repaired: {s}")
+    for s in made:
+        log(f"  + {s}")
     for s in variant_problems:
         log(f"  - variant not made: {s}")
     for s in sheet_problems:

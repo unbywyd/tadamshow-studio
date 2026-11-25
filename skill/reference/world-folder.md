@@ -5,18 +5,22 @@ One folder per world (a series). Everything about the world is here; the server 
 ```
 world.json                 the card and the bible (schema/world.json)
 sources.json               where every picture and sound comes from (schema/sources.json; below)
-cover.png                  the world's cover, vertical
+cover.png                  the world's cover, vertical: cover.png, cover.jpg or cover.webp (or the file world.json
+                           "cover" names); `tadam cover [episode] [--shot sh2 --at 1.5]` makes one from a frame
 heroes/<slug>/hero.json    name, trait (ru/en), about (for you), height (schema/hero.json)
-heroes/<slug>/puppet/      the puppet: meta.json, rig.json, parts/*.png, portrait.png, sheet.png, report.json,
-                           actions.json (tadam hero check), check.jpg (for your eyes, never sent)
-sets/<slug>/               kit.json (what to paint), set.json (the set as data), room.png, pieces, far layers
+heroes/<slug>/puppet/      the puppet: meta.json ("name" = the hero's slug; every paid call with its usage),
+                           rig.json, parts/*.png, portrait.png and sheet.png (sent: the site shows them as the hero's
+                           pictures), report.json, actions.json (tadam hero check)
+sets/<slug>/               kit.json (what to paint), set.json (the set as data), meta.json (the paid calls), room.png,
+                           pieces, far layers
 media/                     music, ambience, props held by heroes (named from the script by file name)
 episodes/<n>/script.json   the script, version 2 (script.md)
 episodes/<n>/episode.json  optional: title, logline, teaser (ru/en); without it the episode is «Серия <n>»
 episodes/<n>/cover.png     optional
-.tadam/                    the kit's own working files: scenes, cards, narration, frames, films, the link to the
-                           server, the merge base, revisions, removed files. Never sent, never committed, never
-                           edited by hand.
+.tadam/                    the kit's own working files: scenes, cards, narration, frames, films, the check
+                           pictures and logs of hero make / set make (.tadam/heroes/<slug>/puppet/check.jpg,
+                           make.log; .tadam/sets/<slug>/room_raw.png), the link to the server, the merge base,
+                           revisions, removed files. Never sent, never committed, never edited by hand.
 ```
 
 ## world.json
@@ -50,7 +54,11 @@ episodes/<n>/cover.png     optional
 
 `tadam push` sends only files of the layout above whose names are latin letters, digits, `- _ .` with a known
 type (png, webp, jpg, mp3, wav, ogg, json). Everything else stays home and push lists it (notes, check pictures,
-logs). Empty files, names that differ only in letter case and unmerged `<file>.server` copies stop a push.
+logs, and working files an older kit left in the layout: a name starting with `_` or ending with `_raw.png`).
+Empty files, names that differ only in letter case and unmerged `<file>.server` copies stop a push. JSON files are
+sent with LF line endings whatever the system wrote (the manifest fingerprints exactly the bytes sent), so the
+same folder gives the same revision from Windows, macOS and Linux. The kit writes pictures as compact PNGs
+(lossless).
 
 ## sources.json: where every picture and sound comes from
 

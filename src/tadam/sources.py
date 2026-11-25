@@ -21,6 +21,7 @@ from pathlib import Path
 
 from tadam import folder, schema
 from tadam.issues import Issue
+from tadam.jsonfile import write_json
 
 FILE = "sources.json"
 MAX_LISTED = 40
@@ -90,7 +91,7 @@ def check(root: Path, paths: list[str] | None = None) -> list[Issue]:
 
 def write(root: Path, data: dict) -> Path:
     f = Path(root) / FILE
-    f.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    write_json(f, data, indent=2)
     return f
 
 

@@ -36,6 +36,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from tadam.puppet import rigkit
+from tadam.jsonfile import write_json
 
 # What counts as a defect. Pixels are sheet pixels (a puppet is about 700 px from neck to sole).
 CENTRE_TOL = 0.04      # a centre pin may be this share of its block's width away from the block's centre line
@@ -528,7 +529,7 @@ def main(argv=None):
             tiles.append(t.convert("RGB"))
     print(f"\n{len(names) - bad} of {len(names)} puppets with no defects")
     if a.json:
-        Path(a.json).write_text(json.dumps(results, indent=1), encoding="utf-8")
+        write_json(a.json, results, indent=1)
     if tiles:
         per = 8
         w, h = tiles[0].size

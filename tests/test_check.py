@@ -54,6 +54,8 @@ SPOIL = {
     "hero_actions_failed": (lambda r: edit(r, "heroes/cow/puppet/actions.json",
                                            lambda d: d.update(passed=False, stage1_failed=["wave"])), None),
     "puppet_no_board": (lambda r: edit(r, "heroes/cow/puppet/rig.json", lambda d: d["parts"]["head"].pop("board")), None),
+    "puppet_name_twice": (lambda r: edit(r, "heroes/cow/puppet/meta.json", lambda d: d.update(name="detective")), None),
+    "cover_file_missing": (lambda r: edit(r, "world.json", lambda w: w.update(cover="art/cover.webp")), None),
     "set_missing": (script(lambda s: s["film"].update(set="attic")), None),
     "set_invalid": (lambda r: edit(r, "sets/barn/set.json", lambda d: d.update(floor=5)), None),
     "set_file_missing": (lambda r: (r / "sets/barn/crate.png").unlink(), None),
@@ -171,3 +173,59 @@ def test_codes_do_not_collide_in_meaning():
     """A code shared by the world and the scene checks must mean the same thing at the same level."""
     for code in set(check.CODES) & set(scenecheck.CODES):
         assert check.CODES[code][0] == scenecheck.CODES[code][0], code
+
+
+# ------------------------------------------------------------------------------------------------ the cover
+
+@pytest.mark.parametrize("name", ["cover.png", "cover.jpg", "cover.jpeg", "cover.webp"])
+def test_any_cover_the_server_takes_is_a_cover(world, name):
+    (world / "cover.png").rename(world / name)
+    edit(world, "sources.json", lambda d: d["files"].update({name: d["files"].pop("cover.png")}))
+    assert "cover_missing" not in codes(world)
+
+
+def test_world_json_names_its_cover(world):
+    (world / "art").mkdir()
+    (world / "cover.png").rename(world / "art" / "front.webp")
+    edit(world, "sources.json", lambda d: d["files"].update({"art/front.webp": d["files"].pop("cover.png")}))
+    assert "cover_missing" in codes(world)
+    edit(world, "world.json", lambda w: w.update(cover="art/front.webp"))
+    found = codes(world)
+    assert "cover_missing" not in found and "cover_file_missing" not in found
+
+
+def test_two_heroes_with_one_puppet_name_is_an_error_that_names_both(world):
+    edit(world, "heroes/detective/puppet/meta.json", lambda d: d.update(name="puppet"))
+    edit(world, "heroes/cow/puppet/meta.json", lambda d: d.update(name="puppet"))
+    (issue,) = [i for i in check.check_world(world) if i.code == "puppet_name_twice"]
+    assert issue.level == "error" and "cow" in issue.where and "detective" in issue.where
+
+
+# ------------------------------------------------------------------------------------------------ the output
+
+def test_check_hides_info_unless_verbose_and_says_the_length(world, capsys):
+    edit(world, "episodes/1/script.json", lambda s: shot(s, "sh3").pop("actors"))       # a shot of a place: info
+    assert "no_actors" in codes(world)
+    assert cli.main(["--world", str(world), "check"]) == 0
+    out = capsys.readouterr().out
+    assert "no_actors" not in out and "--verbose" in out
+    assert "episode 1: 3 shot(s), about" in out
+    assert cli.main(["--world", str(world), "check", "--verbose"]) == 0
+    assert "no_actors" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------------------------------------ the examples
+
+def _examples():
+    from tadam.paths import kit_root
+    return sorted(p.parent for p in (kit_root() / "examples").glob("*/world.json"))
+
+
+@pytest.mark.parametrize("root", _examples(), ids=lambda p: p.name)
+def test_every_example_passes_check_with_no_errors_and_no_warnings(root):
+    found = [i for i in check.check_world(root) if i.level != "info"]
+    assert found == [], [i.as_dict() for i in found]
+
+
+def test_there_is_an_example():
+    assert _examples()

@@ -6,7 +6,7 @@ the script, makes the puppets and the sets, looks at the frames itself and shows
 player. When it is ready, one command sends it to TadamShow for review.
 
 > Status: early. Working: `tadam doctor`, `new`, `hero make` / `hero check`, `set make`, `check`, the local player
-> and frames (`play`, `frames`, `film`), the engine, the link to TadamShow (`join`, `login`, `push`, `pull`,
+> and frames (`play`, `frames`, `film`, `cover`), the engine, the link to TadamShow (`join`, `login`, `push`, `pull`,
 > `diff`, `status`), submissions (`submit`, `studio-version`, `reply`, `withdraw`, `unpublish`), the owner's
 > `review`, and the skill.
 
@@ -30,7 +30,8 @@ You need:
 3. **ffmpeg** with `ffprobe` — https://ffmpeg.org/download.html
 4. **Your own OpenAI API key** in the environment variable `OPENAI_API_KEY` — https://platform.openai.com/api-keys
    It pays for the pictures of your puppets and sets. Nothing paid comes from us. Keep it out of files you
-   commit; a secret manager is best.
+   commit; a secret manager is best (it can pass the key to one command: `skey run --only OPENAI_API_KEY --
+   tadam hero make …`).
 5. A **studio key** (`tds_…`) — to send your work and to hear the narration in the local player. Run
    **`tadam join`** yourself in a terminal: your email, the code from the letter, the studio's rules in full, and
    you type «согласен» / "I agree"; the key comes back once and is kept in your own config folder (never shown).
@@ -53,6 +54,22 @@ tadam doctor
 printed) and a writable temp folder, and says what is missing and where to get it. Exit code 1 means
 something required is missing.
 
+## What it costs
+
+Only painting costs money (your OpenAI key); everything else is free. The kit paints at **medium quality by
+default** (`--quality low | medium | high` on `hero make` and `set make`; `--help` shows the defaults). OpenAI
+prices pictures per token, not per picture; what was actually paid at medium (November 2026):
+
+| what | pictures | about |
+|---|---|---|
+| a hero (`hero make`) | portrait + pattern sheet (+1 per repainted sheet, at most 2) | $0.011 + $0.038 ≈ **$0.05** |
+| a set (`set make`) | 1 room + 1 per piece | **$0.04–0.1** |
+| at `high` | | several times more (one high picture was about $0.25) |
+
+Every paid command prints the pictures it painted and their cost, worked out from the token usage the API
+answers with (the per-token prices, with their date, are in `src/tadam/prices.py`; they may change), and keeps
+the usage in `meta.json` (the puppet's, or `sets/<slug>/meta.json`).
+
 ## Start in 5 minutes
 
 Claude asks about your idea, writes the bible, makes the heroes and the set (naming the price before anything
@@ -74,12 +91,15 @@ tadam hero make cow "a calm brown cow in a raincoat"   # paints the puppet with 
 tadam new set barn                                # sets/barn/kit.json: describe the room and the furniture
 tadam set make barn                               # paints the set with YOUR key, writes set.json
 tadam new episode 1 --cast cow=cow                # episodes/1/script.json (script version 2)
-tadam check 1                                     # what is wrong, in plain words; exit 1 on errors; --json
+tadam check 1                                     # what is wrong, in plain words, and the episode's length;
+                                                  # exit 1 on errors; --json; --verbose adds the info notes
 tadam frames 1 --sheet                            # one PNG: the middle of every shot, labelled (Claude looks at it)
 tadam frames 1 --shot sh3 --at 1.5                # one frame of one shot; --json prints the paths as JSON
 tadam play 1 [--shot sh3]                         # a window plays the episode with its sound; Esc closes it
 tadam film 1                                      # a draft MP4 (picture, narration, music, subtitles)
-tadam hero check cow                              # every action of the engine on the hero (hero make runs it)
+tadam hero check cow                              # every action of the engine on the hero (hero make runs it;
+                                                  # ~30 s, a hero in a skirt 1-2 min)
+tadam cover [1] [--shot sh2 --at 1.5]             # the world's cover from a frame (free), no subtitles
 
 tadam join                                        # become an editor: email, code, the rules, YOU type «согласен»
 tadam login [--key]                               # this computer: email + code (or an existing key, typed hidden)
@@ -113,9 +133,14 @@ the head as large as the site makes it), so the framing matches; `hero make` fin
 it as subtitles. On Linux without a screen, frames and films run under `xvfb-run`. A world folder:
 
 ```
-world.json   sources.json   cover.png   heroes/<slug>/hero.json + puppet/   sets/<slug>/   media/   episodes/<n>/
-.tadam/      the kit's working files (engine scenes, cards, narration, frames, films): never committed, never sent
+world.json   sources.json   cover.png|jpg|webp   heroes/<slug>/hero.json + puppet/   sets/<slug>/   media/   episodes/<n>/
+.tadam/      the kit's working files (engine scenes, cards, narration, frames, films, the check pictures and logs
+             of hero make / set make): never committed, never sent
 ```
+
+The kit writes every JSON file with LF line endings and fingerprints a puppet by its rig's content, so a
+checkout that changes line endings changes nothing; `tadam push` sends JSON with LF on every system. Pictures are
+kept as compact PNGs (lossless: invisible pixels cleaned, deflated hard).
 
 ## Layout
 
@@ -126,7 +151,9 @@ schema/     JSON Schemas of the script, the world folder and the studio API, and
             the server: python devtools/refresh_schemas.py <contracts>; never edited by hand)
 devtools/   the code that drew the engine's instruments and synthesized its sounds; the schema refresh
 skill/      the skill for Claude Code: SKILL.md and reference/ (the folder, the script, shots, recording, puppets)
-examples/   a small sample world: examples/sock-bureau (two heroes, one set, one 40-second episode)
+examples/   a small sample world: examples/sock-bureau (two heroes, one set, one 40-second episode). It lives
+            in the kit's repository to be read and played; your own worlds go in a folder outside it. The tests run
+            `tadam check` on every example (0 errors, 0 warnings)
 ```
 
 ## Contributing and security

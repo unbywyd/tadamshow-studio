@@ -128,6 +128,9 @@ def make_world(parent: Path, puppet: Path, name: str = "мир с пробело
         hj["trait"] = {"ru": "упрямая" if slug == "cow" else "сонный"}
         write_json(d / "hero.json", hj)
         shutil.copytree(puppet, w.puppet_dir(slug))
+        meta = json.loads((w.puppet_dir(slug) / "meta.json").read_text(encoding="utf-8"))
+        meta["name"] = slug                     # (as hero make names it: the server keys puppets by it)
+        write_json(w.puppet_dir(slug) / "meta.json", meta)
     sd = new.set_(w, "barn")
     room = Image.new("RGB", (720, 1280), (200, 210, 190))
     ImageDraw.Draw(room).rectangle([0, 1000, 720, 1280], fill=(150, 120, 90))

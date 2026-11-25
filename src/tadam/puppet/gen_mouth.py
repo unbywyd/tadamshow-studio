@@ -14,6 +14,7 @@ from PIL import Image
 
 from tadam import openai_images as oi
 from tadam.puppet import gen_skin as G
+from tadam.jsonfile import write_json
 SIZE = 1024
 FIT = 880             # the head piece is shown this big (its longer side)
 
@@ -56,6 +57,6 @@ def paint_mouth(pdir, model=oi.DEFAULT_MODEL, quality="medium", log=print):
                              images=[reference(out)])
     (out / "mouth_open.png").write_bytes(png)
     meta["calls"].append({"step": "mouth_open", "seconds": sec, "usage": usage})
-    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(out / "meta.json", meta, indent=2)
     log(f"mouth {sec} s")
     return out / "mouth_open.png"

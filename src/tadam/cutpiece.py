@@ -25,6 +25,7 @@ import cv2
 import numpy as np
 
 from tadam import imgio
+from tadam.jsonfile import write_json
 
 STAGE = (720, 1280)
 
@@ -108,7 +109,7 @@ def main():
         piece["under"] = f"{a.id}.under.png"
     if a.write:
         scene["pieces"] = [p for p in scene.get("pieces", []) if p.get("id") != a.id] + [piece]
-        spec_file.write_text(json.dumps(scene, ensure_ascii=False, indent=1), encoding="utf-8")
+        write_json(spec_file, scene, indent=1)
     print(json.dumps({**piece, "covered": round(float((alpha > 127).mean()), 2)}, ensure_ascii=False))
 
 

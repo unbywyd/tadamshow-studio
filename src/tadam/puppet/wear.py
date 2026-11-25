@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from tadam import imgio
 from tadam.puppet import gen_mouth
 
 HOLE = (0.08, 0.6)        # the hole is this share of the head, or the result is not trusted
@@ -81,13 +82,13 @@ def fit_wear(pdir, parts, pad, images):
     wear[..., 3] = (orig[..., 3].astype(np.float32) * np.clip(soft * 1.4 - 0.2, 0, 1)).astype(np.uint8)
     wear[wear[..., 3] == 0] = 0
     images["head.wear"] = Image.fromarray(wear, "RGBA")
-    images["head.wear"].save(pdir / "parts" / "head.wear.png")
+    imgio.save_png(images["head.wear"], pdir / "parts" / "head.wear.png")
 
     colour = orig[..., :3][keep].reshape(-1, 3).mean(axis=0) * 0.45         # the shadow inside it
     grown = cv2.dilate(hole.astype(np.uint8), np.ones((7, 7), np.uint8)) & solid
     back = np.zeros_like(orig)
     back[grown > 0] = [int(colour[0]), int(colour[1]), int(colour[2]), 255]
-    Image.fromarray(back, "RGBA").save(pdir / "parts" / "head.back.png")
+    imgio.save_png(Image.fromarray(back, "RGBA"), pdir / "parts" / "head.back.png")
 
     ys, xs = np.nonzero(hole)
     box = head["box"]

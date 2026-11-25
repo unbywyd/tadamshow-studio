@@ -19,7 +19,9 @@ from tadam.world import EPISODE, SLUG, World, exact, is_safe_name, read_json
 
 EPISODE_MAX_SECONDS = 300.0      # an episode's length (until the server names its own limit)
 LINE_LONG = 20.0                 # a line longer than this, with no maxSeconds, is worth a warning
-RECORDED = {"read", "pause", "look"}    # steps a person records on the phone: they need a hint and look marks
+RECORDED = {"read", "pause", "look"}
+COVERS = ("cover.png", "cover.jpg", "cover.jpeg", "cover.webp")      # the server takes any of them at the root
+COVER_EXT = (".png", ".jpg", ".jpeg", ".webp")    # steps a person records on the phone: they need a hint and look marks
 TODO = "TODO"
 
 CODES = {
@@ -28,7 +30,8 @@ CODES = {
     "world_missing": ("error", "no world.json"),
     "todo_text": ("warning", "a text is still the template's TODO"),
     "bible_incomplete": ("warning", "the bible lacks its idea, tone or style (needed before a submission)"),
-    "cover_missing": ("warning", "no cover.png"),
+    "cover_missing": ("warning", "no cover picture (cover.png / .jpg / .webp, or world.json cover)"),
+    "cover_file_missing": ("error", "world.json cover names a picture that is not in the folder"),
     "text_missing_lang": ("error", "a text lacks one of the world's languages"),
     "folder_name": ("error", "a hero, set or episode folder has a name that is not allowed"),
     "hero_json_missing": ("error", "a hero folder without hero.json"),
@@ -40,6 +43,8 @@ CODES = {
     "hero_actions_stale": ("warning", "the puppet changed after its action check (tadam hero check again)"),
     "hero_actions_failed": ("error", "the hero fails a stage-1 action: draw it again, never tune it"),
     "puppet_no_board": ("warning", "the head has no face board: the site shows the recorded head whole"),
+    "puppet_name_twice": ("error", "two puppets of the world have one name (meta.json \"name\"): the server keys "
+                                   "puppets by it"),
     "set_missing": ("error", "the script names a set the world does not have"),
     "set_invalid": ("error", "a set.json is malformed"),
     "set_file_missing": ("error", "a picture a set names does not exist"),
@@ -143,10 +148,36 @@ class _Run:
         if lacking:
             self.add("bible_incomplete", "world.json bible", f"no {', '.join(lacking)} yet: the bible is needed "
                                                              "before the first episode is submitted")
-        if exact(w.root, "cover.png") != "ok":
-            self.add("cover_missing", "cover.png", "no cover picture yet (cover.png, vertical)")
+        cover = data.get("cover")
+        if isinstance(cover, str) and cover:
+            if not is_safe_name(cover) or not cover.lower().endswith(COVER_EXT):
+                self.add("cover_file_missing", "world.json cover", f"'{cover}': a picture of the world folder "
+                                                                   f"({', '.join(COVER_EXT)})")
+            elif exact(w.root, cover) != "ok":
+                state = exact(w.root, cover)
+                self.add("name_case" if state == "case" else "cover_file_missing", "world.json cover",
+                         f"'{cover}' differs from the file's name in letter case" if state == "case"
+                         else f"no file {cover}: make it (`tadam cover`) or fix the name")
+        elif not any(exact(w.root, c) == "ok" for c in COVERS):
+            self.add("cover_missing", "cover.png", "no cover picture yet (cover.png, .jpg or .webp, vertical): "
+                                                   "`tadam cover` makes one from a frame")
+
+    def puppet_names(self):
+        """The server keys a world's puppets by meta.json "name": two heroes with one name cannot both be pushed."""
+        seen: dict = {}
+        for slug in self.w.heroes():
+            meta, _ = read_json(self.w.puppet_dir(slug) / "meta.json")
+            name = meta.get("name") if isinstance(meta, dict) else None
+            if isinstance(name, str) and name:
+                seen.setdefault(name, []).append(slug)
+        for name, slugs in seen.items():
+            if len(slugs) > 1:
+                self.add("puppet_name_twice", ", ".join(f"heroes/{x}/puppet/meta.json" for x in slugs),
+                         f"the puppets of {', '.join(slugs)} are all named \"{name}\": write each hero's slug as "
+                         f"\"name\" in its puppet/meta.json")
 
     def heroes(self, used: set):
+        self.puppet_names()
         for slug in self.w.heroes():
             rel = f"heroes/{slug}"
             if not SLUG.match(slug):
@@ -454,6 +485,22 @@ class _Run:
             for issue in scenecheck.check_scene(scene, ctx, f"{rel} shot {sid}"):
                 if issue.code not in _SOURCE:
                     self.out.append(issue)
+
+
+def lengths(root: Path | str, episode: str | None = None) -> list[str]:
+    """One line per episode: how long it runs (shots with lines last their lines, as the player times them)."""
+    w = World(Path(root))
+    out = []
+    for n in ([episode] if episode else w.episodes()):
+        s, _ = read_json(w.episode_dir(str(n)) / "script.json")
+        if not (isinstance(s, dict) and s.get("version") == 2):
+            continue
+        steps = resolve.steps_by_key(s)
+        shots = [x for x in s.get("shots") or [] if isinstance(x, dict)]
+        total = sum(resolve.shot_seconds(x, steps, w.langs()[0]) for x in shots)
+        out.append(f"episode {n}: {len(shots)} shot(s), about {total:.1f} s (a line lasts what a calm reader takes; "
+                   f"the recorded roles set the real length)")
+    return out
 
 
 def used_heroes(w: World, episodes: list[str]) -> set:

@@ -18,8 +18,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tadam import imgio
 from tadam import openai_images as oi
 from tadam.paths import RIGS as RIGS_DIR
+from tadam.puppet import puppet_name
+from tadam.jsonfile import write_json
 
 STYLES = {
     "wood": ("a hand-painted wooden jointed puppet toy: flat front view, matte paint on carved wood, "
@@ -234,8 +237,14 @@ def paint(pdir: Path, character: str, *, style: str = STYLE_DEFAULT, model: str 
     out.mkdir(parents=True, exist_ok=True)
     template = RIGS_DIR / rig / "template.png"
     base = {"model": model, "size": size, "quality": quality, "output_format": "png", "n": 1}
-    meta = {"name": out.name if not is_view(out) else f"{out.parent.name}/{out.name}", "character": character,
+    meta = {"name": puppet_name(out), "character": character,
             "style": style, "rig": rig, "model": model, "quality": quality, "size": size, "calls": []}
+    if reuse_portrait and (out / "meta.json").exists():
+        # a repainted sheet: the calls painted before (the portrait, the earlier sheets) stay on the record
+        try:
+            meta["calls"] = list(json.loads((out / "meta.json").read_text(encoding="utf-8")).get("calls") or [])
+        except (OSError, ValueError, AttributeError):
+            pass
 
     refs = [template]
     view = is_view(out)
@@ -247,7 +256,7 @@ def paint(pdir: Path, character: str, *, style: str = STYLE_DEFAULT, model: str 
     elif not no_portrait:
         png, usage, sec = call("generations", base | {"background": "opaque",
                                "prompt": PORTRAIT_PROMPT.format(character=character, style=style)})
-        (out / "portrait.png").write_bytes(png)
+        imgio.write_png_bytes(png, out / "portrait.png")
         meta["calls"].append({"step": "portrait", "seconds": sec, "usage": usage})
         log(f"portrait {sec} s")
         refs.append(out / "portrait.png")
@@ -270,8 +279,8 @@ def paint(pdir: Path, character: str, *, style: str = STYLE_DEFAULT, model: str 
     png, usage, sec = call("edits", base | {"background": "transparent",
                            "prompt": SHEET_PROMPT.format(ref_line=ref_line, character=character, style=style,
                                                          **RIGS[rig])}, images=refs)
-    (out / "sheet.png").write_bytes(png)
+    imgio.write_png_bytes(png, out / "sheet.png")
     meta["calls"].append({"step": "sheet", "seconds": sec, "usage": usage})
     log(f"sheet {sec} s")
-    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(out / "meta.json", meta, indent=2)
     return meta

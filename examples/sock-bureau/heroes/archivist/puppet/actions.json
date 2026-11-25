@@ -37,8 +37,8 @@
  ],
  "stage1_failed": [],
  "stage1_missing": [],
- "seconds": 22.5,
- "rig": "5b704eb845da7098e3471fe92d26f79783be1ae6eb9ff0639974117f27fdb297",
+ "seconds": 22.3,
+ "rig": "02945aa3e722cbc4c7a27025cece22a285e66fc5d4ff4a132e16757bf175eee2",
  "limits": {
   "accel": 450.0,
   "back": 0.08,

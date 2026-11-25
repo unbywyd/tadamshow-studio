@@ -41,8 +41,11 @@ def test_hero_make_passes_first_time(bare_world, fake_openai, mannequin_sheet_pn
     out = capsys.readouterr().out
     assert code == 0, out
     pdir = w.puppet_dir("cow")
-    for f in ("portrait.png", "sheet.png", "meta.json", "rig.json", "report.json", "check.jpg", "make.log"):
+    for f in ("portrait.png", "sheet.png", "meta.json", "rig.json", "report.json"):
         assert (pdir / f).is_file(), f
+    work = w.root / ".tadam" / "heroes" / "cow" / "puppet"          # the working files: never sent
+    for f in ("check.jpg", "make.log"):
+        assert (work / f).is_file() and not (pdir / f).exists(), f
     assert json.loads((pdir / "report.json").read_text(encoding="utf-8"))["passed"] is True
     assert len(list((pdir / "parts").glob("*.png"))) == 15
     assert (w.hero_dir("cow") / "hero.json").is_file()                 # made on the way
@@ -52,7 +55,7 @@ def test_hero_make_passes_first_time(bare_world, fake_openai, mannequin_sheet_pn
     assert sheet_call["images"] == ["template.png", "portrait.png"]
     assert "a calm brown cow in a raincoat" in sheet_call["prompt"]
     assert sheet_call["background"] == "transparent" and sheet_call["model"] == openai_images.DEFAULT_MODEL
-    assert KEY not in out and KEY not in (pdir / "make.log").read_text(encoding="utf-8")
+    assert KEY not in out and KEY not in (work / "make.log").read_text(encoding="utf-8")
     assert KEY not in (pdir / "meta.json").read_text(encoding="utf-8")
 
 
@@ -61,7 +64,7 @@ def test_hero_make_repaints_a_failed_sheet(bare_world, fake_openai, mannequin_sh
     r = hero.make(bare_world, "cow", "a cow", log=lambda *_: None)
     assert r["passed"] and r["attempts"] == 2
     assert [k for k, _ in fake.calls] == ["generations", "edits", "edits"]   # the portrait is painted once
-    assert "attempt 1 failed" in (bare_world.puppet_dir("cow") / "make.log").read_text(encoding="utf-8")
+    assert "attempt 1 failed" in (bare_world.root / ".tadam/heroes/cow/puppet/make.log").read_text(encoding="utf-8")
 
 
 def test_hero_make_gives_up_after_three(bare_world, fake_openai, mannequin_sheet_png, capsys):

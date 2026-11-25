@@ -10,8 +10,12 @@ place of the layout:
     media/** (png, webp, jpg, jpeg, mp3, wav, ogg)
     episodes/<n>/script.json · episodes/<n>/episode.json · episodes/<n>/cover.<png|webp|jpg|jpeg>
 
-Everything else stays on this computer and is never sent: .tadam/ (the kit's own working files), hidden files, the
-puppet's check pictures (check.jpg, _poses.jpg) and logs, notes, `<file>.server` copies left by a pull.
+Everything else stays on this computer and is never sent: .tadam/ (the kit's own working files: check pictures,
+logs, raw downloads), hidden files, notes, `<file>.server` copies left by a pull, and working files an older kit
+left in the layout (a name starting with "_", like _poses.jpg, or ending with "_raw.<ext>", like room_raw.png).
+
+What is sent is `payload()`: the file's bytes, a JSON file with LF line endings (CRLF from a Windows checkout is
+made LF), and the manifest fingerprints exactly those bytes, so every system sends and fingerprints the same.
 """
 from __future__ import annotations
 
@@ -20,6 +24,8 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from tadam.jsonfile import lf
 
 EXT = {"png": "png", "webp": "webp", "jpg": "jpeg", "jpeg": "jpeg", "mp3": "mp3", "wav": "wav", "ogg": "ogg",
        "json": "json"}
@@ -105,6 +111,31 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def payload(path: Path) -> bytes:
+    """The bytes the push SENDS for a file (and the manifest fingerprints): a JSON file with its line endings made
+    LF (a checkout on Windows may have made them CRLF), every other file as it is. So the same world gives the same
+    manifest on every system, and the server stores what every system would send."""
+    data = Path(path).read_bytes()
+    return lf(data) if str(path).endswith(".json") else data
+
+
+def fingerprint(path: Path) -> dict:
+    """{sha256, bytes} of what is sent for this file."""
+    if str(path).endswith(".json"):
+        data = payload(path)
+        return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+    return {"sha256": sha256_file(path), "bytes": Path(path).stat().st_size}
+
+
+# working files that older kits (or a person) left inside the layout: the server would take them, the kit keeps
+# them home (its own working files go to .tadam/ now)
+LEFTOVER = re.compile(r"(^_|_raw\.[a-z]+$)")
+
+
+def leftover(rel: str) -> bool:
+    return bool(LEFTOVER.search(rel.rsplit("/", 1)[-1]))
+
+
 @dataclass
 class Scan:
     manifest: dict[str, dict] = field(default_factory=dict)   # path -> {sha256, bytes}
@@ -142,7 +173,7 @@ def scan(root: Path, hashing: bool = True) -> Scan:
                 continue
             if n.startswith("."):
                 continue                           # (.DS_Store and the like: not part of the world)
-            why = why_not(rel)
+            why = why_not(rel) or ("a working file of the kit (it belongs in .tadam/)" if leftover(rel) else None)
             if why:
                 out.local_only.append((rel, why))
                 continue
@@ -150,7 +181,7 @@ def scan(root: Path, hashing: bool = True) -> Scan:
             if size == 0:
                 out.empty.append(rel)
                 continue
-            out.manifest[rel] = {"sha256": sha256_file(f), "bytes": size} if hashing else {"bytes": size}
+            out.manifest[rel] = fingerprint(f) if hashing else {"bytes": size}
     seen: dict[str, str] = {}
     for p in sorted(out.manifest):
         k = p.lower()

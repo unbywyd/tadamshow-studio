@@ -30,9 +30,10 @@ HINTS = {
     "ffmpeg": "Install ffmpeg (it brings ffprobe too): https://ffmpeg.org/download.html",
     "ffprobe": "ffprobe comes with ffmpeg: https://ffmpeg.org/download.html",
     "libx264": "This ffmpeg cannot write H.264 (libx264): drafts cannot be saved as MP4. Install a full ffmpeg build.",
-    "openai": ("Set your own OpenAI API key in the environment variable OPENAI_API_KEY "
-               "(https://platform.openai.com/api-keys). Needed to paint puppets and sets; checking and playing "
-               "a world work without it."),
+    "openai": ("Your own OpenAI API key (https://platform.openai.com/api-keys) in OPENAI_API_KEY, only to paint "
+               "puppets and sets; checking and playing a world work without it. Not set here is FINE if you pass it "
+               "per command, e.g. `skey run --only OPENAI_API_KEY -- tadam hero make ...` (a secret manager puts it "
+               "in the environment of that one command)."),
     "temp": "The temp folder is not writable: set TMPDIR (macOS/Linux) or TEMP (Windows) to a folder you can write.",
 }
 

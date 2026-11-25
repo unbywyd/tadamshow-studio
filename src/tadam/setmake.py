@@ -12,9 +12,17 @@ kit.json:
     "props": [ { "id", "prompt", "x", "base", "width", "on", "surface" } ] }
 Writes sets/<slug>/room.png, <prop>.png (trimmed to the drawing), set.json:
   { background, floor, ground, backdrops: [...], pieces: [{ id, image, rect, base, bias }] }   (rect/base: world shares)
+and meta.json: { model, quality, calls: [{ step, seconds, usage }] } (every paid picture, like a puppet's meta.json; a
+repaint with --only adds its calls). The model's raw room (before its window is keyed) goes to
+.tadam/sets/<slug>/room_raw.png: a working file, never sent.
+THE WINDOW: glass painted flat pure magenta (#FF00FF) in the room is keyed out (made see-through) with its pinkish
+fringe; whatever "far" layers the kit lists (your own pictures in the set's folder: a street, a sky, a garden) show
+through it, each at its own depth. Nothing paints the far layers: they are pictures you bring (and declare in
+sources.json).
 A prop "on" another (a lamp on the desk) stands on that one's top surface ("surface": share of its height from the
 top where the top surface is) and is drawn just in front of it.
-Cost: one picture for the room and one per prop.
+Cost: one picture for the room and one per prop, at medium quality by default (tadam.prices: a set about
+$0.04-0.1 at medium).
 """
 from __future__ import annotations
 
@@ -25,9 +33,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from tadam import imgio, prices, sources
 from tadam import openai_images as oi
-from tadam import sources
-from tadam.world import World, WorldError, is_safe_name, write_json
+from tadam.world import World, WorldError, is_safe_name, read_json, work_place, write_json
 
 WORLD = (720, 1280)
 STYLE_DEFAULT = "a flat matte hand-painted illustration, simple shapes, muted colours, even flat light, no shadows"
@@ -49,18 +57,19 @@ def _ref(kit: dict, out: Path) -> list[Path] | None:
     return [out / ref]
 
 
-def _paint(prompt: str, size: str, transparent: bool, refs, model: str, quality: str) -> tuple[bytes, float]:
+def _paint(prompt: str, size: str, transparent: bool, refs, model: str, quality: str) -> tuple[bytes, float, dict]:
     fields = {"model": model, "size": size, "quality": quality, "output_format": "png", "n": 1, "prompt": prompt}
     if transparent:
         fields["background"] = "transparent"
-    png, _, sec = oi.call("edits" if refs else "generations", fields, images=refs)
-    return png, sec
+    png, usage, sec = oi.call("edits" if refs else "generations", fields, images=refs)
+    return png, sec, usage
 
 
-def gen_room(kit: dict, out: Path, style: str, model=oi.DEFAULT_MODEL, quality="medium"):
+def gen_room(kit: dict, out: Path, style: str, model=oi.DEFAULT_MODEL, quality=prices.DEFAULT_QUALITY):
     prompt = kit["room"]["prompt"] + " " + style
-    png, sec = _paint(prompt, "1024x1536", False, _ref(kit, out), model, quality)
-    raw = out / "room_raw.png"
+    png, sec, usage = _paint(prompt, "1024x1536", False, _ref(kit, out), model, quality)
+    (out / "room_raw.png").unlink(missing_ok=True)          # (left in the set's folder by an older kit)
+    raw = work_place(out) / "room_raw.png"                  # a working file: never sent
     raw.write_bytes(png)
     im = np.array(Image.open(raw).convert("RGBA")).astype(np.int16)
     r, g, b = im[..., 0], im[..., 1], im[..., 2]
@@ -69,23 +78,23 @@ def gen_room(kit: dict, out: Path, style: str, model=oi.DEFAULT_MODEL, quality="
     import cv2
     key = cv2.dilate(key, np.ones((5, 5), np.uint8)) > 0
     im[..., 3] = np.where(key, 0, 255)
-    Image.fromarray(im.astype(np.uint8), "RGBA").save(out / "room.png")
-    return "room", sec, int(key.sum())
+    imgio.save_png(Image.fromarray(im.astype(np.uint8), "RGBA"), out / "room.png")
+    return {"step": "room", "seconds": sec, "usage": usage, "say": f"room {sec} s, window {int(key.sum())} px"}
 
 
-def gen_prop(kit: dict, p: dict, out: Path, style: str, model=oi.DEFAULT_MODEL, quality="medium"):
+def gen_prop(kit: dict, p: dict, out: Path, style: str, model=oi.DEFAULT_MODEL, quality=prices.DEFAULT_QUALITY):
     what = "From this picture draw ONLY" if kit.get("style_ref") else "Draw ONLY"
     prompt = (f"{what} {p['prompt']}, alone, whole, nothing cut off, on a fully transparent "
               f"background, no floor, no wall, no shadow on the ground. {style}")
-    png, sec = _paint(prompt, "1024x1024", True, _ref(kit, out), model, quality)
+    png, sec, usage = _paint(prompt, "1024x1024", True, _ref(kit, out), model, quality)
     f = out / f"{p['id']}.png"
-    f.write_bytes(png)
-    im = Image.open(f).convert("RGBA")
+    import io
+    im = Image.open(io.BytesIO(png)).convert("RGBA")
     box = im.getchannel("A").point(lambda v: 255 if v > 30 else 0).getbbox()
     if box:
         im = im.crop(box)                                       # trimmed: the bottom edge is where it stands
-        im.save(f)
-    return p["id"], sec, im.size
+    imgio.save_png(im, f)
+    return {"step": p["id"], "seconds": sec, "usage": usage, "say": f"{p['id']} {sec} s, {im.size[0]}x{im.size[1]} px"}
 
 
 def layout(kit: dict, out: Path) -> dict:
@@ -149,15 +158,23 @@ def placeholder(kit: dict, out: Path) -> None:
     floor = float(kit.get("floor", 0.86))
     room = Image.new("RGBA", WORLD, (214, 206, 190, 255))
     ImageDraw.Draw(room).rectangle([0, int(WORLD[1] * (floor - 0.12)), WORLD[0], WORLD[1]], fill=(150, 126, 100, 255))
-    room.save(out / "room.png")
+    imgio.save_png(room, out / "room.png")
     for i, p in enumerate(kit.get("props", [])):
         w = max(int(float(p.get("width", 0.2)) * WORLD[0]), 8)
         im = Image.new("RGBA", (w, max(int(w * 0.8), 8)), (96 + 20 * (i % 4), 80, 70, 255))
-        im.save(out / f"{p['id']}.png")
+        imgio.save_png(im, out / f"{p['id']}.png")
+
+
+def _record(out: Path, model: str, quality: str, calls: list) -> list:
+    """sets/<slug>/meta.json: every paid picture of the set with its usage (a repaint adds to the list)."""
+    meta, _ = read_json(out / "meta.json")
+    old = meta.get("calls") if isinstance(meta, dict) and isinstance(meta.get("calls"), list) else []
+    write_json(out / "meta.json", {"name": out.name, "model": model, "quality": quality, "calls": old + calls})
+    return calls
 
 
 def make(w: World, slug: str, only: set | None = None, layout_only: bool = False, log=print,
-         model: str = oi.DEFAULT_MODEL, quality: str = "medium", plain: bool = False) -> dict:
+         model: str = oi.DEFAULT_MODEL, quality: str = prices.DEFAULT_QUALITY, plain: bool = False) -> dict:
     out = w.set_dir(slug)
     kp = out / "kit.json"
     if not kp.is_file():
@@ -181,8 +198,16 @@ def make(w: World, slug: str, only: set | None = None, layout_only: bool = False
             for p in kit.get("props", []):
                 if not only or p["id"] in only:
                     jobs.append(ex.submit(gen_prop, kit, p, out, style, model, quality))
-            for j in jobs:
-                log(" ".join(str(x) for x in j.result()))
+            calls = []
+            try:
+                for j in jobs:
+                    c = j.result()
+                    log(c.pop("say"))
+                    calls.append(c)
+            finally:                                    # (what was painted is paid for: on the record even so)
+                if calls:
+                    _record(out, model, quality, calls)
+                log(prices.describe(calls, quality))
     s = layout(kit, out)
     log(f"set -> {out / 'set.json'}: {len(s['pieces'])} pieces")
     if src and sources.declare(w.root, f"sets/{slug}/", src, replace=True):

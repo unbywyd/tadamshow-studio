@@ -22,6 +22,7 @@ from PIL import Image
 
 from tadam import openai_images as oi
 from tadam.puppet import gen_skin as G
+from tadam.jsonfile import write_json
 SIZE = 1024
 TALL = 560            # each hand piece is shown this tall
 
@@ -80,6 +81,6 @@ def paint_hands(pdir, kind="palm", model=oi.DEFAULT_MODEL, quality="medium", log
     target = out / ("hands.png" if kind == "palm" else "hands_fist.png")
     target.write_bytes(png)
     meta["calls"].append({"step": "hands " + kind, "seconds": sec, "usage": usage})
-    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(out / "meta.json", meta, indent=2)
     log(f"hands {sec} s")
     return target

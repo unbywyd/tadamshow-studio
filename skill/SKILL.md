@@ -25,19 +25,22 @@ edit files there, the server keeps the last pushed copy, the owner approves what
 
 1. **Ask about the idea** before writing anything: what the series is about, who the heroes are, the tone, the
    look, the language(s), how long an episode is (30–90 s is good). A few questions at a time.
-2. **The bible**: `tadam new world <slug> --dir <a folder for worlds>` (outside the kit's repository, so the
-   world is never committed with it), then fill `world.json` (title, tagline, description, genre, bible:
-   idea, tone, style, rules, heroes). Show it to the person in plain words.
+2. **The bible**: `tadam new world <slug> --dir <a folder for worlds>` — the person's worlds live OUTSIDE the
+   kit's repository (only the kit's own sample, `examples/sock-bureau`, lives in it: read it, play it, never
+   build in it). Fill `world.json` (title, tagline, description, genre, bible: idea, tone, style, rules,
+   heroes) and show it to the person in plain words.
 3. **Heroes**: `tadam new hero <slug>`, fill `hero.json`. To block out scenes first: `tadam hero make <slug> "…"
    --mannequin` (free). The real puppet: `tadam hero make <slug> "<look>"` — **name the price first** (see
-   below) and wait for a yes. After it, read the action table it prints: a hero that fails a stage-1 action is
-   **drawn again, never tuned**. Look at `heroes/<slug>/puppet/check.jpg` yourself.
+   below) and wait for a yes. Its action check takes ~30 s (a hero in a skirt 1–2 min: say so). Read the table:
+   a hero that fails a stage-1 action is **drawn again, never tuned**. Look at
+   `.tadam/heroes/<slug>/puppet/check.jpg` yourself (check pictures and logs stay in `.tadam/`, never sent).
 4. **The set**: `tadam new set <slug>`, describe the room and the pieces in `kit.json`, then `tadam set make
    <slug>` (price first) or `--placeholder` (free).
    **Every picture and sound has its source in `sources.json`** at the world root, declared the moment the file
-   appears: `own` (the person made it), `generated` + `tool`, `licensed` + `licence` + `url`. `hero make` and
-   `set make` write their own entries; you add the rest (cover, media, anything the person brings — ask where
-   it comes from; no source, no file). `tadam check` errors on any file without one.
+   appears: `own` (the person made it), `generated` + `tool`, `licensed` + `licence` + `url`. `hero make`,
+   `set make` and `tadam cover` (the cover from a frame, free) write their own entries; you add the rest
+   (media, anything the person brings — ask where it comes from; no source, no file). `tadam check` errors on
+   any file without one.
 5. **The script**: `tadam new episode 1 --cast key=hero`, then write `episodes/1/script.json`.
 6. **After EVERY change**: `tadam check [episode]` (fix every error) and `tadam frames <episode> --sheet`, then
    **open the sheet PNG and look at it** — heroes in the picture, not on each other, facing us, the framing
@@ -59,16 +62,16 @@ edit files there, the server keeps the last pushed copy, the owner approves what
 
 ## Money
 
-Paid generation runs on the **person's own OpenAI key**. Before `hero make` or `set make` (without `--mannequin` /
-`--placeholder`) say how many pictures it paints and roughly what that costs, and wait for a yes:
+Paid generation runs on the **person's own OpenAI key**, at **medium quality by default** (`--quality`). Before
+`hero make` or `set make` (without `--mannequin` / `--placeholder`) say how many pictures it paints and what that
+costs, and wait for a yes. OpenAI prices per token, not per picture; what was paid at medium (Nov 2026,
+`gpt-image-2.5-flare`):
 
-- `hero make`: 2 pictures (portrait + pattern sheet, 1024×1536), +1 per repainted sheet (at most 2 more):
-  2–4 pictures.
-- `set make`: 1 room (1024×1536) + 1 picture per piece (1024×1024).
-- The kit's default model is `gpt-image-2.5-flare`. For a rough figure: one high-quality picture cost about
-  **$0.25** in November 2026 (so a hero ≈ $0.5, at most ≈ $1; a room with 5 pieces ≈ $1.5); medium and low are
-  cheaper. Prices change: check https://openai.com/api/pricing before the first generation, give the person the
-  estimate in pictures and dollars, and wait for a yes.
+- `hero make`: portrait ≈ $0.011 + pattern sheet ≈ $0.038 ≈ **$0.05**; each repainted sheet (at most 2) ≈ $0.04.
+- `set make`: 1 room + 1 picture per piece ≈ **$0.04–0.1** a set.
+- `--quality high` costs several times more (one high picture was about $0.25). Prices may change.
+- Every paid command prints the pictures it painted and their cost from the API's usage (`tadam/prices.py`);
+  tell the person what it actually cost.
 
 ## Never
 

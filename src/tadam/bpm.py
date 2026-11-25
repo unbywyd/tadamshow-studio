@@ -13,6 +13,8 @@ from pathlib import Path
 
 import numpy as np
 
+from tadam.jsonfile import write_json
+
 SR = 11025
 HOP = 256
 
@@ -73,7 +75,7 @@ def main():
         m.setdefault("file", f.name)
         m["bpm"], m["offset"] = bpm, offset
         spec["music"] = m
-        p.write_text(json.dumps(spec, ensure_ascii=False, indent=1), encoding="utf-8")
+        write_json(p, spec, indent=1)
         print("written to", p)
 
 

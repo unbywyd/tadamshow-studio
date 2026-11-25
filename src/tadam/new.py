@@ -51,7 +51,7 @@ def world(parent: Path, slug: str, title: str | None = None, langs=("ru",)) -> P
     }
     if "en" in langs:
         for k in ("title", "tagline", "description"):
-            data[k]["en"] = "TODO" if k != "title" else (title or slug)
+            data[k]["en"] = "TODO"           # (never the Russian title: the check lists it until it is written)
         for k in ("idea", "tone", "style", "heroes"):
             data["bible"][k]["en"] = "TODO"
     _check("world", data)
@@ -89,7 +89,10 @@ def set_(w: World, slug: str, name: str | None = None) -> Path:
     kit = {
         "name": name or slug,
         "about": "The parts of this set: an empty room, far layers, every piece of furniture as its own picture. "
-                 "`tadam set make` paints them and writes set.json.",
+                 "`tadam set make` paints the room and the pieces (props) and writes set.json. Window glass painted "
+                 "flat pure magenta #FF00FF is keyed out (see-through); behind it go the far layers (far: "
+                 "[{id, image, scale, rect}]), which are YOUR OWN pictures in this folder (a street, a sky): the kit "
+                 "does not paint them; give each a source in sources.json.",
         "floor": 0.87,
         "ground": ground,
         "room": {"prompt": "TODO: the empty room, front view, vertical 9:16, floor in the lower part; window glass "
