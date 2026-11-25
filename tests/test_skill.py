@@ -25,7 +25,9 @@ def test_skill_has_its_frontmatter_and_its_links_work():
     for md in [SKILL / "SKILL.md", *sorted((SKILL / "reference").glob("*.md"))]:
         for target in re.findall(r"\]\(([^)#:]+\.md)\)", md.read_text(encoding="utf-8")):
             assert (md.parent / target).is_file(), (md.name, target)
-    for must in ("tadam check", "--sheet", "tadam play", "tadam push", "согласен", "price", "skey", "--confirm"):
+    for must in ("tadam check", "--sheet", "tadam play", "tadam push", "согласен", "price", "skey", "--confirm",
+                 "tadam join", "sources.json", "tadam submit", "tadam studio-version", "tadam reply",
+                 "reference/owner-review.md", "tadam review approve"):
         assert must.lower() in text.lower(), must
     assert len(text.splitlines()) < 90          # short and practical: the details are in the references
 
@@ -39,8 +41,9 @@ def test_the_script_example_passes_the_schema_and_the_check(world):
 
 
 def test_the_world_and_set_examples_fit(world):
-    (wj,) = blocks(SKILL / "reference" / "world-folder.md")
+    wj, src = blocks(SKILL / "reference" / "world-folder.md")
     assert schema.validate("world", wj) == []
+    assert schema.validate("sources", src) == []
     (kit,) = blocks(SKILL / "reference" / "puppets-and-sets.md")
     assert setmake.validate_kit(kit) == []
 

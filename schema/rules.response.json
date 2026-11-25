@@ -1,0 +1,75 @@
+{
+  "$id": "https://tadamshow.com/schemas/rules.response.json",
+  "title": "rules.response",
+  "description": "GET /api/studio/rules?lang=",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "lang": {
+      "type": "string",
+      "enum": [
+        "ru",
+        "en"
+      ]
+    },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "terms": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "effectiveAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confirm": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "lang",
+    "rules",
+    "terms",
+    "effectiveAt",
+    "confirm"
+  ],
+  "additionalProperties": false
+}

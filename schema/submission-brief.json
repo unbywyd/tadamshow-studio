@@ -1,0 +1,212 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission-brief.json",
+  "title": "submission-brief",
+  "description": "one row of GET /api/studio/submissions and of the owner queue",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "publish",
+        "revision",
+        "unpublish"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "changes",
+        "rejected",
+        "withdrawn"
+      ]
+    },
+    "world": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "en": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "ru"
+          ],
+          "additionalProperties": false
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "soon",
+            "live",
+            "hidden",
+            "archived"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "title",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "episode": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "number": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "title": {
+              "type": "object",
+              "properties": {
+                "ru": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "en": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "ru"
+              ],
+              "additionalProperties": false
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "idea",
+                "script",
+                "recording",
+                "rendering",
+                "review",
+                "scheduled",
+                "published",
+                "archived"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "number",
+            "title",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "author": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "email": {
+              "type": "string"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "email",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "messages": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "decidedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "status",
+    "world",
+    "episode",
+    "author",
+    "note",
+    "messages",
+    "createdAt",
+    "updatedAt",
+    "decidedAt"
+  ],
+  "additionalProperties": false
+}

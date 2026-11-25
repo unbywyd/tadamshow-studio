@@ -115,8 +115,9 @@ class Scan:
     case_clashes: list[str] = field(default_factory=list)
 
 
-def scan(root: Path) -> Scan:
-    """Walk the world folder (not .tadam/, not hidden folders) and sort every file: sent or kept here."""
+def scan(root: Path, hashing: bool = True) -> Scan:
+    """Walk the world folder (not .tadam/, not hidden folders) and sort every file: sent or kept here. Without
+    `hashing` the manifest has only the sizes (for a check that needs the list, not the fingerprints)."""
     root = Path(root)
     out = Scan()
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
@@ -149,7 +150,7 @@ def scan(root: Path) -> Scan:
             if size == 0:
                 out.empty.append(rel)
                 continue
-            out.manifest[rel] = {"sha256": sha256_file(f), "bytes": size}
+            out.manifest[rel] = {"sha256": sha256_file(f), "bytes": size} if hashing else {"bytes": size}
     seen: dict[str, str] = {}
     for p in sorted(out.manifest):
         k = p.lower()

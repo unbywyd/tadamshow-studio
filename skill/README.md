@@ -1,8 +1,8 @@
 # skill
 
 The skill for Claude Code: [SKILL.md](SKILL.md) (the work order and the rules) and [reference/](reference/) (the
-world folder, the script, shots and the camera, recording steps, puppets and sets, changes after publishing, the
-house rules). `reference/script-fields.md` is generated from `schema/script.v2.json` by
+world folder and sources.json, the script, shots and the camera, recording steps, puppets and sets, submitting
+and the owner's remarks, changes after publishing, the house rules, and the owner's review). `reference/script-fields.md` is generated from `schema/script.v2.json` by
 `python devtools/script_fields.py`; the tests check that it is current and that every example here passes the
 schemas and `tadam check`.
 

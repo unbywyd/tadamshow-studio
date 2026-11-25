@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tadam import schema
+from tadam import schema, sources
 from tadam.world import EPISODE, SLUG, HERO_KEY, World, WorldError, write_json
 
 GITIGNORE = ".tadam/\n"
@@ -58,6 +58,7 @@ def world(parent: Path, slug: str, title: str | None = None, langs=("ru",)) -> P
     write_json(root / "world.json", data)
     for d in ("heroes", "sets", "media", "episodes"):
         (root / d).mkdir(parents=True, exist_ok=True)
+    sources.starter(root)          # where every picture and sound comes from: filled as files are made
     gi = root / ".gitignore"
     if not gi.exists():
         gi.write_text(GITIGNORE, encoding="utf-8", newline="\n")

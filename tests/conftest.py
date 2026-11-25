@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 from PIL import Image, ImageDraw
 
-from tadam import new, openai_images
+from tadam import new, openai_images, sources
 from tadam.puppet import mannequin
 from tadam.world import World, write_json
 
@@ -164,6 +164,9 @@ def make_world(parent: Path, puppet: Path, name: str = "мир с пробело
     }
     (root / "episodes" / "1").mkdir(parents=True, exist_ok=True)
     write_json(root / "episodes" / "1" / "script.json", script)
+    own = {"source": "own", "note": "drawn by the tests' code"}
+    for key in ("cover.png", "heroes/cow/puppet/", "heroes/detective/puppet/", "sets/barn/", "media/"):
+        sources.declare(root, key, own)
     return root
 
 

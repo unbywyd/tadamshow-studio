@@ -84,6 +84,12 @@ SPOIL = {
         [{"id": f"x{i}", "remark": {"ru": "Пауза"}, "seconds": 120, "actors": [{"id": "cow", "x": 0.5}]}
          for i in range(3)])), None),
     "stage_option_unknown": (script(lambda s: s["film"].update(stage={"bogus": 1})), None),
+    # the server's content checks
+    "bad_word": (script(lambda s: step(s, "cow-1").update(text={"ru": "Где моя луна, сука?"})), None),
+    "borderline_word": (script(lambda s: s["shots"][0].update(remark={"ru": "Корова-дурак спрашивает"})), None),
+    "no_sources": (lambda r: (r / "sources.json").unlink(), None),
+    "no_source": (lambda r: edit(r, "sources.json", lambda d: d["files"].pop("media/")), None),
+    "source_unused": (lambda r: edit(r, "sources.json", lambda d: d["files"].update({"media/gone.mp3": {"source": "own"}})), None),
 }
 
 

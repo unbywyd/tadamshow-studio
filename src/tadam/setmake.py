@@ -26,6 +26,7 @@ import numpy as np
 from PIL import Image
 
 from tadam import openai_images as oi
+from tadam import sources
 from tadam.world import World, WorldError, is_safe_name, write_json
 
 WORLD = (720, 1280)
@@ -165,9 +166,12 @@ def make(w: World, slug: str, only: set | None = None, layout_only: bool = False
     bad = [b for b in validate_kit(kit) if not (plain and b.startswith("room.prompt"))]
     if bad:
         raise WorldError("kit.json: " + "; ".join(bad))
+    src = None
     if plain:
         placeholder(kit, out)
+        src = {"source": "own", "note": "a placeholder drawn by the kit's code"}
     elif not layout_only:
+        src = {"source": "generated", "tool": model}
         style = style_line(kit, w.style())
         only = set(only or ())
         jobs = []
@@ -181,4 +185,6 @@ def make(w: World, slug: str, only: set | None = None, layout_only: bool = False
                 log(" ".join(str(x) for x in j.result()))
     s = layout(kit, out)
     log(f"set -> {out / 'set.json'}: {len(s['pieces'])} pieces")
+    if src and sources.declare(w.root, f"sets/{slug}/", src, replace=True):
+        log(f"sources.json: sets/{slug}/ = {src['source']}" + (f" ({src['tool']})" if "tool" in src else ""))
     return s

@@ -1,0 +1,25 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission-approve.request.json",
+  "title": "submission-approve.request",
+  "description": "POST /api/admin/studio/submissions/:id/approve",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "confirm": {
+      "type": "boolean"
+    },
+    "staleVersion": {
+      "type": "boolean"
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    }
+  }
+}

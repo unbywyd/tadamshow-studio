@@ -1,0 +1,21 @@
+{
+  "$id": "https://tadamshow.com/schemas/join-key.request.json",
+  "title": "join-key.request",
+  "description": "POST /api/studio/join/key (tadam login)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "maxLength": 600
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    }
+  },
+  "required": [
+    "token"
+  ]
+}

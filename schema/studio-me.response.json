@@ -56,19 +56,38 @@
         "null"
       ]
     },
-    "request": {
-      "type": "string",
-      "enum": [
-        "none",
-        "pending",
-        "granted"
-      ]
-    },
-    "about": {
-      "type": [
-        "string",
-        "null"
-      ]
+    "rules": {
+      "type": "object",
+      "properties": {
+        "current": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accepted": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acceptedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "outdated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "current",
+        "accepted",
+        "acceptedAt",
+        "outdated"
+      ],
+      "additionalProperties": false
     },
     "staff": {
       "type": "boolean"
@@ -258,8 +277,7 @@
     "via",
     "access",
     "since",
-    "request",
-    "about",
+    "rules",
     "staff",
     "limits",
     "worlds"

@@ -84,6 +84,9 @@ def test_login_refuses_a_wrong_key_and_stores_nothing(fake, monkeypatch, capsys)
 def test_login_wants_a_keyboard_or_the_env(fake, capsys):
     code, out = run(capsys, "login")                         # (pytest's stdin is not a terminal)
     assert code == 2 and "real keyboard" in out and not (link.config_dir() / link.FILE).exists()
+    code, out = run(capsys, "login", "--key")
+    assert code == 2 and "real keyboard" in out and not (link.config_dir() / link.FILE).exists()
+    assert not fake.mails                                    # (no code was asked for without a person)
 
 
 def test_login_refuses_what_is_not_a_studio_key(fake, monkeypatch, capsys):
@@ -392,8 +395,3 @@ def test_uploads_are_retried(monkeypatch):
     a = api.Api(link.Link("https://studio.example", KEY), opener=opener, sleep=lambda s: None)
     a.upload("https://store.example/u", b"data", {"content-type": "image/png", "Authorization": "x"})
     assert len(tries) == 3
-
-
-def test_join_is_a_stub_for_now(capsys):
-    code, out = run(capsys, "join")
-    assert code == 2 and "next kit update" in out and "tadam login" in out

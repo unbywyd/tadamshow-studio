@@ -1,0 +1,90 @@
+{
+  "$id": "https://tadamshow.com/schemas/join-verify.response.json",
+  "title": "join-verify.response",
+  "description": "answer of POST /api/studio/join/verify",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string"
+    },
+    "expiresAt": {
+      "type": "string"
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "email": {
+          "type": "string"
+        },
+        "existed": {
+          "type": "boolean"
+        },
+        "access": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "existed",
+        "access"
+      ],
+      "additionalProperties": false
+    },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "current": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accepted": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acceptedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "outdated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "current",
+        "accepted",
+        "acceptedAt",
+        "outdated"
+      ],
+      "additionalProperties": false
+    },
+    "next": {
+      "type": "string",
+      "enum": [
+        "accept",
+        "key",
+        "off"
+      ]
+    }
+  },
+  "required": [
+    "token",
+    "expiresAt",
+    "account",
+    "rules",
+    "next"
+  ],
+  "additionalProperties": false
+}

@@ -59,9 +59,11 @@ class Api:
     # ------------------------------------------------------------------ JSON with the key
     def call(self, method: str, path: str, body: dict | None = None, timeout: float = TIMEOUT) -> dict:
         data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
-        req = urllib.request.Request(self.link.url + path, data=data, method=method, headers={
-            "Authorization": f"Bearer {self.link.key}", "Content-Type": "application/json",
-            "Accept": "application/json", "User-Agent": f"tadam/{__version__}"})
+        headers = {"Content-Type": "application/json", "Accept": "application/json",
+                   "User-Agent": f"tadam/{__version__}"}
+        if self.link.key:                    # (join, verify and the rules are asked without a key)
+            headers["Authorization"] = f"Bearer {self.link.key}"
+        req = urllib.request.Request(self.link.url + path, data=data, method=method, headers=headers)
         try:
             with self.open(req, timeout=timeout) as r:
                 raw = r.read()
@@ -72,7 +74,7 @@ class Api:
             except (ValueError, AttributeError):
                 err = {}
             msg = str(err.get("message") or f"HTTP {e.code}")
-            if e.code == 401:
+            if e.code == 401 and self.link.key:
                 msg = f"the studio key was refused: {msg}"
             raise ApiError(e.code, str(err.get("code") or "error"), msg, err.get("issues")) from None
         except (urllib.error.URLError, TimeoutError, OSError) as e:

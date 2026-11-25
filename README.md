@@ -6,8 +6,9 @@ the script, makes the puppets and the sets, looks at the frames itself and shows
 player. When it is ready, one command sends it to TadamShow for review.
 
 > Status: early. Working: `tadam doctor`, `new`, `hero make` / `hero check`, `set make`, `check`, the local player
-> and frames (`play`, `frames`, `film`), the engine, the link to TadamShow (`login`, `push`, `pull`, `diff`,
-> `status`) and the skill. Coming: `join` (becoming an editor from the terminal), `submit`, `review`.
+> and frames (`play`, `frames`, `film`), the engine, the link to TadamShow (`join`, `login`, `push`, `pull`,
+> `diff`, `status`), submissions (`submit`, `studio-version`, `reply`, `withdraw`, `unpublish`), the owner's
+> `review`, and the skill.
 
 Русская версия: [README.ru.md](README.ru.md).
 
@@ -30,9 +31,12 @@ You need:
 4. **Your own OpenAI API key** in the environment variable `OPENAI_API_KEY` — https://platform.openai.com/api-keys
    It pays for the pictures of your puppets and sets. Nothing paid comes from us. Keep it out of files you
    commit; a secret manager is best.
-5. A **studio key** (`tds_…`) from your TadamShow studio page — to send your work and to hear the narration in
-   the local player. `tadam login` asks for it (typed hidden) and keeps it in your own config folder, or set
-   `TADAM_STUDIO_KEY`. Without it the narration is shown as subtitles. Never paste it into a chat.
+5. A **studio key** (`tds_…`) — to send your work and to hear the narration in the local player. Run
+   **`tadam join`** yourself in a terminal: your email, the code from the letter, the studio's rules in full, and
+   you type «согласен» / "I agree"; the key comes back once and is kept in your own config folder (never shown).
+   On another computer: `tadam login` (the same email and code), or `tadam login --key` with a key from the
+   cabinet, or `TADAM_STUDIO_KEY`. Without a key the narration is shown as subtitles. Never paste it into a
+   chat.
 
 Then:
 
@@ -56,7 +60,7 @@ paid), writes the script, looks at the frames itself and plays the episode for y
 the world; you record the roles on the site and say when to send it.
 
 1. Install (above) and run `tadam doctor` until it is happy.
-2. `tadam login` and type your studio key (or skip it: everything but sending works without it).
+2. `tadam join` in your own terminal (or skip it for now: everything but sending works without it).
 3. Open Claude Code in this repository (or anywhere, giving the full path of `skill/SKILL.md`) and tell Claude:
    **"read skill/SKILL.md and help me make a world"**
 
@@ -77,12 +81,24 @@ tadam play 1 [--shot sh3]                         # a window plays the episode w
 tadam film 1                                      # a draft MP4 (picture, narration, music, subtitles)
 tadam hero check cow                              # every action of the engine on the hero (hero make runs it)
 
-tadam login                                       # your studio key, typed hidden (or TADAM_STUDIO_KEY)
+tadam join                                        # become an editor: email, code, the rules, YOU type «согласен»
+tadam login [--key]                               # this computer: email + code (or an existing key, typed hidden)
+tadam rules [--terms]                             # read the studio's rules
 tadam push                                        # check, then send only what changed; prints the revision
 tadam pull [slug]                                 # the server's revision: merged into this folder, or a new one
 tadam diff [rev [rev]]                            # what changed, by files and by shots and steps
 tadam status [--json]                             # worlds, episodes, submissions, remarks, what is missing
+tadam studio-version 1 <videoId>                  # the film you made on the site is the episode's studio version
+tadam submit 1 "a note"                           # to the owner (refused with the list while anything is missing)
+tadam reply "text" [--shot sh3]  |  tadam withdraw  |  tadam unpublish "reason" [--episode 1]
+tadam review list | show <id> | approve <id> | return <id> "..." [--shot sh3 "..."] | reject <id> "..."
+                                                  # the project's owner only (staff key: tadam login --staff)
 ```
+
+Every picture and sound of a world has its source in `sources.json` at the world's root (`own`, `generated`
+with the tool, `licensed` with the licence and a link; a folder key ending with `/` covers its files):
+`tadam check` errors on a file without one, and on swearing in any text (borderline words are warnings), the
+same rules the server applies.
 
 `hero make --mannequin` and `set make --placeholder` draw free stand-ins by code (a wooden mannequin, a plain
 room) to block out scenes before anything is painted. `tadam check --engine` also plays every shot through in
@@ -97,7 +113,7 @@ the head as large as the site makes it), so the framing matches; `hero make` fin
 it as subtitles. On Linux without a screen, frames and films run under `xvfb-run`. A world folder:
 
 ```
-world.json   cover.png   heroes/<slug>/hero.json + puppet/   sets/<slug>/   media/   episodes/<n>/script.json
+world.json   sources.json   cover.png   heroes/<slug>/hero.json + puppet/   sets/<slug>/   media/   episodes/<n>/
 .tadam/      the kit's working files (engine scenes, cards, narration, frames, films): never committed, never sent
 ```
 
@@ -106,8 +122,9 @@ world.json   cover.png   heroes/<slug>/hero.json + puppet/   sets/<slug>/   medi
 ```
 tadam/      the library and the `tadam` command (src/tadam)
 engine/     the puppet engine (Godot 4.7): engine/stage.tscn plays a scene, engine/viewer.tscn shows a hero
-schema/     JSON Schemas of the script and the world folder (exported from the server, not edited by hand)
-devtools/   the code that drew the engine's instruments and synthesized its sounds
+schema/     JSON Schemas of the script, the world folder and the studio API, and the word list (exported from
+            the server: python devtools/refresh_schemas.py <contracts>; never edited by hand)
+devtools/   the code that drew the engine's instruments and synthesized its sounds; the schema refresh
 skill/      the skill for Claude Code: SKILL.md and reference/ (the folder, the script, shots, recording, puppets)
 examples/   a small sample world: examples/sock-bureau (two heroes, one set, one 40-second episode)
 ```

@@ -1,0 +1,17 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission-reject.request.json",
+  "title": "submission-reject.request",
+  "description": "POST /api/admin/studio/submissions/:id/reject",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    }
+  },
+  "required": [
+    "reason"
+  ]
+}

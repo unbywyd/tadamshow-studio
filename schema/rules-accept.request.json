@@ -1,0 +1,42 @@
+{
+  "$id": "https://tadamshow.com/schemas/rules-accept.request.json",
+  "title": "rules-accept.request",
+  "description": "POST /api/studio/rules/accept",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "maxLength": 600
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "typed": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "lang": {
+      "type": "string",
+      "enum": [
+        "ru",
+        "en"
+      ]
+    },
+    "client": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "keyName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    }
+  },
+  "required": [
+    "version",
+    "typed"
+  ]
+}
