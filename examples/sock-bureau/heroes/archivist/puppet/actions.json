@@ -1,0 +1,1146 @@
+{
+ "passed": true,
+ "stage1": [
+  "rest",
+  "hips",
+  "think",
+  "tired",
+  "scared",
+  "serious",
+  "victory",
+  "wave",
+  "bye",
+  "beckon",
+  "point",
+  "clap",
+  "facepalm",
+  "head_grab",
+  "heart",
+  "nod",
+  "shake_head",
+  "rub",
+  "scratch_head",
+  "shoo",
+  "shrug",
+  "spread",
+  "angry",
+  "cry",
+  "laugh",
+  "surprised",
+  "dance_arms",
+  "dance_twist",
+  "bow",
+  "curtsy",
+  "hop",
+  "jump",
+  "squat"
+ ],
+ "stage1_failed": [],
+ "stage1_missing": [],
+ "seconds": 22.5,
+ "rig": "5b704eb845da7098e3471fe92d26f79783be1ae6eb9ff0639974117f27fdb297",
+ "limits": {
+  "accel": 450.0,
+  "back": 0.08,
+  "balance": 0.0,
+  "cross": 0.25,
+  "face": 0.5,
+  "floor": 0.005,
+  "grab": 0.12,
+  "inside": 0.15,
+  "item_floor": 0.004,
+  "jerk": 0.15,
+  "miss": 0.05,
+  "nograb": 0.0,
+  "out": 0.0,
+  "path": 1.5,
+  "skirt": 0.25,
+  "slide": 0.03,
+  "torn": 0.1,
+  "wrong": 3
+ },
+ "actions": {
+  "angry": {
+   "group": "feeling",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "beckon": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "block": {
+   "group": "fight",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "bow": {
+   "group": "body",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "bye": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "chicken": {
+   "group": "silly",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "chop": {
+   "group": "fight",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 0.8686
+     }
+    },
+    {
+     "side": "left",
+     "pass": false,
+     "faults": {
+      "inside": 0.8244
+     }
+    }
+   ]
+  },
+  "clap": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "cry": {
+   "group": "feeling",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "curtsy": {
+   "group": "body",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "dance_arms": {
+   "group": "dance",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "dance_twist": {
+   "group": "dance",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "dodge": {
+   "group": "fight",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 1.5778,
+      "accel": 482.7417
+     }
+    }
+   ]
+  },
+  "drink": {
+   "group": "item",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "drive": {
+   "group": "item",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "miss": 0.8103
+     }
+    }
+   ]
+  },
+  "drunk": {
+   "group": "move",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 0.6694
+     }
+    }
+   ]
+  },
+  "facepalm": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "fall": {
+   "group": "body",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "slide": 0.1092,
+      "floor": 0.0273
+     }
+    }
+   ]
+  },
+  "get_hit": {
+   "group": "fight",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "get_up": {
+   "group": "body",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "wrong": 7.0,
+      "floor": 0.1169
+     }
+    }
+   ]
+  },
+  "guard": {
+   "group": "fight",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "haymaker": {
+   "group": "fight",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 1.1517,
+      "accel": 524.9294
+     }
+    },
+    {
+     "side": "left",
+     "pass": false,
+     "faults": {
+      "inside": 0.7398
+     }
+    }
+   ]
+  },
+  "head_grab": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "heart": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "hips": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "hop": {
+   "group": "body",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "jelly": {
+   "group": "silly",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 0.6906
+     }
+    }
+   ]
+  },
+  "jump": {
+   "group": "body",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "jump_forward": {
+   "group": "move",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {},
+     "notes": {
+      "out": 0.0578
+     }
+    }
+   ]
+  },
+  "kick": {
+   "group": "fight",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 1.0556
+     }
+    },
+    {
+     "side": "left",
+     "pass": false,
+     "faults": {
+      "inside": 1.157
+     }
+    }
+   ]
+  },
+  "laugh": {
+   "group": "feeling",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "lift": {
+   "group": "item",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "miss": 0.8126,
+      "nograb": 2.0
+     }
+    }
+   ]
+  },
+  "march": {
+   "group": "move",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {},
+     "notes": {
+      "out": 0.0801
+     }
+    }
+   ]
+  },
+  "nod": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "noodle": {
+   "group": "silly",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "panic": {
+   "group": "silly",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "play_accordion": {
+   "group": "music",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "play_balalaika": {
+   "group": "music",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "play_bass": {
+   "group": "music",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "play_drum": {
+   "group": "music",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "play_guitar": {
+   "group": "music",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "play_pipe": {
+   "group": "music",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "point": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "punch": {
+   "group": "fight",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "put": {
+   "group": "item",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "rest": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "rub": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "run": {
+   "group": "move",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 1.3806
+     },
+     "notes": {
+      "out": 0.5205
+     }
+    }
+   ]
+  },
+  "scared": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "scratch_head": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "serious": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "shake_head": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "shiver": {
+   "group": "silly",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "shoo": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "shrug": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "sit": {
+   "group": "body",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "sit_floor": {
+   "group": "body",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "wrong": 7.0,
+      "slide": 0.0763,
+      "floor": 0.0952
+     }
+    }
+   ]
+  },
+  "sit_ground": {
+   "group": "body",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "wrong": 7.0,
+      "slide": 0.2166,
+      "floor": 0.1292
+     }
+    }
+   ]
+  },
+  "skip": {
+   "group": "move",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "slap": {
+   "group": "fight",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 0.7884
+     }
+    },
+    {
+     "side": "left",
+     "pass": false,
+     "faults": {
+      "inside": 0.7069
+     }
+    }
+   ]
+  },
+  "slash": {
+   "group": "item",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": false,
+     "faults": {
+      "inside": 0.3386
+     }
+    }
+   ]
+  },
+  "sneak": {
+   "group": "move",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {},
+     "notes": {
+      "out": 0.36
+     }
+    }
+   ]
+  },
+  "spread": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "squat": {
+   "group": "body",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "stamp": {
+   "group": "body",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "surprised": {
+   "group": "feeling",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "take": {
+   "group": "item",
+   "stage1": false,
+   "pass": false,
+   "runs": [
+    {
+     "side": "right",
+     "pass": false,
+     "faults": {
+      "inside": 0.8221,
+      "nograb": 1.0
+     }
+    },
+    {
+     "side": "left",
+     "pass": false,
+     "faults": {
+      "inside": 0.852,
+      "nograb": 1.0
+     }
+    }
+   ]
+  },
+  "think": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "throw": {
+   "group": "item",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "tired": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "uppercut": {
+   "group": "fight",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "victory": {
+   "group": "pose",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "waddle": {
+   "group": "move",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "walk": {
+   "group": "move",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "wave": {
+   "group": "gesture",
+   "stage1": true,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    },
+    {
+     "side": "left",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  },
+  "windmill": {
+   "group": "silly",
+   "stage1": false,
+   "pass": true,
+   "runs": [
+    {
+     "side": "right",
+     "pass": true,
+     "faults": {}
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,125 @@
+{
+  "name": "puppet",
+  "passed": true,
+  "parts_ok": 15,
+  "parts_total": 15,
+  "sheet_problems": [],
+  "body_height": 737.0,
+  "bones": {
+    "chest": 253,
+    "upper_arm_l": 166,
+    "forearm_l": 148,
+    "upper_arm_r": 165,
+    "forearm_r": 148,
+    "thigh_l": 148,
+    "shin_l": 152,
+    "thigh_r": 148,
+    "shin_r": 153
+  },
+  "repairs": [
+    "the head has a face board (oval 94x99 px at 150,144)"
+  ],
+  "variant_problems": [],
+  "measured": {
+    "neck_dx": 0.0,
+    "waist_dx_chest": 0.0,
+    "waist_dx_pelvis": 0.0,
+    "head_dx": 0.5,
+    "chest_dx": 0.0,
+    "shoulders_dx": 0.8,
+    "shoulders_dy": -1.0,
+    "hips_dx": 0.0,
+    "hips_dy": 0.0,
+    "neck_r": 32.0,
+    "neck_depth": 2.0,
+    "neck_shown": 41.0,
+    "neck_tail": 33.0,
+    "bridges": {
+      "chest": 103.3,
+      "head": 32.0,
+      "upper_arm_l": 48.0,
+      "forearm_l": 48.8,
+      "hand_l": 37.0,
+      "upper_arm_r": 49.0,
+      "forearm_r": 48.9,
+      "hand_r": 37.0,
+      "thigh_l": 57.1,
+      "shin_l": 56.9,
+      "foot_l": 53.0,
+      "thigh_r": 57.1,
+      "shin_r": 57.0,
+      "foot_r": 51.9
+    },
+    "bridge_min": 32.0,
+    "bridge_at": "head",
+    "arms_over": 0.12,
+    "legs_apart": 1.11,
+    "shoulder_top": 0.54,
+    "overhang": 1.08,
+    "overhang_at": "foot_l at the ankle",
+    "flat": 0.75,
+    "flat_at": "shin_l at the knee"
+  },
+  "parts": {
+    "pelvis": {
+      "ok": true,
+      "problems": []
+    },
+    "chest": {
+      "ok": true,
+      "problems": []
+    },
+    "head": {
+      "ok": true,
+      "problems": []
+    },
+    "upper_arm_l": {
+      "ok": true,
+      "problems": []
+    },
+    "forearm_l": {
+      "ok": true,
+      "problems": []
+    },
+    "hand_l": {
+      "ok": true,
+      "problems": []
+    },
+    "upper_arm_r": {
+      "ok": true,
+      "problems": []
+    },
+    "forearm_r": {
+      "ok": true,
+      "problems": []
+    },
+    "hand_r": {
+      "ok": true,
+      "problems": []
+    },
+    "thigh_l": {
+      "ok": true,
+      "problems": []
+    },
+    "shin_l": {
+      "ok": true,
+      "problems": []
+    },
+    "foot_l": {
+      "ok": true,
+      "problems": []
+    },
+    "thigh_r": {
+      "ok": true,
+      "problems": []
+    },
+    "shin_r": {
+      "ok": true,
+      "problems": []
+    },
+    "foot_r": {
+      "ok": true,
+      "problems": []
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "puppet",
+  "character": "an elderly thin clerk with a bald head and two fluffy tufts of white hair sticking out above the ears, huge round glasses with thin black frames, a long thin nose, a small grey moustache, a bottle-green knitted vest over a cream shirt, mustard sleeve garters on both upper arms, a narrow brick-red tie, brown trousers, brown laced shoes",
+  "style": "flat matte gouache illustration, muted palette of mustard yellow, bottle green, brick red and cream, clean dark brown outlines of even width, visible paper grain, no gradients, no cast shadows, no glossy highlights",
+  "rig": "humanoid-a",
+  "model": "gpt-image-2.5-flare",
+  "quality": "medium",
+  "size": "1024x1536",
+  "calls": [
+    {
+      "step": "portrait",
+      "seconds": 14.9,
+      "usage": {
+        "input_tokens": 180,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 180
+        },
+        "output_tokens": 343,
+        "total_tokens": 523,
+        "output_tokens_details": {
+          "image_tokens": 343,
+          "text_tokens": 0
+        }
+      }
+    },
+    {
+      "step": "sheet",
+      "seconds": 23.2,
+      "usage": {
+        "input_tokens": 3624,
+        "input_tokens_details": {
+          "image_tokens": 3072,
+          "text_tokens": 552
+        },
+        "output_tokens": 343,
+        "total_tokens": 3967,
+        "output_tokens_details": {
+          "image_tokens": 343,
+          "text_tokens": 0
+        }
+      }
+    }
+  ]
+}

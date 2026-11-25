@@ -1,0 +1,6 @@
+portrait 15.4 s
+sheet 19.8 s
+puppet: PASS 16/16 parts ok, body height 745 px
+  + repaired: the pelvis was trimmed to the skirt's outline (2% of it)
+  + repaired: the head has a face board (oval 86x111 px at 91,160)
+visitor: PASS (attempt 1)

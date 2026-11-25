@@ -1,0 +1,38 @@
+{
+  "name": "Бюро пропавших носков",
+  "about": "The bureau's reception room: an empty back wall of small wooden pigeonholes, a filing cabinet with a lamp on the left, a stack of sock boxes on the right. The middle stays free for the heroes.",
+  "floor": 0.87,
+  "ground": {
+    "far": 0.675,
+    "far_scale": 0.55,
+    "tilt": 0.7
+  },
+  "room": {
+    "prompt": "an empty old-fashioned office reception room seen straight from the front, vertical 9:16. The whole back wall is a grid of many small square wooden pigeonholes, each holding one rolled-up sock of a different colour; a small enamel sign high on the wall in the middle with no text on it. The wall meets a plain worn wooden plank floor about two thirds down the picture; the floor fills the lower third. No furniture, no people, no windows, no doors, no text or letters anywhere."
+  },
+  "far": [],
+  "props": [
+    {
+      "id": "cabinet",
+      "prompt": "a tall narrow old wooden filing cabinet with four drawers and small brass handles, seen straight from the front",
+      "x": 0.14,
+      "base": 0.8,
+      "width": 0.24
+    },
+    {
+      "id": "lamp",
+      "prompt": "a small green-shaded brass desk lamp, seen from the front, switched off",
+      "x": 0.14,
+      "on": "cabinet",
+      "surface": 0.04,
+      "width": 0.12
+    },
+    {
+      "id": "boxes",
+      "prompt": "a neat stack of three cardboard boxes of decreasing size, the top one open with a few colourful socks peeking out, no text or labels, seen from the front",
+      "x": 0.87,
+      "base": 0.82,
+      "width": 0.24
+    }
+  ]
+}

@@ -109,7 +109,7 @@ engine/     the puppet engine (Godot 4.7): engine/stage.tscn plays a scene, engi
 schema/     JSON Schemas of the script and the world folder (exported from the server, not edited by hand)
 devtools/   the code that drew the engine's instruments and synthesized its sounds
 skill/      the skill for Claude Code: SKILL.md and reference/ (the folder, the script, shots, recording, puppets)
-examples/   a small sample world — coming
+examples/   a small sample world: examples/sock-bureau (two heroes, one set, one 40-second episode)
 ```
 
 ## Contributing and security

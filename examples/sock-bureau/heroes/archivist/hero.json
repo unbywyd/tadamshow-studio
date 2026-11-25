@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": {
+    "ru": "Архивариус Петля",
+    "en": "Archivist Petlya"
+  },
+  "trait": {
+    "ru": "невозмутим, вежлив, всё знает про носки",
+    "en": "unflappable, polite, knows everything about socks"
+  },
+  "about": "The clerk of the bureau. Elderly, thin, very calm. Speaks slowly, reads from the ledger, never surprised. Plays every line straight.",
+  "height": 0.42
+}

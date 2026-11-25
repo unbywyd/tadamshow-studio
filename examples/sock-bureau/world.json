@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "slug": "sock-bureau",
+  "title": {
+    "ru": "Бюро пропавших носков",
+    "en": "The Lost Sock Bureau"
+  },
+  "tagline": {
+    "ru": "Каждый пропавший носок куда-то уходит. Сюда.",
+    "en": "Every lost sock goes somewhere. Here."
+  },
+  "description": {
+    "ru": "Где-то есть контора, куда попадают все носки, пропавшие после стирки. Там сидит строгий архивариус и принимает жалобы граждан. Носки не возвращаются, но у каждого есть своя история.",
+    "en": "Somewhere there is an office where every sock lost in the wash ends up. A strict archivist sits there and takes complaints from citizens. The socks never come back, but each one has a story."
+  },
+  "genre": "comedy",
+  "langs": [
+    "ru",
+    "en"
+  ],
+  "bible": {
+    "idea": {
+      "ru": "Граждане приходят в бюро искать свой пропавший носок. Архивариус невозмутимо находит его в журнале и узнаёт, почему носок ушёл: к другому носку, в путешествие, на пенсию. Смешно потому, что все говорят о носках абсолютно серьёзно.",
+      "en": "Citizens come to the bureau looking for a lost sock. The archivist calmly finds it in the ledger and learns why it left: for another sock, on a journey, into retirement. It is funny because everyone talks about socks with total seriousness."
+    },
+    "tone": {
+      "ru": "Сухо, вежливо, абсурдно. Как в настоящей конторе. Никто не злится и не кричит; шутка в серьёзности. Не шутим про людей, только про носки.",
+      "en": "Dry, polite, absurd, like a real office. Nobody gets angry or shouts; the joke is in the seriousness. We joke about socks, never about people."
+    },
+    "style": {
+      "ru": "Плоская матовая гуашь, приглушённые цвета (горчичный, бутылочно-зелёный, кирпичный, кремовый), чёткий тёмный контур, зерно бумаги, без градиентов и без теней.",
+      "en": "flat matte gouache illustration, muted palette of mustard yellow, bottle green, brick red and cream, clean dark brown outlines of even width, visible paper grain, no gradients, no cast shadows, no glossy highlights"
+    },
+    "rules": [
+      {
+        "ru": "Камера шутит, кукла серьёзна: никто не кривляется.",
+        "en": "The camera jokes, the puppet stays serious: nobody mugs."
+      },
+      {
+        "ru": "Носок никогда не возвращается к хозяину.",
+        "en": "A sock never goes back to its owner."
+      },
+      {
+        "ru": "Архивариус всегда вежлив и всегда знает, где носок.",
+        "en": "The archivist is always polite and always knows where the sock is."
+      },
+      {
+        "ru": "Одна серия — один посетитель и один носок.",
+        "en": "One episode: one visitor, one sock."
+      }
+    ],
+    "heroes": {
+      "ru": "Архивариус Петля — пожилой служащий бюро, в огромных очках и вязаном жилете, говорит медленно и точно. Гражданка Пяткина — решительная посетительница с высоким пучком, пришла за справедливостью.",
+      "en": "Archivist Petlya (Loop): an elderly bureau clerk in huge glasses and a knitted vest who speaks slowly and precisely. Citizen Pyatkina (Heel): a determined visitor with a tall bun who came for justice."
+    }
+  }
+}

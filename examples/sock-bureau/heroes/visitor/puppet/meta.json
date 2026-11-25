@@ -1,0 +1,45 @@
+{
+  "name": "puppet",
+  "character": "a brisk middle-aged woman with a very tall round dark auburn hair bun on top of her head, a determined face with thick dark eyebrows, small round earrings, a brick-red buttoned coat reaching the knees with big cream buttons, a mustard knitted scarf, dark bottle-green tights, small black ankle boots",
+  "style": "flat matte gouache illustration, muted palette of mustard yellow, bottle green, brick red and cream, clean dark brown outlines of even width, visible paper grain, no gradients, no cast shadows, no glossy highlights",
+  "rig": "humanoid-a-skirt-knee",
+  "model": "gpt-image-2.5-flare",
+  "quality": "medium",
+  "size": "1024x1536",
+  "calls": [
+    {
+      "step": "portrait",
+      "seconds": 15.4,
+      "usage": {
+        "input_tokens": 168,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 168
+        },
+        "output_tokens": 343,
+        "total_tokens": 511,
+        "output_tokens_details": {
+          "image_tokens": 343,
+          "text_tokens": 0
+        }
+      }
+    },
+    {
+      "step": "sheet",
+      "seconds": 19.8,
+      "usage": {
+        "input_tokens": 3846,
+        "input_tokens_details": {
+          "image_tokens": 3072,
+          "text_tokens": 774
+        },
+        "output_tokens": 343,
+        "total_tokens": 4189,
+        "output_tokens_details": {
+          "image_tokens": 343,
+          "text_tokens": 0
+        }
+      }
+    }
+  ]
+}

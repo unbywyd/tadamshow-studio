@@ -1,0 +1,533 @@
+{
+  "rig": "humanoid-a-skirt-knee@1/fitted",
+  "sheet": [
+    1024,
+    1536
+  ],
+  "joint_radius": 41.4,
+  "pad": 14,
+  "sides": "screen: _l is on the viewer's left",
+  "draw_order": [
+    "shin_l",
+    "shin_r",
+    "foot_l",
+    "foot_r",
+    "thigh_l",
+    "thigh_r",
+    "pelvis",
+    "skirt",
+    "chest",
+    "head",
+    "upper_arm_l",
+    "upper_arm_r",
+    "forearm_l",
+    "forearm_r",
+    "hand_l",
+    "hand_r"
+  ],
+  "handles": {
+    "body": {
+      "part": "pelvis"
+    },
+    "chest": {
+      "part": "chest",
+      "kind": "angle"
+    },
+    "head": {
+      "part": "head",
+      "kind": "angle"
+    },
+    "hand_l": {
+      "ik": [
+        "upper_arm_l",
+        "forearm_l"
+      ],
+      "end": "hand_l"
+    },
+    "hand_r": {
+      "ik": [
+        "upper_arm_r",
+        "forearm_r"
+      ],
+      "end": "hand_r"
+    },
+    "foot_l": {
+      "ik": [
+        "thigh_l",
+        "shin_l"
+      ],
+      "end": "foot_l"
+    },
+    "foot_r": {
+      "ik": [
+        "thigh_r",
+        "shin_r"
+      ],
+      "end": "foot_r"
+    }
+  },
+  "parts": {
+    "pelvis": {
+      "parent": null,
+      "box": [
+        470,
+        571,
+        214,
+        137
+      ],
+      "z": 30,
+      "origin": [
+        576.5,
+        635.7
+      ],
+      "kind": "block"
+    },
+    "chest": {
+      "parent": "pelvis",
+      "box": [
+        466,
+        307,
+        222,
+        238
+      ],
+      "z": 40,
+      "joint": {
+        "name": "waist",
+        "parent_at": [
+          576.5,
+          596.0
+        ],
+        "at": [
+          576.5,
+          519.0
+        ],
+        "radius": 26.0
+      },
+      "limits": [
+        -25,
+        25
+      ],
+      "kind": "block"
+    },
+    "head": {
+      "parent": "chest",
+      "box": [
+        499,
+        24,
+        152,
+        263
+      ],
+      "z": 50,
+      "joint": {
+        "name": "neck",
+        "parent_at": [
+          576.5,
+          313.0
+        ],
+        "at": [
+          576.0,
+          253.0
+        ],
+        "radius": 31.6
+      },
+      "limits": [
+        -35,
+        35
+      ],
+      "kind": "head",
+      "board": {
+        "center": [
+          91,
+          160
+        ],
+        "size": [
+          86,
+          111
+        ]
+      }
+    },
+    "upper_arm_l": {
+      "parent": "chest",
+      "box": [
+        272,
+        292,
+        87,
+        224
+      ],
+      "z": 60,
+      "joint": {
+        "name": "shoulder_l",
+        "parent_at": [
+          455.3,
+          375.0
+        ],
+        "at": [
+          316.0,
+          337.0
+        ],
+        "radius": 42.7
+      },
+      "limits": [
+        -180,
+        180
+      ],
+      "kind": "limb"
+    },
+    "forearm_l": {
+      "parent": "upper_arm_l",
+      "box": [
+        273,
+        534,
+        85,
+        201
+      ],
+      "z": 62,
+      "joint": {
+        "name": "elbow_l",
+        "parent_at": [
+          315.5,
+          471.0
+        ],
+        "at": [
+          315.0,
+          579.0
+        ],
+        "radius": 41.4
+      },
+      "limits": [
+        -150,
+        150
+      ],
+      "kind": "limb"
+    },
+    "hand_l": {
+      "parent": "forearm_l",
+      "box": [
+        273,
+        753,
+        81,
+        130
+      ],
+      "z": 64,
+      "joint": {
+        "name": "wrist_l",
+        "parent_at": [
+          313.0,
+          692.0
+        ],
+        "at": [
+          313.5,
+          783.0
+        ],
+        "radius": 29.0
+      },
+      "limits": [
+        -80,
+        80
+      ],
+      "grip": [
+        313.3,
+        832.7
+      ],
+      "tip": [
+        313.3,
+        867.7
+      ],
+      "kind": "hand"
+    },
+    "upper_arm_r": {
+      "parent": "chest",
+      "box": [
+        833,
+        292,
+        87,
+        224
+      ],
+      "z": 60,
+      "joint": {
+        "name": "shoulder_r",
+        "parent_at": [
+          697.7,
+          375.0
+        ],
+        "at": [
+          876.5,
+          337.0
+        ],
+        "radius": 42.7
+      },
+      "limits": [
+        -180,
+        180
+      ],
+      "kind": "limb"
+    },
+    "forearm_r": {
+      "parent": "upper_arm_r",
+      "box": [
+        834,
+        534,
+        85,
+        201
+      ],
+      "z": 62,
+      "joint": {
+        "name": "elbow_r",
+        "parent_at": [
+          876.5,
+          471.0
+        ],
+        "at": [
+          876.0,
+          579.0
+        ],
+        "radius": 41.4
+      },
+      "limits": [
+        -150,
+        150
+      ],
+      "kind": "limb"
+    },
+    "hand_r": {
+      "parent": "forearm_r",
+      "box": [
+        837,
+        752,
+        81,
+        133
+      ],
+      "z": 64,
+      "joint": {
+        "name": "wrist_r",
+        "parent_at": [
+          877.0,
+          693.0
+        ],
+        "at": [
+          876.5,
+          782.0
+        ],
+        "radius": 28.8
+      },
+      "limits": [
+        -80,
+        80
+      ],
+      "grip": [
+        876.7,
+        833.6
+      ],
+      "tip": [
+        876.7,
+        869.4
+      ],
+      "kind": "hand"
+    },
+    "thigh_l": {
+      "parent": "pelvis",
+      "box": [
+        463,
+        728,
+        100,
+        225
+      ],
+      "z": 20,
+      "joint": {
+        "name": "hip_l",
+        "parent_at": [
+          521.8,
+          666.0
+        ],
+        "at": [
+          512.5,
+          781.0
+        ],
+        "radius": 49.7
+      },
+      "limits": [
+        -120,
+        120
+      ],
+      "kind": "limb"
+    },
+    "shin_l": {
+      "parent": "thigh_l",
+      "box": [
+        465,
+        978,
+        95,
+        238
+      ],
+      "z": 18,
+      "joint": {
+        "name": "knee_l",
+        "parent_at": [
+          514.0,
+          902.0
+        ],
+        "at": [
+          512.5,
+          1028.0
+        ],
+        "radius": 46.7
+      },
+      "limits": [
+        -150,
+        150
+      ],
+      "kind": "limb"
+    },
+    "foot_l": {
+      "parent": "shin_l",
+      "box": [
+        439,
+        1237,
+        108,
+        263
+      ],
+      "z": 19,
+      "joint": {
+        "name": "ankle_l",
+        "parent_at": [
+          513.0,
+          1169.0
+        ],
+        "at": [
+          513.0,
+          1272.0
+        ],
+        "radius": 33.6
+      },
+      "limits": [
+        -40,
+        40
+      ],
+      "sole": [
+        492.3,
+        1478.0
+      ],
+      "kind": "foot"
+    },
+    "thigh_r": {
+      "parent": "pelvis",
+      "box": [
+        592,
+        728,
+        99,
+        225
+      ],
+      "z": 20,
+      "joint": {
+        "name": "hip_r",
+        "parent_at": [
+          630.4,
+          668.0
+        ],
+        "at": [
+          640.5,
+          780.0
+        ],
+        "radius": 49.0
+      },
+      "limits": [
+        -120,
+        120
+      ],
+      "kind": "limb"
+    },
+    "shin_r": {
+      "parent": "thigh_r",
+      "box": [
+        594,
+        978,
+        95,
+        238
+      ],
+      "z": 18,
+      "joint": {
+        "name": "knee_r",
+        "parent_at": [
+          638.5,
+          902.0
+        ],
+        "at": [
+          640.5,
+          1027.0
+        ],
+        "radius": 46.1
+      },
+      "limits": [
+        -150,
+        150
+      ],
+      "kind": "limb"
+    },
+    "foot_r": {
+      "parent": "shin_r",
+      "box": [
+        606,
+        1237,
+        113,
+        262
+      ],
+      "z": 19,
+      "joint": {
+        "name": "ankle_r",
+        "parent_at": [
+          640.5,
+          1170.0
+        ],
+        "at": [
+          641.0,
+          1275.0
+        ],
+        "radius": 36.0
+      },
+      "limits": [
+        -40,
+        40
+      ],
+      "sole": [
+        662.2,
+        1477.1
+      ],
+      "kind": "foot"
+    },
+    "skirt": {
+      "parent": "pelvis",
+      "box": [
+        29,
+        903,
+        315,
+        330
+      ],
+      "z": 35,
+      "joint": {
+        "name": "skirt",
+        "parent_at": [
+          576.5,
+          590.0
+        ],
+        "at": [
+          186.0,
+          922.0
+        ],
+        "radius": 20.0
+      },
+      "limits": [
+        -25,
+        25
+      ],
+      "kind": "skirt",
+      "fitted_scale": 0.932
+    }
+  },
+  "skirt_length": 0.5,
+  "puppet": "puppet",
+  "body_height": 745.1,
+  "rest": {
+    "upper_arm_l": 6,
+    "upper_arm_r": -6
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "name": "puppet",
+  "passed": true,
+  "parts_ok": 16,
+  "parts_total": 16,
+  "sheet_problems": [],
+  "body_height": 745.1,
+  "bones": {
+    "chest": 206,
+    "upper_arm_l": 134,
+    "forearm_l": 113,
+    "upper_arm_r": 134,
+    "forearm_r": 114,
+    "thigh_l": 121,
+    "shin_l": 141,
+    "thigh_r": 122,
+    "shin_r": 143
+  },
+  "repairs": [
+    "the pelvis was trimmed to the skirt's outline (2% of it)",
+    "the head has a face board (oval 86x111 px at 91,160)"
+  ],
+  "variant_problems": [],
+  "measured": {
+    "neck_dx": 0.0,
+    "waist_dx_chest": 0.0,
+    "waist_dx_pelvis": -0.5,
+    "head_dx": -0.5,
+    "chest_dx": -0.5,
+    "shoulders_dx": -0.0,
+    "shoulders_dy": 0.0,
+    "hips_dx": 1.8,
+    "hips_dy": -2.0,
+    "neck_r": 31.6,
+    "neck_depth": 5.4,
+    "neck_shown": 21.6,
+    "neck_tail": 33.0,
+    "bridges": {
+      "chest": 92.7,
+      "head": 30.0,
+      "upper_arm_l": 42.7,
+      "forearm_l": 42.9,
+      "hand_l": 39.8,
+      "upper_arm_r": 42.5,
+      "forearm_r": 42.6,
+      "hand_r": 39.0,
+      "thigh_l": 48.3,
+      "shin_l": 46.7,
+      "foot_l": 43.5,
+      "thigh_r": 48.3,
+      "shin_r": 46.7,
+      "foot_r": 42.7,
+      "skirt": 20.0
+    },
+    "bridge_min": 20.0,
+    "bridge_at": "skirt",
+    "skirt_poke": 0.0,
+    "skirt_hem": 235.1,
+    "skirt_len": 0.5,
+    "skirt_thigh": 0.0,
+    "arms_over": 0.11,
+    "legs_apart": 1.11,
+    "shoulder_top": 0.54,
+    "overhang": 1.07,
+    "overhang_at": "thigh_l at the hip",
+    "flat": 0.79,
+    "flat_at": "forearm_l at the elbow"
+  },
+  "parts": {
+    "pelvis": {
+      "ok": true,
+      "problems": []
+    },
+    "chest": {
+      "ok": true,
+      "problems": []
+    },
+    "head": {
+      "ok": true,
+      "problems": []
+    },
+    "upper_arm_l": {
+      "ok": true,
+      "problems": []
+    },
+    "forearm_l": {
+      "ok": true,
+      "problems": []
+    },
+    "hand_l": {
+      "ok": true,
+      "problems": []
+    },
+    "upper_arm_r": {
+      "ok": true,
+      "problems": []
+    },
+    "forearm_r": {
+      "ok": true,
+      "problems": []
+    },
+    "hand_r": {
+      "ok": true,
+      "problems": []
+    },
+    "thigh_l": {
+      "ok": true,
+      "problems": []
+    },
+    "shin_l": {
+      "ok": true,
+      "problems": []
+    },
+    "foot_l": {
+      "ok": true,
+      "problems": []
+    },
+    "thigh_r": {
+      "ok": true,
+      "problems": []
+    },
+    "shin_r": {
+      "ok": true,
+      "problems": []
+    },
+    "foot_r": {
+      "ok": true,
+      "problems": []
+    },
+    "skirt": {
+      "ok": true,
+      "problems": []
+    }
+  }
+}

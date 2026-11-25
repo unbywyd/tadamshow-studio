@@ -1,0 +1,572 @@
+{
+  "version": 2,
+  "cast": {
+    "arch": {
+      "character": "archivist"
+    },
+    "vis": {
+      "character": "visitor"
+    }
+  },
+  "roles": {
+    "arch": [
+      {
+        "key": "arch-wait",
+        "kind": "pause",
+        "hint": {
+          "ru": "Ты строгий служащий на работе. Молча и спокойно смотри прямо в камеру, будто ждёшь посетителя. Один раз медленно моргни",
+          "en": "You are a strict clerk at work. Look straight into the camera, calm and silent, as if waiting for a visitor. Blink slowly once"
+        },
+        "look": [
+          {
+            "target": "lens"
+          }
+        ]
+      },
+      {
+        "key": "arch-listen",
+        "kind": "pause",
+        "hint": {
+          "ru": "Молча слушай посетительницу. Смотри на красную метку справа, лицо серьёзное, один раз чуть кивни",
+          "en": "Listen to the visitor in silence. Look at the red mark on the right, keep a serious face, nod slightly once"
+        },
+        "look": [
+          {
+            "target": "mark_right"
+          }
+        ]
+      },
+      {
+        "key": "arch-1",
+        "kind": "read",
+        "text": {
+          "ru": "Приметы?",
+          "en": "Description?"
+        },
+        "hint": {
+          "ru": "Сухо и вежливо, как в окошке почты. Говори красной метке справа, брови не двигай",
+          "en": "Dry and polite, like a post office clerk. Say it to the red mark on the right, keep your eyebrows still"
+        },
+        "look": [
+          {
+            "target": "mark_right"
+          }
+        ],
+        "maxSeconds": 3
+      },
+      {
+        "key": "arch-2",
+        "kind": "read",
+        "text": {
+          "ru": "Так. Синий, в полоску. Он оставил записку.",
+          "en": "Right. Blue, striped. He left a note."
+        },
+        "hint": {
+          "ru": "Сначала смотри вниз, будто читаешь толстый журнал, медленно. На слове «записку» подними глаза прямо в камеру",
+          "en": "First look down as if reading a thick ledger, slowly. On the word \"note\" raise your eyes straight into the camera"
+        },
+        "look": [
+          {
+            "target": "mark_down"
+          },
+          {
+            "target": "lens",
+            "atSec": 2.6
+          }
+        ],
+        "phrases": 3,
+        "maxSeconds": 6
+      },
+      {
+        "key": "arch-3",
+        "kind": "read",
+        "text": {
+          "ru": "«Ушёл к правому. Не ищите».",
+          "en": "\"Gone to the right one. Do not look for me.\""
+        },
+        "hint": {
+          "ru": "Читай записку вслух ровным голосом, без чувства, как официальный документ. Смотри на красную метку внизу",
+          "en": "Read the note aloud in a flat voice, no feeling, like an official document. Look at the red mark below"
+        },
+        "look": [
+          {
+            "target": "mark_down"
+          }
+        ],
+        "phrases": 2,
+        "maxSeconds": 5
+      },
+      {
+        "key": "arch-4",
+        "kind": "read",
+        "text": {
+          "ru": "Значит, это был не ваш правый.",
+          "en": "Then it was not your right one."
+        },
+        "hint": {
+          "ru": "Сначала две секунды молча смотри в камеру. Потом скажи очень спокойно, как само собой разумеющееся",
+          "en": "First look into the camera for two seconds in silence. Then say it very calmly, as if it were obvious"
+        },
+        "look": [
+          {
+            "target": "lens"
+          }
+        ],
+        "maxSeconds": 7
+      }
+    ],
+    "vis": [
+      {
+        "key": "vis-listen",
+        "kind": "pause",
+        "hint": {
+          "ru": "Молча слушай служащего. Смотри на красную метку слева, губы поджаты, ты ждёшь ответа",
+          "en": "Listen to the clerk in silence. Look at the red mark on the left, lips pressed, you are waiting for an answer"
+        },
+        "look": [
+          {
+            "target": "mark_left"
+          }
+        ]
+      },
+      {
+        "key": "vis-1",
+        "kind": "read",
+        "text": {
+          "ru": "У меня пропал носок. Левый.",
+          "en": "My sock has gone missing. The left one."
+        },
+        "hint": {
+          "ru": "Решительно и серьёзно, будто пришла заявить о краже. Говори красной метке слева, как человеку за стойкой",
+          "en": "Firm and serious, as if reporting a theft. Say it to the red mark on the left, like to a person behind a counter"
+        },
+        "look": [
+          {
+            "target": "mark_left"
+          }
+        ],
+        "phrases": 2,
+        "maxSeconds": 5
+      },
+      {
+        "key": "vis-2",
+        "kind": "read",
+        "text": {
+          "ru": "Синий. В полоску. Очень домашний.",
+          "en": "Blue. Striped. Very homely."
+        },
+        "hint": {
+          "ru": "Описывай его с нежностью, по одному слову. Сначала говори метке слева, на «очень домашний» посмотри прямо в камеру",
+          "en": "Describe it tenderly, one word at a time. Talk to the mark on the left first; on \"very homely\" look straight into the camera"
+        },
+        "look": [
+          {
+            "target": "mark_left"
+          },
+          {
+            "target": "lens",
+            "atSec": 2.2
+          }
+        ],
+        "phrases": 3,
+        "maxSeconds": 6
+      },
+      {
+        "key": "vis-3",
+        "kind": "read",
+        "text": {
+          "ru": "Но правый же дома!",
+          "en": "But the right one is at home!"
+        },
+        "hint": {
+          "ru": "Возмущённо и растерянно, брови вверх. Говори метке слева. Не кричи, просто очень удивись",
+          "en": "Indignant and confused, eyebrows up. Say it to the mark on the left. Do not shout, just be very surprised"
+        },
+        "look": [
+          {
+            "target": "mark_left"
+          }
+        ],
+        "maxSeconds": 4
+      }
+    ]
+  },
+  "shots": [
+    {
+      "id": "sh1",
+      "remark": {
+        "ru": "Название",
+        "en": "Title"
+      },
+      "about": "Title card over the empty bureau, wide.",
+      "seconds": 4,
+      "card": {
+        "kicker": {
+          "ru": "Серия 1",
+          "en": "Episode 1"
+        },
+        "title": {
+          "ru": "Бюро пропавших носков",
+          "en": "The Lost Sock Bureau"
+        },
+        "sub": {
+          "ru": "Левый ушёл",
+          "en": "The Left One Left"
+        }
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "wide"
+        }
+      ]
+    },
+    {
+      "id": "sh2",
+      "remark": {
+        "ru": "Бюро ждёт посетителей",
+        "en": "The bureau waits for visitors"
+      },
+      "about": "Wide, slow push-in on the archivist standing in the middle of the room. The narrator sets up the world.",
+      "seconds": 7,
+      "listen": {
+        "arch": "arch-wait"
+      },
+      "narration": {
+        "text": {
+          "ru": "После каждой стирки где-то пропадает один носок. Все они приходят сюда.",
+          "en": "After every wash, one sock goes missing. They all come here."
+        },
+        "at": 0.5
+      },
+      "actors": [
+        {
+          "id": "arch",
+          "x": 0.5,
+          "depth": 0.45
+        }
+      ],
+      "camera": [
+        {
+          "at": 0,
+          "camera": "wide"
+        },
+        {
+          "at": 0.5,
+          "camera": "full",
+          "on": "arch",
+          "time": 6
+        }
+      ]
+    },
+    {
+      "id": "sh3",
+      "remark": {
+        "ru": "Гражданка заявляет о пропаже",
+        "en": "The citizen reports a loss"
+      },
+      "about": "Two in depth: the visitor near on the left, sharp; the archivist far on the right, soft. A slow push-in towards her.",
+      "say": "vis-1",
+      "listen": {
+        "arch": "arch-listen"
+      },
+      "actors": [
+        {
+          "id": "vis",
+          "x": 0.3,
+          "depth": 0.05
+        },
+        {
+          "id": "arch",
+          "x": 0.72,
+          "depth": 0.6
+        }
+      ],
+      "focus": {
+        "on": "vis",
+        "back": 0.5
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "two",
+          "on": [
+            "vis",
+            "arch"
+          ]
+        },
+        {
+          "at": 0.3,
+          "camera": "medium",
+          "on": "vis",
+          "time": 3
+        }
+      ]
+    },
+    {
+      "id": "sh4",
+      "remark": {
+        "ru": "Архивариус спрашивает приметы",
+        "en": "The archivist asks for a description"
+      },
+      "about": "Portrait close-up; he looks to the left of the picture, where she stands.",
+      "say": "arch-1",
+      "actors": [
+        {
+          "id": "arch",
+          "x": 0.55
+        }
+      ],
+      "focus": {
+        "on": "arch",
+        "back": 0.6
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "close",
+          "on": "arch"
+        }
+      ]
+    },
+    {
+      "id": "sh5",
+      "remark": {
+        "ru": "Приметы носка",
+        "en": "The sock's description"
+      },
+      "about": "Portrait, slow push-in from medium to close over the whole line; on 'very homely' she looks at us.",
+      "say": "vis-2",
+      "actors": [
+        {
+          "id": "vis",
+          "x": 0.45
+        }
+      ],
+      "focus": {
+        "on": "vis",
+        "back": 0.6
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "medium",
+          "on": "vis"
+        },
+        {
+          "at": 0.2,
+          "camera": "close",
+          "on": "vis",
+          "time": 4
+        }
+      ]
+    },
+    {
+      "id": "sh6",
+      "remark": {
+        "ru": "Архивариус находит носок в журнале",
+        "en": "The archivist finds the sock in the ledger"
+      },
+      "about": "Medium on the archivist; he thinks, reads downwards, then looks up into the lens on 'note' with a short push-in.",
+      "say": "arch-2",
+      "actors": [
+        {
+          "id": "arch",
+          "x": 0.5,
+          "depth": 0.2
+        }
+      ],
+      "focus": {
+        "on": "arch",
+        "back": 0.5
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "medium",
+          "on": "arch"
+        },
+        {
+          "at": 0.3,
+          "who": "arch",
+          "do": "think"
+        },
+        {
+          "phrase": 3,
+          "camera": "close",
+          "on": "arch",
+          "time": 0.4
+        }
+      ]
+    },
+    {
+      "id": "sh7",
+      "remark": {
+        "ru": "Записка",
+        "en": "The note"
+      },
+      "about": "Past a face: the visitor near on the left edge, soft, listening; focus on the archivist reading the note.",
+      "say": "arch-3",
+      "listen": {
+        "vis": "vis-listen"
+      },
+      "actors": [
+        {
+          "id": "vis",
+          "x": 0.24,
+          "near": true
+        },
+        {
+          "id": "arch",
+          "x": 0.65,
+          "depth": 0.5
+        }
+      ],
+      "focus": {
+        "on": "arch",
+        "back": 0.4
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "two",
+          "on": [
+            "vis",
+            "arch"
+          ]
+        },
+        {
+          "at": 0.3,
+          "camera": "medium",
+          "on": "arch",
+          "time": 3
+        }
+      ]
+    },
+    {
+      "id": "sh8",
+      "remark": {
+        "ru": "Но правый же дома",
+        "en": "But the right one is at home"
+      },
+      "about": "Close on the visitor; she is surprised, a small jolt of the camera.",
+      "say": "vis-3",
+      "actors": [
+        {
+          "id": "vis",
+          "x": 0.45
+        }
+      ],
+      "focus": {
+        "on": "vis",
+        "back": 0.7
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "medium",
+          "on": "vis"
+        },
+        {
+          "at": 0.1,
+          "who": "vis",
+          "do": "surprised"
+        },
+        {
+          "at": 0.4,
+          "camera": "close",
+          "on": "vis",
+          "time": 0.15
+        },
+        {
+          "at": 0.45,
+          "camera": "shake",
+          "power": 0.4,
+          "time": 0.3
+        }
+      ]
+    },
+    {
+      "id": "sh9",
+      "remark": {
+        "ru": "Не ваш правый",
+        "en": "Not your right one"
+      },
+      "about": "Pause and hit: full figure, two silent seconds into the lens, then on the first word a sharp push-in to a close-up and a small jolt.",
+      "say": "arch-4",
+      "lead": 2,
+      "actors": [
+        {
+          "id": "arch",
+          "x": 0.5,
+          "depth": 0.35
+        }
+      ],
+      "focus": {
+        "on": "arch",
+        "back": 0.6
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "full",
+          "on": "arch"
+        },
+        {
+          "at": 2.2,
+          "camera": "close",
+          "on": "arch",
+          "time": 0.12
+        },
+        {
+          "at": 2.25,
+          "camera": "shake",
+          "power": 0.3,
+          "time": 0.25
+        }
+      ]
+    },
+    {
+      "id": "sh10",
+      "remark": {
+        "ru": "Конец",
+        "en": "The end"
+      },
+      "about": "End card over the bureau, wide; the narrator closes.",
+      "seconds": 6,
+      "card": {
+        "kicker": {
+          "ru": "Бюро пропавших носков",
+          "en": "The Lost Sock Bureau"
+        },
+        "title": {
+          "ru": "Конец",
+          "en": "The End"
+        },
+        "sub": {
+          "ru": "Носки не возвращаются",
+          "en": "Socks never come back"
+        }
+      },
+      "narration": {
+        "text": {
+          "ru": "Носки не возвращаются. Но записку оставляют всегда.",
+          "en": "Socks never come back. But they always leave a note."
+        },
+        "at": 1
+      },
+      "camera": [
+        {
+          "at": 0,
+          "camera": "wide"
+        }
+      ]
+    }
+  ],
+  "film": {
+    "set": "bureau",
+    "stage": {
+      "faces": "board"
+    }
+  }
+}
