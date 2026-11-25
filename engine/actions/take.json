@@ -1,0 +1,51 @@
+{
+ "id": "take",
+ "title": "взять (с пола или стола)",
+ "group": "item",
+ "params": {
+  "side": "right",
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "mug",
+   "at": [
+    "reach",
+    0.0
+   ]
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.7,
+   "arm_r": {
+    "at": {
+     "to": "$item"
+    },
+    "grab": true,
+    "look": "palm"
+   },
+   "legs": {
+    "reach": "$item"
+   },
+   "body": {
+    "lean": 14
+   },
+   "head": 12
+  },
+  {
+   "time": 0.6,
+   "arm_r": {
+    "at": [
+     0.3,
+     0.62
+    ]
+   },
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "low_view": "side"
+}

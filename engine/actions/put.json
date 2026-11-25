@@ -1,0 +1,41 @@
+{
+ "id": "put",
+ "title": "положить",
+ "group": "item",
+ "params": {
+  "side": "right"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "mug",
+   "held": "right"
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.8,
+   "arm_r": {
+    "at": {
+     "to": "@floor"
+    },
+    "release": true
+   },
+   "legs": {
+    "reach": "@floor"
+   },
+   "body": {
+    "lean": 10
+   },
+   "head": 12
+  },
+  {
+   "time": 0.55,
+   "arm_r": "rest",
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "low_view": "side"
+}

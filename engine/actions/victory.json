@@ -1,0 +1,31 @@
+{
+ "id": "victory",
+ "title": "победа",
+ "group": "pose",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.4,
+   "ease": "out",
+   "arms": {
+    "at": [
+     0.32,
+     -0.88
+    ],
+    "look": "fist"
+   },
+   "head": 0
+  },
+  {
+   "time": 1.2,
+   "loop": true,
+   "legs": {
+    "drop": {
+     "base": 0.0,
+     "amp": 0.015,
+     "rate": 2.5
+    }
+   }
+  }
+ ]
+}

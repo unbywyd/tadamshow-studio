@@ -1,0 +1,36 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission-create.request.json",
+  "title": "submission-create.request",
+  "description": "POST /api/studio/submissions",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "publish",
+        "revision",
+        "unpublish"
+      ]
+    },
+    "world": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "episode": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "kind",
+    "world"
+  ]
+}

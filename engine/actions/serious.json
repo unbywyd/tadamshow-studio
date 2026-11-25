@@ -1,0 +1,24 @@
+{
+ "id": "serious",
+ "title": "серьёзная поза",
+ "group": "pose",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.5,
+   "arms": {
+    "at": [
+     0.16,
+     0.9
+    ],
+    "look": "fist",
+    "wrist": -6
+   },
+   "body": {
+    "lean": 0,
+    "chest": 0
+   },
+   "head": 0
+  }
+ ]
+}

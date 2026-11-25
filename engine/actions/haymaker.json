@@ -1,0 +1,55 @@
+{
+ "id": "haymaker",
+ "title": "удар с размаху",
+ "group": "fight",
+ "view": "side",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": [
+     -0.45,
+     -0.6
+    ],
+    "look": "fist"
+   },
+   "body": {
+    "lean": -10
+   },
+   "head": -6
+  },
+  {
+   "time": 0.16,
+   "ease": "in",
+   "arm_r": {
+    "at": [
+     0.95,
+     0.05
+    ]
+   },
+   "body": {
+    "lean": 16
+   },
+   "head": 8
+  },
+  {
+   "time": 0.2,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.6,
+     0.55
+    ]
+   }
+  },
+  {
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

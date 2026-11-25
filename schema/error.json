@@ -1,0 +1,41 @@
+{
+  "$id": "https://tadamshow.com/schemas/error.json",
+  "title": "error",
+  "description": "any error answer: { error: { code, message, issues? } }",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "bad_request",
+            "unauthorized",
+            "forbidden",
+            "not_found",
+            "conflict",
+            "payload_too_large",
+            "too_many_requests",
+            "internal",
+            "unavailable"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "issues": {}
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "additionalProperties": false
+}

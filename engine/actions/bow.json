@@ -1,0 +1,34 @@
+{
+ "id": "bow",
+ "title": "поклон",
+ "group": "body",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.4,
+   "legs": {
+    "drop": 0.1
+   },
+   "arm_r": {
+    "at": {
+     "to": "heart"
+    },
+    "contact": true,
+    "look": "palm"
+   },
+   "head": -4
+  },
+  {
+   "time": 0.5
+  },
+  {
+   "name": "return",
+   "time": 0.4,
+   "legs": "rest",
+   "arm_r": "rest",
+   "head": "rest"
+  }
+ ]
+}

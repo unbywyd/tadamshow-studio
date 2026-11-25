@@ -1,0 +1,31 @@
+{
+ "id": "think",
+ "title": "задумался",
+ "group": "pose",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.6,
+   "arm_r": {
+    "at": {
+     "to": "chin",
+     "dy": 0.25
+    },
+    "contact": true,
+    "look": "fist"
+   },
+   "arm_l": {
+    "at": {
+     "to": "hip"
+    },
+    "contact": true,
+    "look": "back",
+    "aim": 105
+   },
+   "head": 8,
+   "body": {
+    "lean": 2
+   }
+  }
+ ]
+}

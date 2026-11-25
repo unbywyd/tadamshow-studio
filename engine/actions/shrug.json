@@ -1,0 +1,33 @@
+{
+ "id": "shrug",
+ "title": "пожать плечами",
+ "group": "gesture",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.4,
+   "arms": {
+    "at": [
+     0.4,
+     0.42
+    ],
+    "look": "palm"
+   },
+   "head": 10,
+   "legs": {
+    "drop": -0.01
+   }
+  },
+  {
+   "time": 0.8
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

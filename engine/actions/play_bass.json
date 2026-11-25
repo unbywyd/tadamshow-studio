@@ -1,0 +1,103 @@
+{
+ "id": "play_bass",
+ "title": "играть на контрабасе",
+ "group": "music",
+ "params": {
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "bass",
+   "held": "wear"
+  }
+ ],
+ "beats": [
+  {
+   "arm": "arm_l",
+   "on": "out",
+   "sound": "bass",
+   "min": 0.03
+  },
+  {
+   "arm": "arm_l",
+   "on": "in",
+   "sound": "bass",
+   "min": 0.03
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.5,
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "pluck"
+    },
+    "contact": true,
+    "elbow": "down",
+    "look": "fist"
+   },
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "neck"
+    },
+    "contact": true,
+    "look": "fist"
+   },
+   "head": -6
+  },
+  {
+   "time": 3.0,
+   "loop": true,
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "pluck",
+     "amp": [
+      0.09,
+      0.02
+     ],
+     "rate": 1.0
+    },
+    "contact": true,
+    "elbow": "down",
+    "look": "fist"
+   },
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "neck",
+     "amp": [
+      0.0,
+      0.07
+     ],
+     "rate": 0.25
+    },
+    "contact": true,
+    "look": "fist"
+   },
+   "head": {
+    "base": -6,
+    "amp": 5,
+    "rate": 1.0
+   },
+   "legs": {
+    "drop": {
+     "base": 0.015,
+     "amp": 0.02,
+     "rate": 1.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_l": "rest",
+   "arm_r": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

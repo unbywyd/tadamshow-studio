@@ -1,0 +1,233 @@
+{
+  "$id": "https://tadamshow.com/schemas/studio-me.response.json",
+  "title": "studio-me.response",
+  "description": "GET /api/studio/me",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "email": {
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name",
+        "handle"
+      ],
+      "additionalProperties": false
+    },
+    "via": {
+      "type": "string",
+      "enum": [
+        "web",
+        "app",
+        "mcp",
+        "api",
+        "system"
+      ]
+    },
+    "access": {
+      "type": "boolean"
+    },
+    "since": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "request": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pending",
+        "granted"
+      ]
+    },
+    "about": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "staff": {
+      "type": "boolean"
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "storageMb": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "ttsPerDay": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "pushesPerHour": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "storageMb",
+        "ttsPerDay",
+        "pushesPerHour"
+      ],
+      "additionalProperties": false
+    },
+    "worlds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "ru": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "en": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "ru"
+            ],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "soon",
+              "live",
+              "hidden",
+              "archived"
+            ]
+          },
+          "rev": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "title": {
+                  "type": "object",
+                  "properties": {
+                    "ru": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "en": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "ru"
+                  ],
+                  "additionalProperties": false
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "idea",
+                    "script",
+                    "recording",
+                    "rendering",
+                    "review",
+                    "scheduled",
+                    "published",
+                    "archived"
+                  ]
+                }
+              },
+              "required": [
+                "number",
+                "title",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "status",
+          "rev",
+          "episodes"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "user",
+    "via",
+    "access",
+    "since",
+    "request",
+    "about",
+    "staff",
+    "limits",
+    "worlds"
+  ],
+  "additionalProperties": false
+}

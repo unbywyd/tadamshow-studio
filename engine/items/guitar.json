@@ -1,0 +1,49 @@
+{
+ "id": "guitar",
+ "title": "гитара",
+ "size": 0.2,
+ "hold": "wear",
+ "grip": [
+  0.5,
+  0.72
+ ],
+ "wear": {
+  "spots": {
+   "strum": [
+    "arm_l",
+    0.3,
+    0.8
+   ],
+   "fret": [
+    "arm_r",
+    0.45,
+    0.05
+   ]
+  },
+  "fit": [
+   1.6,
+   2.2
+  ],
+  "over": "chest"
+ },
+ "spots": {
+  "strum": [
+   0.5,
+   0.66
+  ],
+  "fret": [
+   0.5,
+   0.3
+  ],
+  "fret_hi": [
+   0.5,
+   0.22
+  ],
+  "fret_lo": [
+   0.5,
+   0.4
+  ]
+ },
+ "play": "play_guitar",
+ "bounce": 0.15
+}

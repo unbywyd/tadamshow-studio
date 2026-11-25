@@ -1,0 +1,102 @@
+{
+ "id": "sit_ground",
+ "title": "сесть на землю (лицом к нам)",
+ "group": "body",
+ "params": {
+  "height": 0.0
+ },
+ "phases": [
+  {
+   "time": 0.45,
+   "legs": {
+    "drop": 0.3
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.6
+    ]
+   }
+  },
+  {
+   "time": 0.6,
+   "legs": {
+    "seat": "$height",
+    "foot_l": [
+     0.7,
+     0.08
+    ],
+    "foot_r": [
+     0.7,
+     0.08
+    ]
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.75
+    ]
+   }
+  },
+  {
+   "time": 0.15,
+   "legs": {
+    "foot_l": [
+     0.7,
+     0.0
+    ],
+    "foot_r": [
+     0.7,
+     0.0
+    ]
+   }
+  },
+  {
+   "time": 3.0,
+   "loop": true
+  },
+  {
+   "name": "return",
+   "time": 0.3,
+   "legs": {
+    "seat": "$height",
+    "foot_l": [
+     0.3,
+     0.1
+    ],
+    "foot_r": [
+     0.3,
+     0.1
+    ]
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.6
+    ]
+   }
+  },
+  {
+   "time": 0.45,
+   "legs": {
+    "drop": 0.3,
+    "foot_l": [
+     0.0,
+     0.0
+    ],
+    "foot_r": [
+     0.0,
+     0.0
+    ],
+    "shift": 0.0
+   }
+  },
+  {
+   "time": 0.6,
+   "legs": "rest",
+   "body": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ]
+}

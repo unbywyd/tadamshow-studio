@@ -1,0 +1,63 @@
+{
+ "id": "chop",
+ "title": "рубануть ладонью",
+ "group": "fight",
+ "view": "side",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "arm_r": {
+    "at": [
+     0.3,
+     -0.9
+    ],
+    "look": "edge",
+    "aim": -90
+   },
+   "legs": {
+    "drop": 0.08
+   },
+   "head": -4
+  },
+  {
+   "time": 0.16,
+   "ease": "linear",
+   "arm_r": {
+    "at": [
+     0.85,
+     0.2
+    ],
+    "aim": 30
+   },
+   "body": {
+    "lean": 10
+   },
+   "legs": {
+    "drop": 0.14
+   }
+  },
+  {
+   "time": 0.22,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.75,
+     0.5
+    ]
+   }
+  },
+  {
+   "time": 0.25
+  },
+  {
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "legs": "rest",
+   "head": "rest"
+  }
+ ]
+}

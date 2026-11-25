@@ -5,7 +5,8 @@ Tools for making puppet-theatre cartoons for [TadamShow](https://tadamshow.com):
 the script, makes the puppets and the sets, looks at the frames itself and shows you the scene in a local
 player. When it is ready, one command sends it to TadamShow for review.
 
-> Status: early skeleton. Only `tadam doctor` works so far. The engine, the commands and the skill are coming.
+> Status: early. Working: `tadam doctor`, `new`, `hero make`, `set make`, `check` and the engine. Coming: the
+> local player and frames (`play`, `frames`, `film`), sending to TadamShow (`login`, `push`, ...), the skill.
 
 Русская версия: [README.ru.md](README.ru.md).
 
@@ -45,12 +46,35 @@ tadam doctor
 printed) and a writable temp folder, and says what is missing and where to get it. Exit code 1 means
 something required is missing.
 
+## Commands
+
+```bash
+tadam new world my-world --title "Моя рубрика"   # a world folder (world.json with the bible)
+cd my-world
+tadam new hero cow --name "Корова"                # heroes/cow/hero.json
+tadam hero make cow "a calm brown cow in a raincoat"   # paints the puppet with YOUR key, cuts it, checks it
+tadam new set barn                                # sets/barn/kit.json: describe the room and the furniture
+tadam set make barn                               # paints the set with YOUR key, writes set.json
+tadam new episode 1 --cast cow=cow                # episodes/1/script.json (script version 2)
+tadam check 1                                     # what is wrong, in plain words; exit 1 on errors; --json
+```
+
+`hero make --mannequin` and `set make --placeholder` draw free stand-ins by code (a wooden mannequin, a plain
+room) to block out scenes before anything is painted. `tadam check --engine` also plays every shot through in
+the engine, unseen. A world folder:
+
+```
+world.json   cover.png   heroes/<slug>/hero.json + puppet/   sets/<slug>/   media/   episodes/<n>/script.json
+.tadam/      the kit's working files (engine scenes, caches): never committed, never sent
+```
+
 ## Layout
 
 ```
 tadam/      the library and the `tadam` command (src/tadam)
-engine/     the puppet engine (Godot 4.7) — coming
-schema/     JSON Schemas of the script and the world folder — coming
+engine/     the puppet engine (Godot 4.7): engine/stage.tscn plays a scene, engine/viewer.tscn shows a hero
+schema/     JSON Schemas of the script and the world folder (exported from the server, not edited by hand)
+devtools/   the code that drew the engine's instruments and synthesized its sounds
 skill/      the skill for Claude Code — coming
 examples/   a small sample world — coming
 ```

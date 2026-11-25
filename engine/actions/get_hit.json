@@ -1,0 +1,52 @@
+{
+ "id": "get_hit",
+ "title": "получить удар",
+ "group": "fight",
+ "view": "side",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.08,
+   "ease": "out",
+   "head": -28,
+   "body": {
+    "lean": -14
+   },
+   "arms": {
+    "at": [
+     0.35,
+     0.05
+    ]
+   },
+   "legs": {
+    "drop": 0.05
+   }
+  },
+  {
+   "time": 0.3,
+   "ease": "out",
+   "head": -10,
+   "body": {
+    "lean": -8
+   },
+   "legs": {
+    "shift": -0.12
+   }
+  },
+  {
+   "time": 0.5,
+   "head": {
+    "base": -4,
+    "amp": 6,
+    "rate": 3
+   }
+  },
+  {
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

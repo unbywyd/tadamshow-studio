@@ -1,0 +1,16 @@
+{
+ "id": "rest",
+ "title": "стоять спокойно",
+ "group": "pose",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.5,
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest",
+   "arm_l": "rest",
+   "arm_r": "rest"
+  }
+ ]
+}

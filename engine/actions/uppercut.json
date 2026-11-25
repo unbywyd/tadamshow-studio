@@ -1,0 +1,61 @@
+{
+ "id": "uppercut",
+ "title": "апперкот",
+ "group": "fight",
+ "view": "side",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.22,
+   "arm_r": {
+    "at": [
+     0.35,
+     0.6
+    ],
+    "look": "fist"
+   },
+   "arm_l": {
+    "at": [
+     0.28,
+     0.22
+    ],
+    "look": "fist"
+   },
+   "legs": {
+    "drop": 0.12
+   },
+   "body": {
+    "lean": 10
+   }
+  },
+  {
+   "time": 0.14,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.55,
+     -0.7
+    ]
+   },
+   "legs": {
+    "drop": 0.0
+   },
+   "body": {
+    "lean": -4
+   },
+   "head": -8
+  },
+  {
+   "time": 0.25
+  },
+  {
+   "time": 0.45,
+   "arms": "rest",
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

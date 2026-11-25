@@ -1,0 +1,38 @@
+{
+ "id": "block",
+ "title": "закрыться",
+ "group": "fight",
+ "view": "side",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.15,
+   "ease": "out",
+   "arms": {
+    "at": [
+     0.32,
+     -0.32
+    ],
+    "look": "fist",
+    "aim": -80
+   },
+   "body": {
+    "lean": -6
+   },
+   "head": 10,
+   "legs": {
+    "drop": 0.08
+   }
+  },
+  {
+   "time": 0.8
+  },
+  {
+   "time": 0.4,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

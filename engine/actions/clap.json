@@ -1,0 +1,45 @@
+{
+ "id": "clap",
+ "title": "хлопать",
+ "group": "gesture",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.35,
+   "arms": {
+    "at": {
+     "to": "chest",
+     "dx": 0.14,
+     "dy": 0.1
+    },
+    "contact": true,
+    "look": "edge",
+    "aim": -90
+   }
+  },
+  {
+   "time": 1.8,
+   "loop": true,
+   "arms": {
+    "at": {
+     "to": "chest",
+     "dx": 0.14,
+     "dy": 0.1,
+     "amp": [
+      0.13,
+      0.0
+     ],
+     "rate": 2.4
+    },
+    "contact": true,
+    "aim": -90
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ]
+}

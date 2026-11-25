@@ -1,0 +1,62 @@
+{
+ "id": "scratch_head",
+ "title": "почесать затылок",
+ "group": "gesture",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.55,
+   "ease": "inout",
+   "arm_r": {
+    "at": {
+     "to": "crown",
+     "dx": 0.45,
+     "dy": 0.15
+    },
+    "contact": true,
+    "look": "back",
+    "elbow": "out",
+    "aim": -120
+   },
+   "head": 8,
+   "body": {
+    "lean": 2
+   }
+  },
+  {
+   "time": 1.6,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "to": "crown",
+     "dx": 0.45,
+     "dy": 0.15,
+     "amp": [
+      0.1,
+      0.03
+     ],
+     "rate": 2.0
+    },
+    "contact": true,
+    "look": "back",
+    "elbow": "out",
+    "aim": -120
+   },
+   "head": {
+    "base": 8,
+    "amp": 1.5,
+    "rate": 1.0
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.6,
+   "ease": "inout",
+   "arm_r": "rest",
+   "head": "rest",
+   "body": "rest"
+  }
+ ]
+}

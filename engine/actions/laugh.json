@@ -1,0 +1,42 @@
+{
+ "id": "laugh",
+ "title": "смеяться",
+ "group": "feeling",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": {
+     "to": "belly"
+    },
+    "contact": true,
+    "look": "back"
+   }
+  },
+  {
+   "time": 1.8,
+   "loop": true,
+   "legs": {
+    "drop": {
+     "base": 0.02,
+     "amp": 0.02,
+     "rate": 3.5
+    }
+   },
+   "head": {
+    "base": 6,
+    "amp": 4,
+    "rate": 3.5
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "legs": "rest",
+   "head": "rest"
+  }
+ ]
+}

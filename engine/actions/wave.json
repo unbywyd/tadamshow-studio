@@ -1,0 +1,38 @@
+{
+ "id": "wave",
+ "title": "помахать, привет",
+ "group": "gesture",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": [
+     0.44,
+     -0.68
+    ],
+    "look": "palm"
+   },
+   "head": 6
+  },
+  {
+   "time": 1.6,
+   "loop": true,
+   "arm_r": {
+    "wrist": {
+     "base": 0,
+     "amp": 24,
+     "rate": 2.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "head": "rest"
+  }
+ ]
+}

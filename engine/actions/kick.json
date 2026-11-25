@@ -1,0 +1,64 @@
+{
+ "id": "kick",
+ "title": "пнуть",
+ "group": "fight",
+ "view": "side",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": [
+     0.3,
+     0.3
+    ],
+    "look": "fist"
+   },
+   "body": {
+    "lean": -6
+   }
+  },
+  {
+   "time": 0.18,
+   "ease": "out",
+   "legs": {
+    "foot_r": [
+     0.62,
+     0.42
+    ]
+   },
+   "body": {
+    "lean": -8
+   },
+   "arm_l": {
+    "at": [
+     -0.3,
+     0.2
+    ]
+   }
+  },
+  {
+   "time": 0.2
+  },
+  {
+   "time": 0.35,
+   "legs": {
+    "foot_r": [
+     0.0,
+     0.0
+    ]
+   },
+   "body": {
+    "lean": -4
+   }
+  },
+  {
+   "time": 0.4,
+   "arms": "rest",
+   "legs": "rest",
+   "body": "rest"
+  }
+ ]
+}

@@ -1,0 +1,80 @@
+{
+ "id": "panic",
+ "title": "паника",
+ "group": "silly",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.2,
+   "arms": {
+    "at": [
+     0.5,
+     -0.75
+    ],
+    "look": "palm"
+   },
+   "head": -6
+  },
+  {
+   "time": 2.0,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "base": [
+      0.5,
+      -0.75
+     ],
+     "amp": [
+      0.25,
+      0.2
+     ],
+     "rate": 4.0
+    },
+    "wrist": {
+     "base": 0,
+     "amp": 35,
+     "rate": 8
+    }
+   },
+   "arm_l": {
+    "at": {
+     "base": [
+      0.5,
+      -0.75
+     ],
+     "amp": [
+      0.25,
+      0.2
+     ],
+     "rate": 4.0,
+     "phase": 0.5
+    },
+    "wrist": {
+     "base": 0,
+     "amp": 35,
+     "rate": 8,
+     "phase": 0.5
+    }
+   },
+   "head": {
+    "base": 0,
+    "amp": 16,
+    "rate": 3.0
+   },
+   "legs": {
+    "drop": {
+     "base": 0.05,
+     "amp": 0.04,
+     "rate": 4.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": "rest",
+   "legs": "rest",
+   "head": "rest"
+  }
+ ]
+}

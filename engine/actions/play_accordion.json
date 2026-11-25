@@ -1,0 +1,103 @@
+{
+ "id": "play_accordion",
+ "title": "играть на гармошке",
+ "group": "music",
+ "params": {
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "accordion",
+   "held": "both"
+  }
+ ],
+ "beats": [
+  {
+   "arm": "arm_r",
+   "on": "out",
+   "sound": "accordion",
+   "min": 0.05
+  },
+  {
+   "arm": "arm_r",
+   "on": "in",
+   "sound": "accordion",
+   "min": 0.05
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.4,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.62
+     ]
+    },
+    "contact": true,
+    "elbow": "out"
+   },
+   "head": 5
+  },
+  {
+   "time": 3.0,
+   "loop": true,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.62
+     ],
+     "amp": [
+      0.16,
+      0.0
+     ],
+     "rate": 0.5
+    },
+    "contact": true,
+    "elbow": "out"
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 5,
+     "rate": 0.25
+    }
+   },
+   "head": {
+    "base": 0,
+    "amp": 7,
+    "rate": 0.5
+   },
+   "legs": {
+    "drop": {
+     "base": 0.01,
+     "amp": 0.015,
+     "rate": 1.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.62
+     ]
+    },
+    "contact": true,
+    "elbow": "out"
+   },
+   "head": "rest",
+   "body": "rest",
+   "legs": "rest"
+  }
+ ]
+}

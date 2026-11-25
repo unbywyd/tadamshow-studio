@@ -1,0 +1,63 @@
+{
+ "id": "dance_arms",
+ "title": "танец: руки вверх",
+ "group": "dance",
+ "params": {},
+ "phases": [
+  {
+   "time": 3.0,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "base": [
+      0.4,
+      -0.55
+     ],
+     "amp": [
+      0.12,
+      0.18
+     ],
+     "rate": 1.0
+    },
+    "look": "palm"
+   },
+   "arm_l": {
+    "at": {
+     "base": [
+      0.4,
+      -0.55
+     ],
+     "amp": [
+      0.12,
+      0.18
+     ],
+     "rate": 1.0,
+     "phase": 0.5
+    },
+    "look": "palm"
+   },
+   "legs": {
+    "drop": {
+     "base": 0.03,
+     "amp": 0.03,
+     "rate": 2.0
+    }
+   },
+   "head": {
+    "base": 0,
+    "amp": 6,
+    "rate": 1.0
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest",
+   "body": "rest",
+   "legs": "rest"
+  }
+ ],
+ "beat_rate": 2.0
+}

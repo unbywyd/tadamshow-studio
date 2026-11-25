@@ -1,0 +1,41 @@
+{
+ "id": "jump",
+ "title": "прыгнуть",
+ "group": "body",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.15,
+   "arms": {
+    "at": [
+     0.3,
+     0.95
+    ]
+   }
+  },
+  {
+   "time": 0.3,
+   "ease": "out",
+   "legs": {
+    "jump": 0.55
+   },
+   "arms": {
+    "at": [
+     0.4,
+     -0.7
+    ],
+    "look": "palm"
+   }
+  },
+  {
+   "time": 0.5
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "legs": "rest"
+  }
+ ]
+}

@@ -1,0 +1,45 @@
+{
+ "id": "bass",
+ "title": "контрабас",
+ "size": 0.5,
+ "hold": "wear",
+ "grip": [
+  0.5,
+  1.0
+ ],
+ "wear": {
+  "spots": {
+   "grip": [
+    "floor",
+    -0.1
+   ],
+   "neck": [
+    "arm_r",
+    0.3,
+    0.12
+   ]
+  },
+  "over": "chest"
+ },
+ "spots": {
+  "pluck": [
+   0.5,
+   0.62
+  ],
+  "neck": [
+   0.5,
+   0.2
+  ],
+  "neck_hi": [
+   0.5,
+   0.15
+  ],
+  "neck_lo": [
+   0.5,
+   0.27
+  ]
+ },
+ "play": "play_bass",
+ "bounce": 0.1,
+ "heavy": true
+}

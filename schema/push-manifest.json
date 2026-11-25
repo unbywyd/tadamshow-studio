@@ -1,0 +1,31 @@
+{
+  "$id": "https://tadamshow.com/schemas/push-manifest.json",
+  "title": "push-manifest",
+  "description": "the world folder as path → sha256 + bytes",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "propertyNames": {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 300,
+    "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}(?:\\/[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}){0,7}$"
+  },
+  "additionalProperties": {
+    "type": "object",
+    "properties": {
+      "sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 209715200
+      }
+    },
+    "required": [
+      "sha256",
+      "bytes"
+    ]
+  }
+}

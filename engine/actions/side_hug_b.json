@@ -1,0 +1,55 @@
+{
+ "id": "side_hug_b",
+ "title": "обнять за пояс (в паре)",
+ "group": "two",
+ "params": {
+  "side": "right"
+ },
+ "partner_only": true,
+ "phases": [
+  {
+   "time": 0.6,
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "waist_far"
+    },
+    "contact": true
+   },
+   "body": {
+    "lean": 5
+   },
+   "head": 8
+  },
+  {
+   "time": 2.0,
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "waist_far"
+    },
+    "contact": true
+   },
+   "body": {
+    "lean": {
+     "base": 5,
+     "amp": 3,
+     "rate": 0.5
+    }
+   },
+   "head": {
+    "base": 8,
+    "amp": 3,
+    "rate": 0.5
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "two": true
+}

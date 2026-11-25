@@ -1,0 +1,41 @@
+{
+ "id": "run",
+ "title": "бежать",
+ "group": "move",
+ "view": "side",
+ "test": {
+  "dist": 1.2
+ },
+ "params": {
+  "dist": 3.0,
+  "pace": 2.6
+ },
+ "phases": [
+  {
+   "time": 0.1,
+   "legs": {
+    "walk": "$dist",
+    "speed": "$pace",
+    "gait": {
+     "step": 1.1,
+     "lift": 0.26,
+     "bob": 0.04,
+     "hop": 0.06,
+     "swing": 1.4,
+     "bend": 0.85,
+     "fists": true
+    },
+    "drop": 0.0
+   },
+   "body": {
+    "lean": 10
+   },
+   "head": -4
+  },
+  {
+   "time": 0.4,
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

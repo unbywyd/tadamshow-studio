@@ -1,0 +1,38 @@
+{
+ "id": "bye",
+ "title": "пока",
+ "group": "gesture",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": [
+     0.58,
+     -0.4
+    ],
+    "look": "palm"
+   },
+   "head": -4
+  },
+  {
+   "time": 1.4,
+   "loop": true,
+   "arm_r": {
+    "wrist": {
+     "base": 0,
+     "amp": 32,
+     "rate": 1.5
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "head": "rest"
+  }
+ ]
+}

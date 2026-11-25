@@ -1,0 +1,49 @@
+{
+ "id": "shoo",
+ "title": "отмахнуться",
+ "group": "gesture",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "arm_r": {
+    "at": [
+     0.7,
+     0.05
+    ],
+    "look": "back"
+   },
+   "head": -8
+  },
+  {
+   "time": 1.4,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "base": [
+      0.7,
+      0.05
+     ],
+     "amp": [
+      0.06,
+      0.04
+     ],
+     "rate": 2.2
+    },
+    "wrist": {
+     "base": 0,
+     "amp": 22,
+     "rate": 2.2
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "head": "rest"
+  }
+ ]
+}

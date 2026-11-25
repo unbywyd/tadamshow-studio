@@ -1,0 +1,38 @@
+{
+ "id": "march",
+ "title": "строевым шагом",
+ "group": "move",
+ "view": "side",
+ "test": {
+  "dist": 1.2
+ },
+ "params": {
+  "dist": 2.0,
+  "pace": 0.9
+ },
+ "phases": [
+  {
+   "time": 0.1,
+   "legs": {
+    "walk": "$dist",
+    "speed": "$pace",
+    "gait": {
+     "step": 0.75,
+     "lift": 0.34,
+     "bob": 0.0,
+     "swing": 1.9
+    },
+    "drop": 0.0
+   },
+   "body": {
+    "lean": -3
+   },
+   "head": -6
+  },
+  {
+   "time": 0.4,
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

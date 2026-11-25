@@ -1,0 +1,25 @@
+{
+ "id": "tired",
+ "title": "устал",
+ "group": "pose",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.9,
+   "legs": {
+    "drop": 0.04
+   },
+   "body": {
+    "lean": -3
+   },
+   "head": -12,
+   "arms": {
+    "at": [
+     0.05,
+     0.95
+    ],
+    "wrist": 0
+   }
+  }
+ ]
+}

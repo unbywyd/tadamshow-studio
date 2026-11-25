@@ -1,0 +1,35 @@
+{
+ "id": "head_grab",
+ "title": "схватиться за голову",
+ "group": "gesture",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.4,
+   "arms": {
+    "at": {
+     "to": "ear"
+    },
+    "contact": true,
+    "look": "palm",
+    "aim": -80
+   }
+  },
+  {
+   "time": 1.6,
+   "loop": true,
+   "head": {
+    "base": 0,
+    "amp": 6,
+    "rate": 1.4
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest"
+  }
+ ]
+}

@@ -1,0 +1,59 @@
+{
+ "id": "jelly",
+ "title": "трястись как желе",
+ "group": "silly",
+ "params": {},
+ "phases": [
+  {
+   "time": 1.6,
+   "loop": true,
+   "legs": {
+    "drop": {
+     "base": 0.04,
+     "amp": 0.035,
+     "rate": 5.5
+    }
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 6,
+     "rate": 2.75
+    },
+    "chest": {
+     "base": 0,
+     "amp": 4,
+     "rate": 5.5,
+     "phase": 0.25
+    }
+   },
+   "head": {
+    "base": 0,
+    "amp": 9,
+    "rate": 2.75,
+    "phase": 0.5
+   },
+   "arms": {
+    "at": {
+     "base": [
+      0.25,
+      0.85
+     ],
+     "amp": [
+      0.12,
+      -0.08
+     ],
+     "rate": 5.5
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

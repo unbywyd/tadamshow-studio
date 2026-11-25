@@ -1,0 +1,35 @@
+{
+ "id": "facepalm",
+ "title": "рука на лицо",
+ "group": "gesture",
+ "params": {
+  "side": "right"
+ },
+ "covers_face": true,
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": {
+     "to": "face"
+    },
+    "contact": true,
+    "look": "palm"
+   },
+   "head": -8,
+   "body": {
+    "lean": -3
+   }
+  },
+  {
+   "time": 1.0
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "head": "rest",
+   "body": "rest"
+  }
+ ]
+}

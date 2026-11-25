@@ -1,0 +1,266 @@
+{
+  "$id": "https://tadamshow.com/schemas/push-commit.response.json",
+  "title": "push-commit.response",
+  "description": "answer of push/commit",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "rev": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "world": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "soon",
+            "live",
+            "hidden",
+            "archived"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": [
+                  "error",
+                  "warning",
+                  "info"
+                ]
+              },
+              "where": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "code": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "level",
+              "where",
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "issues"
+      ],
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}(?:\\/[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}){0,7}$"
+          }
+        },
+        "changed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}(?:\\/[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}){0,7}$"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}(?:\\/[A-Za-z0-9_-][A-Za-z0-9_.-]{0,99}){0,7}$"
+          }
+        },
+        "episodes": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "shots": {
+                "type": "object",
+                "properties": {
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "changed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "removed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "added",
+                  "changed",
+                  "removed"
+                ],
+                "additionalProperties": false
+              },
+              "steps": {
+                "type": "object",
+                "properties": {
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "changed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "removed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "added",
+                  "changed",
+                  "removed"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "shots",
+              "steps"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "added",
+        "changed",
+        "removed"
+      ],
+      "additionalProperties": false
+    },
+    "editClass": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "links": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "format": "uri"
+        },
+        "episodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "number",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "world",
+        "episodes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "rev",
+    "world",
+    "check",
+    "summary",
+    "editClass",
+    "links"
+  ],
+  "additionalProperties": false
+}

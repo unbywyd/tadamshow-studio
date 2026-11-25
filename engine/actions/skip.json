@@ -1,0 +1,39 @@
+{
+ "id": "skip",
+ "title": "вприпрыжку",
+ "group": "move",
+ "view": "side",
+ "test": {
+  "dist": 1.2
+ },
+ "params": {
+  "dist": 2.0,
+  "pace": 1.6
+ },
+ "phases": [
+  {
+   "time": 0.1,
+   "legs": {
+    "walk": "$dist",
+    "speed": "$pace",
+    "gait": {
+     "step": 0.9,
+     "lift": 0.22,
+     "bob": 0.03,
+     "hop": 0.1,
+     "swing": 1.5
+    },
+    "drop": 0.0
+   },
+   "body": {
+    "lean": 0
+   },
+   "head": 0
+  },
+  {
+   "time": 0.4,
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

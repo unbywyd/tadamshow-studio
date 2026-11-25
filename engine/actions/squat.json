@@ -1,0 +1,30 @@
+{
+ "id": "squat",
+ "title": "присесть",
+ "group": "body",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.5,
+   "legs": {
+    "drop": 0.32
+   },
+   "arms": {
+    "at": [
+     0.55,
+     0.25
+    ]
+   }
+  },
+  {
+   "time": 0.6
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "legs": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ]
+}

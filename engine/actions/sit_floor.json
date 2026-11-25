@@ -1,0 +1,178 @@
+{
+ "id": "sit_floor",
+ "title": "сесть на пол",
+ "group": "body",
+ "view": "side",
+ "params": {
+  "height": 0.0
+ },
+ "phases": [
+  {
+   "time": 0.45,
+   "legs": {
+    "foot_l": [
+     0.35,
+     0.0
+    ],
+    "foot_r": [
+     0.4,
+     0.0
+    ],
+    "drop": 0.2
+   },
+   "body": {
+    "lean": 6
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.6
+    ]
+   }
+  },
+  {
+   "time": 0.8,
+   "legs": {
+    "seat": "$height"
+   },
+   "body": {
+    "lean": -4
+   },
+   "arms": {
+    "at": [
+     -0.25,
+     0.75
+    ]
+   }
+  },
+  {
+   "time": 1.2
+  },
+  {
+   "time": 0.7,
+   "legs": {
+    "drop": 0.25,
+    "foot_l": [
+     0.35,
+     0.0
+    ],
+    "foot_r": [
+     0.4,
+     0.0
+    ],
+    "shift": 0.0
+   },
+   "body": {
+    "lean": 8
+   },
+   "arms": {
+    "at": [
+     0.35,
+     0.55
+    ]
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.6,
+   "legs": "rest",
+   "body": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ],
+ "seated": true,
+ "front": [
+  {
+   "time": 0.45,
+   "legs": {
+    "drop": 0.3
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.6
+    ]
+   }
+  },
+  {
+   "time": 0.6,
+   "legs": {
+    "seat": 0.22,
+    "foot_l": [
+     0.7,
+     0.08
+    ],
+    "foot_r": [
+     0.7,
+     0.08
+    ]
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.75
+    ]
+   }
+  },
+  {
+   "time": 0.15,
+   "legs": {
+    "foot_l": [
+     0.7,
+     0.0
+    ],
+    "foot_r": [
+     0.7,
+     0.0
+    ]
+   }
+  },
+  {
+   "time": 1.2
+  },
+  {
+   "time": 0.3,
+   "legs": {
+    "seat": 0.22,
+    "foot_l": [
+     0.3,
+     0.1
+    ],
+    "foot_r": [
+     0.3,
+     0.1
+    ]
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.6
+    ]
+   }
+  },
+  {
+   "time": 0.45,
+   "legs": {
+    "drop": 0.3,
+    "foot_l": [
+     0.0,
+     0.0
+    ],
+    "foot_r": [
+     0.0,
+     0.0
+    ],
+    "shift": 0.0
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.6,
+   "legs": "rest",
+   "body": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ]
+}

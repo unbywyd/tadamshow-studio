@@ -1,0 +1,35 @@
+{
+ "id": "point",
+ "title": "указать",
+ "group": "gesture",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.95,
+     -0.06
+    ],
+    "look": "point"
+   },
+   "head": 6,
+   "body": {
+    "lean": -2
+   }
+  },
+  {
+   "time": 1.2
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "head": "rest",
+   "body": "rest"
+  }
+ ]
+}

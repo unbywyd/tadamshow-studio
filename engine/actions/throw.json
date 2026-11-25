@@ -1,0 +1,63 @@
+{
+ "id": "throw",
+ "title": "бросить",
+ "group": "item",
+ "params": {
+  "side": "right"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "ball",
+   "held": "right"
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": [
+     0.1,
+     -0.8
+    ]
+   },
+   "body": {
+    "lean": -3
+   },
+   "head": -6
+  },
+  {
+   "time": 0.16,
+   "ease": "in",
+   "arm_r": {
+    "at": [
+     0.9,
+     -0.25
+    ],
+    "throw": [
+     2.5,
+     2.0
+    ]
+   },
+   "body": {
+    "lean": 5
+   }
+  },
+  {
+   "time": 0.25,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.75,
+     0.35
+    ]
+   }
+  },
+  {
+   "time": 0.45,
+   "arm_r": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

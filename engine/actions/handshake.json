@@ -1,0 +1,56 @@
+{
+ "id": "handshake",
+ "title": "пожать руки",
+ "group": "two",
+ "pair": {
+  "gap": 0.8,
+  "view": "front"
+ },
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.55,
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "meet"
+    },
+    "look": "edge"
+   },
+   "body": {
+    "lean": 3
+   },
+   "head": 5
+  },
+  {
+   "time": 1.3,
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "meet",
+     "amp": [
+      0.0,
+      0.07
+     ],
+     "rate": 2.5
+    },
+    "look": "edge"
+   },
+   "head": {
+    "base": 5,
+    "amp": 3,
+    "rate": 1.25
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "two": true
+}

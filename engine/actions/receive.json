@@ -1,0 +1,37 @@
+{
+ "id": "receive",
+ "title": "принять (взять у другого)",
+ "group": "item",
+ "params": {
+  "side": "right",
+  "item": "@item"
+ },
+ "phases": [
+  {
+   "time": 0.95,
+   "arm_r": {
+    "at": {
+     "to": "$item"
+    },
+    "grab": true,
+    "look": "palm"
+   },
+   "body": {
+    "lean": 4
+   },
+   "head": 6
+  },
+  {
+   "time": 0.55,
+   "arm_r": {
+    "at": [
+     0.3,
+     0.62
+    ]
+   },
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "two": true
+}

@@ -1,0 +1,64 @@
+{
+ "id": "stamp",
+ "title": "топнуть",
+ "group": "body",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "legs": {
+    "foot_r": [
+     0.0,
+     0.015
+    ]
+   },
+   "body": {
+    "lean": -2
+   }
+  },
+  {
+   "time": 0.25,
+   "legs": {
+    "foot_r": [
+     0.06,
+     0.22
+    ]
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.82
+    ],
+    "look": "fist"
+   },
+   "body": {
+    "lean": 3
+   },
+   "head": -6
+  },
+  {
+   "time": 0.08,
+   "ease": "in",
+   "legs": {
+    "foot_r": [
+     0.06,
+     0.0
+    ]
+   }
+  },
+  {
+   "time": 0.4
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "legs": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+{
+ "id": "cry",
+ "title": "плакать",
+ "group": "feeling",
+ "params": {},
+ "covers_face": true,
+ "phases": [
+  {
+   "time": 0.4,
+   "arms": {
+    "at": {
+     "to": "face",
+     "dx": 0.3
+    },
+    "contact": true,
+    "look": "palm"
+   },
+   "head": -8,
+   "legs": {
+    "drop": 0.04
+   }
+  },
+  {
+   "time": 1.8,
+   "loop": true,
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 1.0,
+     "rate": 5
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest",
+   "legs": "rest",
+   "body": "rest"
+  }
+ ]
+}

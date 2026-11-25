@@ -1,0 +1,177 @@
+{
+  "$id": "https://tadamshow.com/schemas/submission.json",
+  "title": "submission",
+  "description": "a submission (request to the owner)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "publish",
+        "revision",
+        "unpublish"
+      ]
+    },
+    "worldId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "episodeId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "authorId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "changes",
+        "rejected",
+        "withdrawn"
+      ]
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "thread": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "by": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "author",
+              "staff"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "shot": {
+            "type": "string",
+            "maxLength": 24
+          }
+        },
+        "required": [
+          "at",
+          "by",
+          "side",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "rev": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "scriptSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "studioVersionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "rev"
+      ],
+      "additionalProperties": {}
+    },
+    "impact": {
+      "anyOf": [
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decidedBy": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decidedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "worldId",
+    "episodeId",
+    "authorId",
+    "status",
+    "note",
+    "thread",
+    "snapshot",
+    "impact",
+    "decidedBy",
+    "decidedAt",
+    "createdAt",
+    "updatedAt"
+  ],
+  "additionalProperties": false
+}

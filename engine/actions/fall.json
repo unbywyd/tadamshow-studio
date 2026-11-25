@@ -1,0 +1,119 @@
+{
+ "id": "fall",
+ "title": "упасть на спину",
+ "group": "body",
+ "view": "side",
+ "seated": true,
+ "params": {},
+ "phases": [
+  {
+   "time": 0.3,
+   "body": {
+    "lean": -12
+   },
+   "arms": {
+    "at": [
+     0.45,
+     -0.5
+    ],
+    "look": "palm"
+   },
+   "head": 8,
+   "legs": {
+    "foot_l": [
+     0.2,
+     0.0
+    ],
+    "foot_r": [
+     0.35,
+     0.12
+    ]
+   }
+  },
+  {
+   "time": 0.45,
+   "ease": "in",
+   "legs": {
+    "seat": 0.0
+   },
+   "body": {
+    "lean": -62
+   },
+   "arms": {
+    "at": [
+     0.55,
+     -0.35
+    ]
+   },
+   "head": 14
+  },
+  {
+   "time": 0.25,
+   "ease": "out",
+   "body": {
+    "lean": -56
+   }
+  },
+  {
+   "time": 1.5,
+   "loop": true
+  }
+ ],
+ "front": [
+  {
+   "time": 0.25,
+   "arms": {
+    "at": [
+     0.55,
+     -0.3
+    ],
+    "look": "palm"
+   },
+   "head": 6,
+   "legs": {
+    "drop": 0.12
+   }
+  },
+  {
+   "time": 0.35,
+   "ease": "in",
+   "legs": {
+    "seat": 0.22,
+    "foot_l": [
+     0.7,
+     0.12
+    ],
+    "foot_r": [
+     0.7,
+     0.12
+    ]
+   },
+   "arms": {
+    "at": [
+     0.75,
+     0.15
+    ]
+   },
+   "head": -6
+  },
+  {
+   "time": 0.25,
+   "ease": "out",
+   "legs": {
+    "foot_l": [
+     0.7,
+     0.0
+    ],
+    "foot_r": [
+     0.7,
+     0.0
+    ]
+   },
+   "head": 0
+  },
+  {
+   "time": 1.5,
+   "loop": true
+  }
+ ]
+}

@@ -1,0 +1,47 @@
+{
+ "id": "rub",
+ "title": "потирать руки",
+ "group": "gesture",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.35,
+   "arms": {
+    "at": {
+     "to": "belly",
+     "dx": 0.15
+    },
+    "contact": true,
+    "look": "back"
+   },
+   "head": 8,
+   "body": {
+    "lean": 4
+   }
+  },
+  {
+   "time": 1.6,
+   "loop": true,
+   "arms": {
+    "at": {
+     "to": "belly",
+     "dx": 0.15,
+     "amp": [
+      0.05,
+      0.03
+     ],
+     "rate": 3.0
+    },
+    "contact": true
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest",
+   "body": "rest"
+  }
+ ]
+}

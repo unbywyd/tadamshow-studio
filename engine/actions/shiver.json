@@ -1,0 +1,55 @@
+{
+ "id": "shiver",
+ "title": "дрожать",
+ "group": "silly",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": {
+     "to": "chest",
+     "dx": 0.6,
+     "dy": 0.1
+    },
+    "contact": true,
+    "look": "fist"
+   },
+   "legs": {
+    "drop": 0.06
+   },
+   "head": 8
+  },
+  {
+   "time": 1.6,
+   "loop": true,
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 1.5,
+     "rate": 11
+    }
+   },
+   "head": {
+    "base": 8,
+    "amp": 2.5,
+    "rate": 13
+   },
+   "legs": {
+    "drop": {
+     "base": 0.06,
+     "amp": 0.008,
+     "rate": 11
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": "rest",
+   "legs": "rest",
+   "head": "rest",
+   "body": "rest"
+  }
+ ]
+}

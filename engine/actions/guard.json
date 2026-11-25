@@ -1,0 +1,56 @@
+{
+ "id": "guard",
+ "title": "боевая стойка",
+ "group": "fight",
+ "view": "side",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.35,
+   "arms": {
+    "at": [
+     0.28,
+     0.22
+    ],
+    "look": "fist"
+   },
+   "legs": {
+    "drop": 0.08,
+    "foot_r": [
+     0.18,
+     0.0
+    ]
+   },
+   "body": {
+    "lean": 6
+   },
+   "head": 6
+  },
+  {
+   "time": 1.5,
+   "loop": true,
+   "legs": {
+    "drop": {
+     "base": 0.08,
+     "amp": 0.025,
+     "rate": 2.2
+    }
+   },
+   "body": {
+    "lean": {
+     "base": 6,
+     "amp": 2,
+     "rate": 2.2
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.4,
+   "arms": "rest",
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

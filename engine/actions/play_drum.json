@@ -1,0 +1,122 @@
+{
+ "id": "play_drum",
+ "title": "бить в барабан",
+ "group": "music",
+ "params": {
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "drum",
+   "held": "wear"
+  },
+  {
+   "id": "stick_r",
+   "card": "drumstick",
+   "held": "right",
+   "def": {
+    "hold": -140
+   }
+  },
+  {
+   "id": "stick_l",
+   "card": "drumstick",
+   "held": "left",
+   "def": {
+    "hold": -140
+   }
+  }
+ ],
+ "beats": [
+  {
+   "arm": "arm_r",
+   "on": "down",
+   "sound": "drum_1",
+   "min": 0.06
+  },
+  {
+   "arm": "arm_l",
+   "on": "down",
+   "sound": "drum_2",
+   "min": 0.06
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.45,
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "right",
+     "dx": 0.36,
+     "dy": -0.46
+    },
+    "contact": true
+   },
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "left",
+     "dx": 0.36,
+     "dy": -0.46
+    },
+    "contact": true
+   },
+   "head": 6
+  },
+  {
+   "time": 3.0,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "right",
+     "dx": 0.36,
+     "dy": -0.46,
+     "amp": [
+      0.0,
+      0.11
+     ],
+     "rate": 2.0
+    },
+    "contact": true
+   },
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "left",
+     "dx": 0.36,
+     "dy": -0.46,
+     "amp": [
+      0.0,
+      0.11
+     ],
+     "rate": 2.0,
+     "phase": 0.5
+    },
+    "contact": true
+   },
+   "head": {
+    "base": 6,
+    "amp": 3,
+    "rate": 1.0
+   },
+   "legs": {
+    "drop": {
+     "base": 0.01,
+     "amp": 0.015,
+     "rate": 2.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_l": "rest",
+   "arm_r": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

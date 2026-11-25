@@ -1,0 +1,104 @@
+{
+ "id": "play_balalaika",
+ "title": "играть на балалайке",
+ "group": "music",
+ "params": {
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "balalaika",
+   "held": "wear"
+  }
+ ],
+ "beats": [
+  {
+   "arm": "arm_l",
+   "on": "down",
+   "sound": "balalaika",
+   "min": 0.04
+  },
+  {
+   "arm": "arm_l",
+   "on": "up",
+   "sound": "balalaika",
+   "min": 0.04,
+   "db": -7
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.45,
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "strum"
+    },
+    "contact": true,
+    "elbow": "down",
+    "look": "fist"
+   },
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "fret"
+    },
+    "contact": true,
+    "look": "fist"
+   },
+   "head": -4
+  },
+  {
+   "time": 3.0,
+   "loop": true,
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "strum",
+     "amp": [
+      0.02,
+      0.07
+     ],
+     "rate": 3.2
+    },
+    "contact": true,
+    "elbow": "down",
+    "look": "fist"
+   },
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "fret",
+     "amp": [
+      0.05,
+      -0.035
+     ],
+     "rate": 0.5
+    },
+    "contact": true,
+    "look": "fist"
+   },
+   "head": {
+    "base": -4,
+    "amp": 4,
+    "rate": 1.6
+   },
+   "legs": {
+    "drop": {
+     "base": 0.01,
+     "amp": 0.012,
+     "rate": 1.6
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_l": "rest",
+   "arm_r": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

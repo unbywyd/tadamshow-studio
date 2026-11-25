@@ -1,0 +1,30 @@
+{
+ "id": "pipe",
+ "title": "дудочка",
+ "size": 0.07,
+ "fit": 1.1,
+ "hold": "wear",
+ "grip": [
+  0.5,
+  0.02
+ ],
+ "wear": {
+  "on": "mouth",
+  "dx": 0.0,
+  "dy": 0.0,
+  "rot": -6,
+  "over": "forearm_r"
+ },
+ "spots": {
+  "up": [
+   0.5,
+   0.4
+  ],
+  "low": [
+   0.5,
+   0.68
+  ]
+ },
+ "play": "play_pipe",
+ "bounce": 0.3
+}

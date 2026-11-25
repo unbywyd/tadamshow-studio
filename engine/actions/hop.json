@@ -1,0 +1,19 @@
+{
+ "id": "hop",
+ "title": "подпрыгнуть",
+ "group": "body",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.6,
+   "legs": {
+    "jump": 0.2
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.2,
+   "legs": "rest"
+  }
+ ]
+}

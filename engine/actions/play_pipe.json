@@ -1,0 +1,128 @@
+{
+ "id": "play_pipe",
+ "title": "играть на дудочке",
+ "group": "music",
+ "params": {
+  "item": "@item"
+ },
+ "covers_face": true,
+ "test_items": [
+  {
+   "id": "item",
+   "card": "pipe",
+   "held": "wear"
+  }
+ ],
+ "beats": [
+  {
+   "arm": "arm_r",
+   "on": "down",
+   "sound": "pipe",
+   "min": 0.012
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.45,
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "up"
+    },
+    "contact": true,
+    "look": "fist",
+    "elbow": "out"
+   },
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "low"
+    },
+    "contact": true,
+    "look": "fist",
+    "elbow": "out"
+   },
+   "head": -3
+  },
+  {
+   "time": 3.0,
+   "loop": true,
+   "arm_l": {
+    "at": {
+     "to": "$item",
+     "on": "up",
+     "amp": [
+      0.0,
+      0.02
+     ],
+     "rate": 2.0,
+     "phase": 0.5
+    },
+    "contact": true,
+    "look": "fist",
+    "elbow": "out"
+   },
+   "arm_r": {
+    "at": {
+     "to": "$item",
+     "on": "low",
+     "amp": [
+      0.0,
+      0.025
+     ],
+     "rate": 2.0
+    },
+    "contact": true,
+    "look": "fist",
+    "elbow": "out"
+   },
+   "head": {
+    "base": -3,
+    "amp": 6,
+    "rate": 0.5
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 4,
+     "rate": 0.5
+    }
+   },
+   "legs": {
+    "drop": {
+     "base": 0.01,
+     "amp": 0.012,
+     "rate": 1.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.3,
+   "arm_l": {
+    "at": {
+     "to": "chest",
+     "dx": 0.4,
+     "dy": 0.7
+    },
+    "contact": true
+   },
+   "arm_r": {
+    "at": {
+     "to": "chest",
+     "dx": 0.4,
+     "dy": 0.7
+    },
+    "contact": true
+   },
+   "head": "rest",
+   "body": "rest",
+   "legs": "rest"
+  },
+  {
+   "time": 0.4,
+   "arm_l": "rest",
+   "arm_r": "rest"
+  }
+ ]
+}

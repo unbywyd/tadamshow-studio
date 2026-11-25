@@ -1,0 +1,57 @@
+{
+  "$id": "https://tadamshow.com/schemas/studio-key-created.response.json",
+  "title": "studio-key-created.response",
+  "description": "answer of POST /api/studio/keys (the secret, once)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "lastUsedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revokedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "prefix",
+        "lastUsedAt",
+        "revokedAt",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "secret": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "secret"
+  ],
+  "additionalProperties": false
+}

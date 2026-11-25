@@ -1,0 +1,61 @@
+{
+ "id": "chicken",
+ "title": "курица",
+ "group": "silly",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": {
+     "to": "hip",
+     "dy": -0.35
+    },
+    "look": "fist",
+    "contact": true
+   },
+   "legs": {
+    "drop": 0.1
+   },
+   "body": {
+    "lean": 8
+   }
+  },
+  {
+   "time": 2.0,
+   "loop": true,
+   "arms": {
+    "at": {
+     "to": "hip",
+     "dy": -0.35,
+     "amp": [
+      0.0,
+      -0.1
+     ],
+     "rate": 2.3
+    },
+    "contact": true
+   },
+   "head": {
+    "base": 6,
+    "amp": 14,
+    "rate": 2.0
+   },
+   "legs": {
+    "drop": {
+     "base": 0.1,
+     "amp": 0.03,
+     "rate": 3.5
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

@@ -1,0 +1,54 @@
+{
+ "id": "jump_forward",
+ "title": "прыгнуть вперёд",
+ "group": "move",
+ "params": {
+  "dist": 1.0
+ },
+ "test": {
+  "dist": 0.6
+ },
+ "phases": [
+  {
+   "time": 0.15,
+   "arms": {
+    "at": [
+     0.25,
+     0.95
+    ]
+   },
+   "body": {
+    "lean": 6
+   }
+  },
+  {
+   "time": 0.3,
+   "ease": "out",
+   "legs": {
+    "jump": 0.4,
+    "forward": "$dist"
+   },
+   "arms": {
+    "at": [
+     0.45,
+     -0.55
+    ],
+    "look": "palm"
+   },
+   "body": {
+    "lean": 0
+   }
+  },
+  {
+   "time": 0.6
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "legs": "rest",
+   "body": "rest"
+  }
+ ]
+}

@@ -1,0 +1,65 @@
+{
+  "$id": "https://tadamshow.com/schemas/hero.json",
+  "title": "hero",
+  "description": "heroes/<slug>/hero.json: a recurring hero",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "name": {
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "en": {
+          "type": "string",
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "ru"
+      ]
+    },
+    "trait": {
+      "type": "object",
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "en": {
+          "type": "string",
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "ru"
+      ]
+    },
+    "about": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "height": {
+      "type": "number",
+      "minimum": 0.05,
+      "maximum": 1
+    }
+  },
+  "required": [
+    "version",
+    "name"
+  ],
+  "additionalProperties": false
+}

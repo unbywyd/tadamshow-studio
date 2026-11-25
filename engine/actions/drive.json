@@ -1,0 +1,101 @@
+{
+ "id": "drive",
+ "title": "рулить",
+ "group": "item",
+ "params": {
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "wheel",
+   "held": "both"
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.4,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.5
+     ]
+    },
+    "contact": true
+   },
+   "head": 4
+  },
+  {
+   "time": 0.5,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.5
+     ],
+     "turn": 35
+    },
+    "contact": true
+   },
+   "body": {
+    "lean": 6
+   },
+   "head": 8
+  },
+  {
+   "time": 0.6,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.5
+     ],
+     "turn": -40
+    },
+    "contact": true
+   },
+   "body": {
+    "lean": -7
+   },
+   "head": -6
+  },
+  {
+   "time": 0.5,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.5
+     ],
+     "turn": 25
+    },
+    "contact": true
+   },
+   "body": {
+    "lean": 4
+   },
+   "head": 4
+  },
+  {
+   "time": 0.4,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.5
+     ]
+    },
+    "contact": true
+   },
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "view": "front"
+}

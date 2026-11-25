@@ -1,0 +1,47 @@
+{
+ "id": "angry",
+ "title": "злиться",
+ "group": "feeling",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": [
+     0.25,
+     0.75
+    ],
+    "look": "fist"
+   },
+   "head": -6,
+   "body": {
+    "lean": 2
+   }
+  },
+  {
+   "time": 1.4,
+   "loop": true,
+   "arms": {
+    "at": {
+     "base": [
+      0.25,
+      0.75
+     ],
+     "amp": [
+      0.0,
+      0.05
+     ],
+     "rate": 4.0
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest",
+   "body": "rest"
+  }
+ ]
+}

@@ -30,8 +30,49 @@ not open source: non-commercial use is free; commercial use needs a separate lic
 
 4. Third-party parts
 
-   Third-party parts keep their own licences. Each one is listed here with its licence when it is added.
-   None yet.
+   Third-party parts keep their own licences.
 
-   (The Godot Engine, which the kit runs on, is installed separately by the user and is licensed under the
-   MIT licence; it will be listed here if any part of it is ever included.)
+   4.1 Included in this repository
+
+   PT Serif (Bold, Italic) and PT Mono fonts - src/tadam/data/fonts/PT_Serif-Web-Bold.ttf,
+   PT_Serif-Web-Italic.ttf, PTM55FT.ttf. Copyright (c) 2010-2011 ParaType Ltd., with Reserved Font Names
+   "PT Sans", "PT Serif", "PT Mono" and "ParaType". Licensed under the SIL Open Font License, Version 1.1:
+   the full texts are next to the fonts (OFL-PT-Serif.txt, OFL-PT-Mono.txt), and at
+   https://openfontlicense.org. Used unmodified for the title cards (tadam/titlecard.py); taken from the
+   Google Fonts repository (https://github.com/google/fonts, ofl/ptserif and ofl/ptmono).
+
+   4.2 Not included: installed separately by the user
+
+   The Godot Engine (https://godotengine.org), which runs engine/. MIT licence:
+
+     Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md).
+     Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.
+
+     Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+     associated documentation files (the "Software"), to deal in the Software without restriction,
+     including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+     and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+     subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be included in all copies or substantial
+     portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+     LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+     NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   ffmpeg (https://ffmpeg.org): run as a separate program, LGPL/GPL depending on the build the user installs.
+
+   Python packages, installed by pip from their own sources (pyproject.toml), none of them copied here:
+   Pillow (MIT-CMU), NumPy (BSD-3-Clause), opencv-python-headless (Apache-2.0; OpenCV, Apache-2.0),
+   SciPy (BSD-3-Clause), jsonschema (MIT), openai (Apache-2.0), pytest for the tests (MIT).
+
+   4.3 Own work in this repository (no third-party rights)
+
+   engine/: the scripts, scenes, the actions (engine/actions/*.json), the instruments (engine/items: drawn
+   by code, devtools/draw_instruments.py) and the sounds (engine/sounds: synthesized by code,
+   devtools/make_sfx.py and devtools/make_foley.py; nothing downloaded or recorded). The pattern rigs and
+   their mannequins (src/tadam/data/rigs: drawn by code, src/tadam/puppet/make_rig.py). The JSON Schemas
+   (schema/: exported from TadamShow's own contracts).

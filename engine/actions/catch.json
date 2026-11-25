@@ -1,0 +1,43 @@
+{
+ "id": "catch",
+ "title": "поймать",
+ "group": "item",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "arm_r": {
+    "at": [
+     0.45,
+     -0.2
+    ],
+    "look": "palm",
+    "catch": true
+   },
+   "head": -6
+  },
+  {
+   "time": 1.4,
+   "arm_r": {
+    "at": [
+     0.45,
+     -0.2
+    ],
+    "catch": true
+   }
+  },
+  {
+   "time": 0.5,
+   "arm_r": {
+    "at": [
+     0.3,
+     0.62
+    ]
+   },
+   "head": "rest"
+  }
+ ],
+ "two": true
+}

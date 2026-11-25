@@ -1,0 +1,29 @@
+{
+ "id": "spread",
+ "title": "развести руками",
+ "group": "gesture",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.4,
+   "arms": {
+    "at": [
+     0.85,
+     0.2
+    ],
+    "look": "palm"
+   },
+   "head": -4
+  },
+  {
+   "time": 1.0
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest"
+  }
+ ]
+}

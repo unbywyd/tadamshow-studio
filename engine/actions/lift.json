@@ -1,0 +1,70 @@
+{
+ "id": "lift",
+ "title": "поднять двумя руками",
+ "group": "item",
+ "params": {
+  "item": "@item"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "crate",
+   "at": [
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.95,
+   "arms": {
+    "at": {
+     "to": "$item"
+    },
+    "grab": true,
+    "look": "palm",
+    "contact": true
+   },
+   "legs": {
+    "reach": "$item"
+   },
+   "head": 14,
+   "body": {
+    "lean": 0
+   }
+  },
+  {
+   "time": 1.1,
+   "arms": {
+    "at": {
+     "to": "$item",
+     "carry": [
+      0,
+      0.93
+     ]
+    },
+    "contact": true
+   },
+   "legs": "rest",
+   "head": {
+    "base": -4,
+    "amp": 2,
+    "rate": 7
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 1.2,
+     "rate": 9
+    }
+   }
+  },
+  {
+   "time": 0.3,
+   "head": "rest",
+   "body": "rest"
+  }
+ ],
+ "low_view": "side"
+}

@@ -1,0 +1,49 @@
+{
+ "id": "pushed",
+ "title": "отшатнуться от толчка (в паре)",
+ "group": "two",
+ "params": {
+  "side": "right"
+ },
+ "partner_only": true,
+ "phases": [
+  {
+   "time": 0.44
+  },
+  {
+   "time": 0.12,
+   "ease": "out",
+   "body": {
+    "lean": -16
+   },
+   "head": -18,
+   "arms": {
+    "at": [
+     0.45,
+     0.15
+    ]
+   },
+   "legs": {
+    "shift": -0.14,
+    "drop": 0.04
+   }
+  },
+  {
+   "time": 0.45,
+   "body": {
+    "lean": -7
+   },
+   "head": -8
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ],
+ "two": true
+}

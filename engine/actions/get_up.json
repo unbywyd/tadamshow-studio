@@ -1,0 +1,112 @@
+{
+ "id": "get_up",
+ "title": "подняться",
+ "group": "body",
+ "view": "side",
+ "seated": true,
+ "params": {},
+ "phases": [
+  {
+   "time": 0.5,
+   "body": {
+    "lean": -10
+   },
+   "arms": {
+    "at": [
+     -0.3,
+     0.75
+    ]
+   },
+   "head": 0,
+   "legs": {
+    "seat": 0.0
+   }
+  },
+  {
+   "time": 0.45,
+   "legs": {
+    "drop": 0.3,
+    "foot_l": [
+     0.25,
+     0.0
+    ],
+    "foot_r": [
+     0.3,
+     0.0
+    ],
+    "shift": 0.0
+   },
+   "body": {
+    "lean": 14
+   },
+   "arms": {
+    "at": [
+     0.45,
+     0.4
+    ]
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.6,
+   "legs": "rest",
+   "body": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest"
+  }
+ ],
+ "front": [
+  {
+   "time": 0.35,
+   "legs": {
+    "seat": 0.22,
+    "foot_l": [
+     0.3,
+     0.1
+    ],
+    "foot_r": [
+     0.3,
+     0.1
+    ]
+   },
+   "arms": {
+    "at": [
+     0.3,
+     0.75
+    ]
+   },
+   "head": 0
+  },
+  {
+   "time": 0.5,
+   "legs": {
+    "drop": 0.32,
+    "foot_l": [
+     0.0,
+     0.0
+    ],
+    "foot_r": [
+     0.0,
+     0.0
+    ],
+    "shift": 0.0
+   },
+   "arms": {
+    "at": [
+     0.35,
+     0.5
+    ]
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.6,
+   "legs": "rest",
+   "body": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest"
+  }
+ ]
+}

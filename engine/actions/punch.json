@@ -1,0 +1,57 @@
+{
+ "id": "punch",
+ "title": "ударить кулаком",
+ "group": "fight",
+ "view": "side",
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.2,
+   "arms": {
+    "at": [
+     0.28,
+     0.22
+    ],
+    "look": "fist"
+   },
+   "body": {
+    "lean": 4
+   }
+  },
+  {
+   "time": 0.1,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.98,
+     -0.08
+    ],
+    "look": "fist"
+   },
+   "body": {
+    "lean": 12
+   },
+   "head": 4
+  },
+  {
+   "time": 0.18,
+   "arm_r": {
+    "at": [
+     0.28,
+     0.22
+    ]
+   },
+   "body": {
+    "lean": 4
+   }
+  },
+  {
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

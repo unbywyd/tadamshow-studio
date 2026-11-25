@@ -1,0 +1,63 @@
+{
+ "id": "slash",
+ "title": "рубануть мечом",
+ "group": "item",
+ "params": {
+  "side": "right"
+ },
+ "test_items": [
+  {
+   "id": "item",
+   "card": "sword",
+   "held": "right"
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": [
+     0.25,
+     -0.85
+    ]
+   },
+   "body": {
+    "lean": -4
+   },
+   "head": -4
+  },
+  {
+   "time": 0.16,
+   "ease": "in",
+   "arm_r": {
+    "at": [
+     0.85,
+     0.2
+    ]
+   },
+   "body": {
+    "lean": 6
+   },
+   "head": 6
+  },
+  {
+   "time": 0.22,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.7,
+     0.6
+    ]
+   }
+  },
+  {
+   "time": 0.3
+  },
+  {
+   "time": 0.45,
+   "arm_r": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

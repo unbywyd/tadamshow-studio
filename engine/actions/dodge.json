@@ -1,0 +1,36 @@
+{
+ "id": "dodge",
+ "title": "увернуться",
+ "group": "fight",
+ "view": "side",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.15,
+   "ease": "out",
+   "body": {
+    "lean": -24
+   },
+   "legs": {
+    "drop": 0.1
+   },
+   "head": -12,
+   "arms": {
+    "at": [
+     -0.2,
+     0.5
+    ]
+   }
+  },
+  {
+   "time": 0.4
+  },
+  {
+   "time": 0.4,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
+ ]
+}

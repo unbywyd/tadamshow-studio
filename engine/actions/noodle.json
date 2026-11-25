@@ -1,0 +1,80 @@
+{
+ "id": "noodle",
+ "title": "руки-макаронины",
+ "group": "silly",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": [
+     0.55,
+     0.2
+    ],
+    "look": "back"
+   }
+  },
+  {
+   "time": 2.0,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "base": [
+      0.55,
+      0.2
+     ],
+     "amp": [
+      0.25,
+      0.35
+     ],
+     "rate": 1.6
+    },
+    "wrist": {
+     "base": 0,
+     "amp": 50,
+     "rate": 3.2
+    }
+   },
+   "arm_l": {
+    "at": {
+     "base": [
+      0.55,
+      0.2
+     ],
+     "amp": [
+      0.25,
+      0.35
+     ],
+     "rate": 1.6,
+     "phase": 0.5
+    },
+    "wrist": {
+     "base": 0,
+     "amp": 50,
+     "rate": 3.2,
+     "phase": 0.5
+    }
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 5,
+     "rate": 0.8
+    }
+   },
+   "head": {
+    "base": 0,
+    "amp": 10,
+    "rate": 0.8,
+    "phase": 0.25
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ]
+}

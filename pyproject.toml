@@ -11,7 +11,14 @@ requires-python = ">=3.11"
 license = "PolyForm-Noncommercial-1.0.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "unbywyd" }]
-dependencies = []
+dependencies = [
+    "Pillow>=10.0,<14",
+    "numpy>=1.26,<3",
+    "opencv-python-headless>=4.9,<6",
+    "scipy>=1.11,<2",
+    "jsonschema>=4.21,<5",
+    "openai>=1.80,<4",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
@@ -25,6 +32,9 @@ Issues = "https://github.com/unbywyd/tadamshow-studio/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+tadam = ["data/rigs/*/*.json", "data/rigs/*/*.png", "data/rigs/*/mannequin/*.png", "data/fonts/*.ttf", "data/fonts/*.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

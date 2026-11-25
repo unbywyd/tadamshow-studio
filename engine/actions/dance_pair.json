@@ -1,0 +1,94 @@
+{
+ "id": "dance_pair",
+ "title": "танцевать за руку",
+ "group": "two",
+ "pair": {
+  "gap": 0.75,
+  "view": "front"
+ },
+ "params": {
+  "side": "right"
+ },
+ "beat_rate": 2.0,
+ "phases": [
+  {
+   "time": 0.5,
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "meet",
+     "dy": 0.12
+    },
+    "look": "edge"
+   },
+   "arm_l": {
+    "at": [
+     0.45,
+     -0.45
+    ]
+   }
+  },
+  {
+   "time": 4.0,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "meet",
+     "dy": 0.12
+    },
+    "look": "edge"
+   },
+   "arm_l": {
+    "at": {
+     "base": [
+      0.45,
+      -0.45
+     ],
+     "amp": [
+      0.08,
+      0.1
+     ],
+     "rate": 1.0
+    },
+    "look": "palm"
+   },
+   "legs": {
+    "shift": {
+     "base": 0.0,
+     "amp": 0.07,
+     "rate": 1.0
+    },
+    "drop": {
+     "base": 0.05,
+     "amp": 0.03,
+     "rate": 2.0
+    }
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 6,
+     "rate": 1.0,
+     "phase": 0.5
+    }
+   },
+   "head": {
+    "base": 0,
+    "amp": 8,
+    "rate": 1.0,
+    "phase": 0.25
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest",
+   "body": "rest",
+   "legs": "rest"
+  }
+ ],
+ "two": true
+}

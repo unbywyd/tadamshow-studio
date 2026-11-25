@@ -1,0 +1,52 @@
+{
+  "$id": "https://tadamshow.com/schemas/check-result.json",
+  "title": "check-result",
+  "description": "the result of tadam check / the server check",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ]
+          },
+          "where": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "level",
+          "where",
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "ok",
+    "issues"
+  ],
+  "additionalProperties": false
+}

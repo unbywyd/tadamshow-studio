@@ -1,0 +1,48 @@
+{
+ "id": "drink",
+ "title": "отпить",
+ "group": "item",
+ "params": {
+  "side": "right"
+ },
+ "covers_face": true,
+ "test_items": [
+  {
+   "id": "item",
+   "card": "mug",
+   "held": "right"
+  }
+ ],
+ "phases": [
+  {
+   "time": 0.5,
+   "arm_r": {
+    "at": {
+     "to": "mouth",
+     "dx": 1.25,
+     "dy": 0.1
+    },
+    "contact": true
+   },
+   "head": -6
+  },
+  {
+   "time": 0.7,
+   "head": {
+    "base": -10,
+    "amp": 2,
+    "rate": 3
+   }
+  },
+  {
+   "time": 0.45,
+   "arm_r": {
+    "at": [
+     0.3,
+     0.62
+    ]
+   },
+   "head": "rest"
+  }
+ ]
+}

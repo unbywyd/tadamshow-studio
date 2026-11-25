@@ -1,0 +1,20 @@
+{
+ "id": "hips",
+ "title": "руки в боки",
+ "group": "pose",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.5,
+   "arms": {
+    "at": {
+     "to": "hip"
+    },
+    "contact": true,
+    "look": "back",
+    "aim": 105
+   },
+   "head": 4
+  }
+ ]
+}

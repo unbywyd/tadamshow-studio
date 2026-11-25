@@ -1,0 +1,22 @@
+{
+ "id": "walk",
+ "title": "идти",
+ "group": "move",
+ "view": "side",
+ "params": {
+  "dist": 2.0,
+  "pace": 1.0
+ },
+ "phases": [
+  {
+   "time": 0.1,
+   "legs": {
+    "walk": "$dist",
+    "speed": "$pace"
+   }
+  }
+ ],
+ "test": {
+  "dist": 1.0
+ }
+}

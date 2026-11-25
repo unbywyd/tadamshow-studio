@@ -1,0 +1,33 @@
+{
+ "id": "curtsy",
+ "title": "реверанс",
+ "group": "body",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.5,
+   "legs": {
+    "drop": 0.16
+   },
+   "arms": {
+    "at": [
+     0.45,
+     0.62
+    ],
+    "look": "back"
+   },
+   "head": -6
+  },
+  {
+   "time": 0.5
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "legs": "rest",
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest"
+  }
+ ]
+}

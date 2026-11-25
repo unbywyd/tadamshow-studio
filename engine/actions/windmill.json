@@ -1,0 +1,75 @@
+{
+ "id": "windmill",
+ "title": "мельница руками",
+ "group": "silly",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.35,
+   "arm_r": {
+    "at": [
+     0.85,
+     0.0
+    ],
+    "look": "back",
+    "contact": true
+   },
+   "arm_l": {
+    "at": [
+     -0.85,
+     0.0
+    ],
+    "look": "back",
+    "contact": true
+   }
+  },
+  {
+   "time": 2.0,
+   "loop": true,
+   "arm_r": {
+    "at": {
+     "base": [
+      0.0,
+      0.0
+     ],
+     "amp": [
+      0.85,
+      0.85
+     ],
+     "rate": 1.4,
+     "circle": true
+    },
+    "contact": true
+   },
+   "arm_l": {
+    "at": {
+     "base": [
+      0.0,
+      0.0
+     ],
+     "amp": [
+      0.85,
+      0.85
+     ],
+     "rate": 1.4,
+     "phase": 0.5,
+     "circle": true
+    },
+    "contact": true
+   },
+   "body": {
+    "lean": {
+     "base": 0,
+     "amp": 4,
+     "rate": 1.4
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arms": "rest",
+   "body": "rest"
+  }
+ ]
+}

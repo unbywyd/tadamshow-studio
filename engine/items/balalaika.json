@@ -1,0 +1,49 @@
+{
+ "id": "balalaika",
+ "title": "балалайка",
+ "size": 0.2,
+ "hold": "wear",
+ "grip": [
+  0.5,
+  0.8
+ ],
+ "wear": {
+  "spots": {
+   "strum": [
+    "arm_l",
+    0.3,
+    0.75
+   ],
+   "fret": [
+    "arm_r",
+    0.5,
+    0.0
+   ]
+  },
+  "fit": [
+   1.8,
+   2.3
+  ],
+  "over": "chest"
+ },
+ "spots": {
+  "strum": [
+   0.5,
+   0.8
+  ],
+  "fret": [
+   0.5,
+   0.32
+  ],
+  "fret_hi": [
+   0.5,
+   0.24
+  ],
+  "fret_lo": [
+   0.5,
+   0.42
+  ]
+ },
+ "play": "play_balalaika",
+ "bounce": 0.2
+}

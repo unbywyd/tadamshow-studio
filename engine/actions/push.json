@@ -1,0 +1,55 @@
+{
+ "id": "push",
+ "title": "толкнуть",
+ "group": "two",
+ "pair": {
+  "gap": 0.15,
+  "view": "front",
+  "partner": "pushed"
+ },
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.3,
+   "arm_r": {
+    "at": [
+     0.15,
+     0.35
+    ]
+   },
+   "body": {
+    "lean": -5
+   },
+   "head": -3
+  },
+  {
+   "time": 0.16,
+   "ease": "out",
+   "arm_r": {
+    "at": {
+     "to": "@partner",
+     "on": "side_near"
+    },
+    "look": "palm",
+    "contact": true
+   },
+   "body": {
+    "lean": 10
+   },
+   "head": 6
+  },
+  {
+   "time": 0.3
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
+ ],
+ "two": true
+}
