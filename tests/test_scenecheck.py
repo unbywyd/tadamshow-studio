@@ -21,7 +21,7 @@ ACTIONS = {
     "handshake_b": {"partner_only": True, "phases": [{"arm_r": {}}]},
 }
 FILES = {"bg.png", "music.ogg", "head.ogv"}
-PUPPETS = {"p/a": sc.PuppetInfo(views={"front"}, width=0.55),
+PUPPETS = {"p/a": sc.PuppetInfo(views={"front"}, width=0.55, framed={"chest"}),
            "p/b": sc.PuppetInfo(views={"front", "side", "back"}, width=0.55)}
 
 
@@ -35,6 +35,8 @@ BASE = {
     "background": "bg.png", "seconds": 6, "format": "9:16",
     "points": {"door": {"x": 0.8, "y": 0.8}, "bench": {"x": 0.2, "y": 0.8, "seat": {}}},
     "items": [{"id": "mug", "card": "mug"}],
+    "pieces": [{"id": "lamp", "image": "lamp.png", "rect": [0.1, 0.4, 0.1, 0.1], "frames": {"count": 3}},
+               {"id": "crate", "image": "crate.png", "rect": [0.7, 0.6, 0.2, 0.1]}],
     "actors": [{"id": "a", "puppet": "p/a", "x": 0.25, "height": 0.4},
                {"id": "b", "puppet": "p/b", "x": 0.75, "height": 0.4, "clip": "head.ogv"}],
     "music": {"file": "music.ogg", "bpm": 120},
@@ -54,6 +56,10 @@ BASE = {
         {"at": 4.5, "who": "a", "stand": True},
         {"at": 5, "who": "b", "play": "guitar", "for": 1},
         {"at": 5, "who": "a", "do": "handshake", "with": "b"},
+        {"at": 1, "who": "a", "frames": {"chest": 2}},
+        {"at": 2.2, "who": "a", "frames": {"chest": "again"}},
+        {"at": 1, "piece": "lamp", "frames": 0},
+        {"at": 3, "piece": "lamp", "frames": "again"},
     ],
 }
 
@@ -126,7 +132,31 @@ SPOIL = {
     "off_frame": actor(0, x=0.02),
     "heroes_overlap": actor(1, x=0.3),
     "not_frontal": line(at=1, who="b", turn="left"),
+    "frames_command": line(at=1, who="b", frames={"chest": 2}),
 }
+
+
+@pytest.mark.parametrize("bad, why", [
+    ({"who": "a", "frames": {"chest": 9}}, "speed 0..8"),
+    ({"who": "a", "frames": {"chest": True}}, "speed 0..8"),
+    ({"who": "a", "frames": {"skirt": 1}}, "skirt not frames (it has: chest)"),
+    ({"who": "a", "frames": 2}, "e.g."),
+    ({"who": "a", "frames": {}}, "e.g."),
+    ({"piece": "lamp", "frames": "faster"}, "\"again\""),
+    ({"piece": "crate", "frames": 0}, "one picture, not frames"),
+    ({"piece": "sofa", "frames": 0}, "no set piece 'sofa' (there are: lamp, crate)"),
+])
+def test_frames_lines_that_are_wrong(bad, why):
+    s, c = copy.deepcopy(BASE), ctx()
+    s["script"].append({"at": 1, **bad})
+    found = [i for i in sc.check_scene(s, c, "sh1") if i.code == "frames_command"]
+    assert found and why in found[0].message, [i.message for i in found]
+
+
+def test_frames_of_a_hero_without_who_among_several():
+    s, c = copy.deepcopy(BASE), ctx()
+    s["script"].append({"at": 1, "frames": {"chest": 0}})
+    assert "who_missing" in {i.code for i in sc.check_scene(s, c, "sh1")}
 
 
 def run(spoil=None):

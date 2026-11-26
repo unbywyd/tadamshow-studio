@@ -78,7 +78,7 @@ does the acting. The actions every hero is checked on (stage 1): rest, hips, thi
 victory; wave, bye, beckon, point, clap, facepalm, head_grab, heart, nod, shake_head, rub, scratch_head, shoo,
 shrug, spread; angry, cry, laugh, surprised; dance_arms, dance_twist; bow, curtsy, hop, jump, squat. Others exist
 (`engine/actions/*.json`) but are not guaranteed on every hero. `go` walks (always facing us), `turn` only to
-`front`.
+`front`. A drawing that is frames goes faster, stops or starts again by `"frames"`: see [frames](frames.md).
 
 ## Stage options (`film.stage` or a shot's `stage`)
 

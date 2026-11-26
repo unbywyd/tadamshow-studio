@@ -147,6 +147,7 @@ const CROSS_REACH := 0.80        # how far out (arm lengths) a hand is when its 
 
 class Actor:
 	var id: String
+	var fspeed := {}                  # part -> the speed of its frames a script line set ({"frames": {...}})
 	var dir := ""                     # the hero's folder
 	var height := 0.45                # neck to sole, share of the stage height
 	var puppet: Puppet                # the view shown now, its physics and motion
@@ -540,6 +541,9 @@ func _enter(a: Actor, view: String, x: float) -> bool:
 			items.rebind(a.motion, mo)       # ...and what it holds
 	var old_mo: Motion = a.motion
 	p.visible = true
+	p.take_frames(a.puppet)                  # (frames go on where the old view's were)
+	for part: String in a.fspeed:
+		p.set_frames_speed(part, a.fspeed[part])
 	a.puppet = p
 	a.phys = phys
 	a.motion = mo
@@ -725,6 +729,10 @@ func _command(line: Dictionary) -> void:
 		fx.command(over, step_no, _head_screen)
 		if not line.has("who"):
 			return
+	if line.has("piece") and line.has("frames"):   # a set piece's frames: {"piece": "lamp", "frames": 0.5}
+		_piece_frames(str(line["piece"]), line["frames"])
+		if not line.has("who"):
+			return
 	if line.get("who", "") == "all":              # the same command for everyone on the stage
 		for id: String in actors:
 			var each := line.duplicate()
@@ -736,6 +744,10 @@ func _command(line: Dictionary) -> void:
 		a = actors.values()[0]
 	if a == null:
 		return
+	if line.has("frames") and not line.has("piece"):    # {"who": "vis", "frames": {"chest": 2, "skirt": "again"}}
+		_hero_frames(a, line["frames"])
+		if _only_frames(line):
+			return
 	if not a.turning.is_empty():                 # mid-turn: it happens once the turn is over
 		a.after.append(line)
 		return
@@ -1771,6 +1783,38 @@ func _go_target(a: Actor, line: Dictionary) -> Vector2:
 	elif line.has("y"):
 		z = space.ground_of(Vector2(world.x * float(go), world.y * float(line["y"]))).y
 	return Vector2(space.frame_x(world.x * float(go), z), z)
+
+
+## FRAMES from the script (engine/frames.gd): a number is the speed (1 as drawn, 0 stands still, 2 twice as fast),
+## "again" plays the round from its first frame (a "once" drawing plays once more).
+func _hero_frames(a: Actor, what: Variant) -> void:
+	if not (what is Dictionary):
+		return
+	for part: String in what:
+		var v: Variant = what[part]
+		if v is String and v == "again":
+			a.puppet.restart_frames(part)
+		elif v is float or v is int:
+			a.fspeed[part] = clampf(float(v), 0.0, 8.0)
+			a.puppet.set_frames_speed(part, a.fspeed[part])
+
+
+func _piece_frames(id: String, v: Variant) -> void:
+	var reel: Variant = _piece_nodes.get(id, {}).get("reel")
+	if reel == null:
+		return
+	if v is String and v == "again":
+		reel.restart()
+	elif v is float or v is int:
+		reel.speed = clampf(float(v), 0.0, 8.0)
+
+
+## A line that says nothing but the frames (and when): it is done here, a turn does not keep it waiting.
+static func _only_frames(line: Dictionary) -> bool:
+	for k: String in line:
+		if not (k in ["who", "frames", "at", "after", "of", "delay", "phrase", "beat", "end", "voice"] or k.begins_with("_")):
+			return false
+	return true
 
 
 ## A set piece: a part of the background cut out, drawn over the same place, sorted in depth with the heroes.

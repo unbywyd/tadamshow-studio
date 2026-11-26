@@ -35,7 +35,7 @@ HERO_KEYS = {"who", "do", "side", "energy", "speed", "duration", "height", "item
              "catch", "give", "play", "facing", "with", "hands", "left", "right", "head", "lean", "bow", "show", "hide",
              "frontal"}
 OVER_KEYS = {"title", "subtitle", "flash", "confetti", "grade", "sound", "volume", "music", "camera", "on", "zoom",
-             "roll", "power", "focus", "aperture", "x", "y"}
+             "roll", "power", "focus", "aperture", "x", "y", "frames", "piece"}
 KNOWN = TIME_KEYS | HERO_KEYS | OVER_KEYS
 CAMERAS = {"wide", "full", "medium", "close", "two", "shake"}
 TURNS = {"left", "right", "front", "back"}
@@ -66,6 +66,7 @@ CODES = {
     "actor_height_unusual": ("warning", "a hero's height is outside what usually works"),
     "point_missing": ("error", "a named point does not exist"),
     "unknown_command": ("error", "a script line has a key the engine does not know"),
+    "frames_command": ("error", "a 'frames' line names a part or piece that is not frames, or a wrong speed"),
     "unknown_hero": ("error", "a script line names a hero who is not in the scene"),
     "who_missing": ("error", "a command for a hero without `who` while there are several heroes"),
     "action_missing": ("error", "an action that does not exist"),
@@ -114,6 +115,7 @@ CODES = {
 @dataclass
 class PuppetInfo:
     views: set = field(default_factory=lambda: {"front"})   # front, side, back
+    framed: set = field(default_factory=set)                # parts whose drawing is frames (rig "frames")
     width: float = DEFAULT_WIDTH                            # rest width against neck-to-sole height
 
 
@@ -252,7 +254,9 @@ def puppet_from_folder(path: str) -> PuppetInfo | None:
     except ValueError:
         return None
     views = {"front"} | {v for v in ("side", "back") if (d / v / "rig.json").is_file()}
-    return PuppetInfo(views=views, width=rig_width(rig))
+    framed = {n for n, p in (rig.get("parts") or {}).items() if isinstance(p, dict) and isinstance(p.get("frames"), dict)
+              and n != "head" and not n.startswith("hand_")}
+    return PuppetInfo(views=views, width=rig_width(rig), framed=framed)
 
 
 # ---------------------------------------------------------------------------------------------------- the check
@@ -372,6 +376,40 @@ class _Check:
                     self.add("heroes_overlap", f"heroes {a[0]}, {b[0]}",
                              "they stand on each other: move them apart (x) or one of them deeper (depth)")
 
+    # ------------------------------------------------------------------ frames from the script
+    def frames_line(self, where: str, ln: dict, targets: list):
+        def ok(v) -> bool:
+            return v == "again" or (isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 8)
+        v = ln["frames"]
+        if "piece" in ln:
+            pieces = {p.get("id"): p for p in self.spec.get("pieces", []) if isinstance(p, dict)}
+            if not ok(v):
+                self.add("frames_command", where, "'frames' of a piece: a speed 0..8 (1 as drawn, 0 stands still) "
+                                                  "or \"again\"")
+            elif ln["piece"] not in pieces:
+                self.add("frames_command", where, f"no set piece '{ln['piece']}' (there are: "
+                                                  f"{', '.join(str(k) for k in pieces) or 'none'})")
+            elif not isinstance(pieces[ln["piece"]].get("frames"), dict):
+                self.add("frames_command", where, f"the piece '{ln['piece']}' is one picture, not frames "
+                                                  f"(`tadam strip`)")
+            return
+        if not targets and len(self.heroes) > 1:
+            self.add("who_missing", where, "'frames' of a hero without 'who': there are several, say whose")
+        targets = targets or list(self.heroes)[:1]
+        if not isinstance(v, dict) or not v:
+            self.add("frames_command", where, "'frames' of a hero: {\"<part>\": speed 0..8 or \"again\"}, "
+                                              "e.g. {\"chest\": 2}")
+            return
+        for part, val in v.items():
+            if not ok(val):
+                self.add("frames_command", where, f"frames.{part}: a speed 0..8 or \"again\"")
+        for h in targets:
+            framed = self.heroes.get(h, {}).get("info", PuppetInfo()).framed
+            missing = [p for p in v if p not in framed]
+            if missing:
+                self.add("frames_command", where, f"{h}: {', '.join(missing)} not frames "
+                                                  f"(it has: {', '.join(sorted(framed)) or 'none'})")
+
     # ------------------------------------------------------------------ one line of the script
     def line(self, n: int, ln: dict):
         where = f"line {n + 1}" + (f" ({ln['who']})" if ln.get("who") else "")
@@ -385,6 +423,8 @@ class _Check:
             self.add("unknown_hero", where, f"no hero '{who}' (there are: {', '.join(self.heroes) or 'none'})")
             return
         targets = list(self.heroes) if who == "all" else ([who] if who else [])
+        if "frames" in ln:
+            self.frames_line(where, ln, targets)
         if not who and set(ln) & (HERO_KEYS - {"time", "for", "x", "y"}):
             if len(self.heroes) > 1:
                 self.add("who_missing", where, f"a command for a hero without 'who': there are several, the first "
