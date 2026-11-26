@@ -48,5 +48,49 @@
    "arms": "rest",
    "body": "rest"
   }
+ ],
+ "front": [
+  {
+   "time": 0.3,
+   "arm_r": {
+    "at": [
+     0.45,
+     -0.5
+    ],
+    "look": "palm"
+   },
+   "body": {
+    "lean": -3
+   }
+  },
+  {
+   "time": 0.14,
+   "ease": "in",
+   "arm_r": {
+    "at": [
+     0.98,
+     -0.1
+    ]
+   },
+   "body": {
+    "lean": 6
+   }
+  },
+  {
+   "time": 0.2,
+   "ease": "out",
+   "arm_r": {
+    "at": [
+     0.8,
+     0.35
+    ]
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arms": "rest",
+   "body": "rest"
+  }
  ]
 }
