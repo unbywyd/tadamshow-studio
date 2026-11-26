@@ -162,10 +162,20 @@ def test_proof_bodies_differ_as_named():
 # ------------------------------------------------------------------------------------------------ the engine
 
 def _godot(args: list[str], timeout: float = 300, env: dict | None = None) -> str:
+    """Runs the engine; on a hang it closes the whole tree (the console wrapper AND the window it started),
+    never leaving an off-screen window behind."""
     engine.ensure_imported()
-    p = subprocess.run([engine.godot(), *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       timeout=timeout, env={**os.environ, **(env or {})})
-    return p.stdout + p.stderr
+    p = subprocess.Popen([engine.godot(), *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                         encoding="utf-8", errors="replace", env={**os.environ, **(env or {})})
+    try:
+        out, err = p.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True)
+        p.kill()
+        out, err = p.communicate()
+        raise AssertionError(f"the engine hung ({timeout} s) and was closed:\n{(out + err)[-2000:]}")
+    return out + err
 
 
 @needs_godot
@@ -253,3 +263,25 @@ def test_the_dots_follow_the_real_mouse(tmp_path):
     _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
     ax, ay = json.loads(Path(after).read_text())
     assert ay < y - 150, ((x, y), (ax, ay))
+
+
+@needs_godot
+def test_the_hand_buttons_replay_the_action_at_once(tmp_path):
+    """«Рука: Левая» while «помахать» plays: the wave goes to the other hand right away, with no new press."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    cmd = workshop.command(d / "config.json")
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    a, b = (tmp_path / "a.json").as_posix(), (tmp_path / "b.json").as_posix()
+    seq = f"still@5,play:wave@20,where:{a}@120,side:left@130,where:{b}@260,state@262,quit@264"
+    out = _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
+    assert Path(a).exists() and Path(b).exists(), out[-2000:]
+    pa, pb = json.loads(Path(a).read_text()), json.loads(Path(b).read_text())
+    up = lambda p, h: p["body"][1] - p[h][1]          # (how high the hand is over the pelvis)
+    assert up(pa, "hand_r") > up(pa, "hand_l") + 60, pa
+    assert up(pb, "hand_l") > up(pb, "hand_r") + 60, pb
+    st = workshop.read_state(root)
+    assert st["action"] == "wave" and st["side"] == "left"

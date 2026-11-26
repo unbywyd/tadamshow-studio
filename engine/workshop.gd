@@ -103,6 +103,10 @@ var _playing_box: HFlowContainer
 var _tiles: VBoxContainer
 var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
+var _how_title: Label                # «Как сыграть «…»»: what the card's buttons change
+var _how_note: Label
+var _side_row: Control
+var _elbow_row: Control
 var _modes: Array = []              # the two mode buttons
 var _pages: Array = []              # the two pages
 var _pose_cards: VBoxContainer
@@ -438,7 +442,7 @@ func _line(title: String, control: Control) -> HBoxContainer:
 	return r
 
 
-func _slider(lo: float, hi: float, value: float, fmt: String, on_change: Callable) -> HBoxContainer:
+func _slider(lo: float, hi: float, value: float, fmt: String, on_change: Callable, on_done := Callable()) -> HBoxContainer:
 	var r := HBoxContainer.new()
 	r.add_theme_constant_override("separation", 12)
 	var s := HSlider.new()
@@ -457,6 +461,10 @@ func _slider(lo: float, hi: float, value: float, fmt: String, on_change: Callabl
 	s.value_changed.connect(func(x: float) -> void:
 		v.text = fmt % x
 		on_change.call(x))
+	if on_done.is_valid():
+		s.drag_ended.connect(func(changed: bool) -> void:
+			if changed:
+				on_done.call())
 	r.add_child(s)
 	r.add_child(v)
 	return r
@@ -623,9 +631,17 @@ func _actions_page() -> Control:
 	var hv := VBoxContainer.new()
 	hv.add_theme_constant_override("separation", 8)
 	how.add_child(hv)
-	hv.add_child(_line("Рука", _seg([["Правая", "right"], ["Левая", "left"], ["Обе", "both"]], _side, func(v: String) -> void: _side = v)))
-	hv.add_child(_line("Локоть", _seg([["Сам", ""], ["Вниз", "down"], ["Вверх", "up"], ["Наружу", "out"], ["Внутрь", "in"]], _elbow_say,
-		func(v: String) -> void: _elbow_say = v)))
+	_how_title = _title("", 22)
+	_how_title.clip_text = true
+	hv.add_child(_how_title)
+	_how_note = _note("", 16)
+	_how_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hv.add_child(_how_note)
+	_side_row = _line("Рука", _seg([["Правая", "right"], ["Левая", "left"], ["Обе", "both"]], _side, _pick_side))
+	hv.add_child(_side_row)
+	_elbow_row = _line("Локоть", _seg([["Сам", ""], ["Вниз", "down"], ["Вверх", "up"], ["Наружу", "out"], ["Внутрь", "in"]], _elbow_say,
+		_pick_elbow))
+	hv.add_child(_elbow_row)
 	var sliders := HBoxContainer.new()
 	sliders.add_theme_constant_override("separation", 18)
 	for s: Array in [["Сила", _energy, func(v: float) -> void: _energy = v], ["Темп", _speed, func(v: float) -> void: _speed = v]]:
@@ -634,7 +650,7 @@ func _actions_page() -> Control:
 		var l := Label.new()
 		l.text = s[0]
 		one.add_child(l)
-		var sl := _slider(0.5, 1.6, s[1], "%.1f×", s[2])
+		var sl := _slider(0.5, 1.6, s[1], "%.1f×", s[2], _replay)
 		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		one.add_child(sl)
 		one.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -649,6 +665,7 @@ func _actions_page() -> Control:
 	orow.add_child(_btn("В покой", func() -> void: _rest(true)))
 	hv.add_child(orow)
 	box.add_child(how)
+	_update_how()
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -985,6 +1002,60 @@ func _play(id: String) -> void:
 			_pending = {}
 	_say("%s%s" % [_title_of(act, id), "  · действие рубрики" if world_action_ids.has(id) else ""])
 	_show_faults(id)
+	_update_how()
+
+
+## The card's buttons change the action that plays: a pick plays it again at once, the new way.
+func _pick_side(v: String) -> void:
+	_side = v
+	_dirty_state = true
+	_replay()
+
+
+func _pick_elbow(v: String) -> void:
+	_elbow_say = v
+	_dirty_state = true
+	_replay()
+
+
+func _replay() -> void:
+	if chosen != "" and actions().has(chosen):
+		_play(chosen)
+
+
+static func _has_arms(act: Dictionary) -> bool:
+	for ph: Dictionary in act.get("phases", []):
+		for k: String in ["arm_l", "arm_r", "arms"]:
+			if ph.get(k, null) is Dictionary:
+				return true
+	return false
+
+
+## The card says which action its buttons change, and shows only the buttons that change it.
+func _update_how() -> void:
+	if _how_title == null:
+		return
+	if chosen == "" or not actions().has(chosen):
+		_how_title.text = "Как сыграть"
+		_how_note.text = "Сначала нажмите действие ниже. Потом эти кнопки сразу переиграют его по-новому."
+		_side_row.visible = true
+		_elbow_row.visible = true
+		return
+	var act: Dictionary = actions()[chosen]
+	var sided: bool = act.get("params", {}).has("side")
+	var elbowed: bool = _has_arms(act) and not (act.get("group", "") == "move" and _walks(act))
+	_side_row.visible = sided
+	_elbow_row.visible = elbowed
+	_how_title.text = "Как сыграть «%s»" % _title_of(act, chosen)
+	var says: Array = []
+	if sided:
+		says.append("Рука — какой рукой: справа или слева на экране, или обеими.")
+	if elbowed:
+		says.append("Локоть — куда он смотрит, пока рука идёт.")
+	says.append("Сила — шире или скромнее, темп — быстрее или медленнее.")
+	if not sided and not elbowed:
+		says.push_front("Здесь не выбрать руку и локоть: это действие не про одну руку.")
+	_how_note.text = " ".join(says)
 
 
 ## The clean switch: every hero lets everything go and goes back to rest (motion.gd play_clean); the line waits.
@@ -1002,6 +1073,7 @@ func _rest(say := true) -> void:
 	_let_go()
 	chosen = ""
 	_mark_tile("")
+	_update_how()
 	if _faults != null:
 		_faults.visible = false
 	if say:
@@ -1509,7 +1581,7 @@ func _write_state() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(dir)
 	var a := _main()
-	var st := {"world": cfg.get("world", ""), "world_title": cfg.get("world_title", ""), "hero": hero_id, "row": row, "tab": ["mechanics", "poses"][tab], "action": chosen,
+	var st := {"world": cfg.get("world", ""), "world_title": cfg.get("world_title", ""), "hero": hero_id, "row": row, "tab": ["mechanics", "poses"][tab], "action": chosen, "side": _side, "elbow": _elbow_say,
 		"view": a.view if a != null else "front", "pose": pose_now, "poses": poses.size(), "pose_selected": _sel + 1,
 		"cmd_seen": _cmd_seen, "at": Time.get_datetime_string_from_system(false, true)}
 	var f := FileAccess.open(dir.path_join("state.json"), FileAccess.WRITE)
@@ -1541,6 +1613,10 @@ func _scripted() -> void:
 				_show_mode(int(bits[1]))
 			"play":
 				_play(bits[1])
+			"side":                        # side:left: as the «Рука» buttons do
+				_pick_side(bits[1])
+			"elbow":
+				_pick_elbow(bits[1] if bits.size() > 1 else "")
 			"drag":
 				_drag_to(_main(), bits[1], Vector2(float(bits[2]), float(bits[3])))
 			"hover":
