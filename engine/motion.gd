@@ -34,6 +34,7 @@ extends RefCounted
 ##         wrist: degrees, outward   look: "palm" | "fist" | "back" | "edge" (the hand turned edge on) | "point"
 ##              (the index finger out) | "auto"
 ##         contact: true = may touch the body
+##         front: true = this arm is drawn over the other one (a hand raised across the body, over the other arm)
 ##      or, instead of "at", the arm's own ANGLES (what is written is what is seen: the engine guesses nothing):
 ##         raise: degrees, 0 hanging straight down, 90 out level, 180 straight up, < 0 across the body
 ##         elbow: degrees (a NUMBER here), 0 straight, + the forearm turns on the way the arm rises (up when the
@@ -840,6 +841,7 @@ func _next_phase(r: Run) -> void:
 			c.now["contact"] = bool(c.goal.get("contact", false)) or leaving
 			if c.goal.has("at"):
 				c.now["exact"] = bool(c.goal.get("exact", false))
+			c.now["front"] = bool(c.goal.get("front", false))
 			c.now["leaving"] = leaving
 			var at_spec: Variant = c.goal.get("at", null)
 			var was_front: bool = _elbow[ch] == "down" and not left_already   # leaving a place in front of the body (chin, chest)
@@ -999,7 +1001,7 @@ func _advance_values(r: Run) -> void:
 	for ch: String in r.owned:
 		var c: Chan = chans[ch]
 		for key: String in c.goal:
-			if key in ["look", "contact", "jump", "forward", "walk", "speed", "seat", "grab", "release", "throw", "reach", "catch", "gait", "elbow", "_side", "exact", "free"]:
+			if key in ["look", "contact", "jump", "forward", "walk", "speed", "seat", "grab", "release", "throw", "reach", "catch", "gait", "elbow", "_side", "exact", "free", "front"]:
 				continue
 			var spec: Variant = c.goal[key]
 			if ch.begins_with("arm") and key == "at":
@@ -1412,6 +1414,11 @@ func _apply() -> void:
 		var c: Chan = chans[ch]
 		var h: String = "hand_" + ch.right(1)
 		var s := _sign(ch)
+		# an arm said "front" is drawn over the other arm (both are on one layer as drawn)
+		var lift_z: int = 8 if c.owner != null and bool(c.now.get("front", false)) else 0
+		var arm_chain: Variant = p.chains[h]
+		for part: Variant in [arm_chain.a, arm_chain.b, arm_chain.end]:
+			part.sprite.z_index = part.z + lift_z
 		var exact: bool = c.owner != null and bool(c.now.get("exact", false))
 		var where: Vector2 = _cart(_stretch(ch, c.now["at"]) if exact else _fold_limit(_stretch(ch, c.now["at"])))
 		if _walk_w > 0.0 and c.owner == null:        # arms swing against the legs while walking
