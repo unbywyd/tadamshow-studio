@@ -4,47 +4,74 @@ extends "res://stage.gd"
 ##
 ##   tadam workshop [hero]          (it writes the config and opens this scene: --config=<file.json>)
 ##
-## The stage on the left, the panel on the right, two tabs:
-##   МЕХАНИКА  every action of the library and of this world, by group, with a search; side, elbow, strength,
-##             speed; a CLEAN switch by default (everything lets go and goes to rest first: motion.gd play_clean),
-##             "поверх" layers it on what plays; slow (0.25x, 0.5x), pause, a step, a loop, the trail of the hands and
-##             feet; the faults the hero check found in this action, with their numbers.
-##   ПОЗЫ      dots on the hero: the hands, the feet, the pelvis (down / aside), the neck (the lean), the head (its
-##             tilt); right click on a hand: palm / fist / back / edge / point; the wheel over a hand turns the
-##             wrist; Shift + right click: where the elbow points. «Фикс» (F) keeps the pose in the list; every
-##             pose has its way in (time, ease, hold); «Проиграть» plays the list as an action; «Сохранить» writes it
-##             as an action of this world (actions/<id>.json), or of the core library with --core.
-## One hero, all the world's heroes in a row (the same pose / action on all of them), or the proof bodies in a row.
+## The stage on the left with its clock under the hero (pause, a frame, 0.25x / 0.5x / 1x, round and round, the
+## trail of the hands and feet, breathing); the panel on the right: who is on the stage, and two modes:
+##   ДЕЙСТВИЯ   every action of the library and of this world as tiles by group, with a search; how to play it
+##              (side, elbow, strength, speed); a CLEAN switch by default (everything lets go and goes to rest
+##              first: motion.gd play_clean), or laid over what plays; what plays now; the faults the hero check
+##              found in this action, in words.
+##   ИЗ ПОЗ     dots on the hero: the hands, the feet, the pelvis (down / aside), the neck (the lean), the head;
+##              right click on a hand: palm / fist / back / edge / point; the wheel turns the wrist; Shift + right
+##              click: where the elbow points. «Запомнить позу» (F) keeps it; every pose is a card with its way in
+##              (time, ease, hold); «Показать движение» plays them; «Сохранить» writes an action of this world
+##              (actions/<id>.json), or of the core library with --core.
+## Design (the owner's taste): flat and matte, no borders, no shadows, no grey; one ink, deep blue for what is
+## chosen, red only for the main button and for faults; every state of every control is set.
 ## The files are the only truth: an action file changed on disk (by Claude) is read again at once; what is chosen
 ## and the pose list are written to <world>/.tadam/workshop/state.json for Claude, and `tadam workshop pose --fix`
 ## asks through cmd.json.
 
 const MotionScript := preload("res://motion.gd")
-const VIEW_NAMES := {"front": "спереди", "side_l": "влево", "side_r": "вправо", "back": "сзади"}
 const GROUP_TITLES := {"pose": "Позы", "gesture": "Жесты", "body": "Тело", "move": "Перемещение", "feeling": "Чувства",
-	"dance": "Танцы", "item": "Предметы", "fight": "Драка", "silly": "Дурачества", "music": "Музыка", "two": "Вдвоём"}
+	"dance": "Танцы", "item": "С предметами", "fight": "Драка", "silly": "Дурачества", "music": "Музыка", "two": "Вдвоём"}
 const LOOKS := ["auto", "palm", "fist", "back", "edge", "point"]
 const LOOK_NAMES := {"auto": "сама", "palm": "ладонь", "fist": "кулак", "back": "тыльная", "edge": "ребро", "point": "палец"}
 const ELBOWS := ["", "down", "up", "out", "in"]
+const ELBOW_NAMES := {"down": "локоть вниз", "up": "локоть вверх", "out": "локоть наружу", "in": "локоть внутрь"}
 const EASES := ["inout", "out", "in", "linear"]
-const EASE_NAMES := ["плавно", "резко в начале", "резко в конце", "ровно"]
-const DOT := 13.0
+const EASE_NAMES := ["Плавно", "Резкий старт", "Резкий конец", "Ровно"]
+## The hero check's measures in words (engine/tools/action_check.gd LIMITS)
+const FAULT_WORDS := {"wrong": "локоть или колено выгнулись не в ту сторону", "slide": "стоящая стопа скользит",
+	"inside": "кисть уходит в корпус", "floor": "что-то проваливается под пол", "miss": "кисть не дошла до места",
+	"path": "кисть идёт в обход, а не прямо", "accel": "рывок кисти", "out": "уходит из кадра",
+	"face": "рука закрывает лицо", "back": "не вернулся в покой", "balance": "теряет равновесие",
+	"grab": "промахнулся мимо предмета", "nograb": "не взял предмет, который должен был взять",
+	"item_floor": "предмет уходит под пол", "cross": "локоть неудачно переходит на другую сторону",
+	"skirt": "юбка проходит сквозь ноги", "torn": "юбка рвётся", "jerk": "дёргается"}
+const DOT_NAMES := {"hand_l": "левая кисть", "hand_r": "правая кисть", "foot_l": "левая стопа", "foot_r": "правая стопа",
+	"body": "таз: присесть, сдвинуться", "neck": "плечи: наклон корпуса", "head": "макушка: наклон головы"}
+const PANEL_W := 760.0
+const DOT := 14.0
 const REACH := 40.0
-const INK := Color("2b6cb0")
-const ACCENT := Color("c2351f")
 const TRAIL := 120                  # steps of the trail
 const HAND_PACE := 1.6              # arm lengths a second: the time a pose's way in gets by default
+
+## the palette (one system: see the header)
+const C_PAPER := Color("f2efe9")    # the panel
+const C_CARD := Color("fbfaf7")     # a card on it
+const C_CONTROL := Color("e4ded3")  # a button at rest
+const C_HOVER := Color("d8d0c2")
+const C_INK := Color("1e2330")
+const C_SOFT := Color("596070")     # notes
+const C_CHOSEN := Color("22506a")   # chosen (deep blue), white text
+const C_CHOSEN_HOVER := Color("1b4257")
+const C_MAIN := Color("b3362c")     # the main button, faults
+const C_MAIN_HOVER := Color("9c2e25")
+const C_FAULT_BG := Color("f5e1dc")
+const C_DOT_LIMB := Color("22506a")
+const C_DOT_BODY := Color("b3362c")
 
 ## kept across a reload of the scene (changing the hero or the row)
 static var cfg: Dictionary = {}
 static var row := "one"             # "one" | "all" | "proof"
 static var hero_id := ""
-static var tab := 0
+static var tab := 0                 # 0 actions, 1 poses
 static var poses: Array = []        # [{pose, time, ease, hold}]
 static var pose_now: Dictionary = {}
 static var chosen := ""             # the action chosen last
 static var _cmd_seen := 0
 static var still := false           # the idle life (breath, sway) off: a pose stands exactly still
+static var _sized := false
 
 var _side := "right"
 var _elbow_say := ""
@@ -54,34 +81,36 @@ var speed := 1.0                    # the clock: 0.25 / 0.5 / 1
 var paused := false
 var _steps_wanted := 0
 var _acc := 0.0
-var _over_mode := false                 # "поверх": layered instead of a clean switch
+var _over_mode := false             # laid over what plays, instead of a clean switch
 var _loop := false
 var _trails := false
 var _pending: Dictionary = {}       # a line waiting for the clean switch to reach rest
+var _due_lines: Array = []
 var _idle := 0
 var _trail: Dictionary = {}         # handle -> [points]
 var _drag := ""
 var _drag_off := Vector2.ZERO
-var _sel := -1                      # the pose of the list being edited
+var _hover := ""
+var _sel := -1                      # the pose card being edited
 var _stamp := ""
 var _poll := 0.0
 var _dirty_state := true
 
 var _status: Label
-var _faults: Label
-var _playing_box: HBoxContainer
-var _list: ItemList
-var _list_ids: Array = []
+var _faults: PanelContainer
+var _faults_text: Label
+var _playing_box: HFlowContainer
+var _tiles: VBoxContainer
+var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
-var _pose_list: ItemList
-var _pose_time: HSlider
-var _pose_time_lbl: Label
-var _pose_ease: OptionButton
-var _pose_hold: CheckBox
+var _modes: Array = []              # the two mode buttons
+var _pages: Array = []              # the two pages
+var _pose_cards: VBoxContainer
 var _save_id: LineEdit
 var _save_title: LineEdit
+var _pause_btn: Button
 var _dots: Node2D
-var _tabs: TabContainer
+var _head_font: Font
 
 
 class Dots extends Node2D:
@@ -113,20 +142,43 @@ func _ready() -> void:
 	camera_on = false
 	super._ready()
 	set_physics_process(true)
+	_fit_window()
 	_dots = Dots.new()
 	_dots.ws = self
 	_dots.z_index = 4000
 	add_child(_dots)
+	_head_font = _load_head_font()
 	_build_panel()
+	_build_clock()
 	if pose_now.is_empty():
 		pose_now = rest_pose()
-	if tab == 1:
-		_apply_pose.call_deferred()
-	elif chosen != "" and actions().has(chosen):
+	_show_mode(tab)
+	if tab == 0 and chosen != "" and actions().has(chosen):
 		_play.call_deferred(chosen)
 	_stamp = _actions_stamp()
 	_set_life()
 	_write_state()
+
+
+## The window takes most of the screen's height (the stage 720 and the panel side by side, 1280 high).
+func _fit_window() -> void:
+	if _sized or DisplayServer.get_name() == "headless" or OS.has_environment("WORKSHOP_SEQ"):
+		return
+	_sized = true
+	var usable := DisplayServer.screen_get_usable_rect()
+	var h := mini(int(usable.size.y * 0.94), 1280)
+	var w := int(h * (SIZE.x + PANEL_W) / SIZE.y)
+	DisplayServer.window_set_size(Vector2i(w, h))
+	DisplayServer.window_set_position(usable.position + (usable.size - Vector2i(w, h)) / 2)
+
+
+static func _load_head_font() -> Font:
+	var f := ProjectSettings.globalize_path("res://").path_join("../src/tadam/data/fonts/PT_Serif-Web-Bold.ttf").simplify_path()
+	if FileAccess.file_exists(f):
+		var ff := FontFile.new()
+		if ff.load_dynamic_font(f) == OK:
+			return ff
+	return null
 
 
 func _set_life() -> void:
@@ -226,318 +278,616 @@ func _process(delta: float) -> void:
 	_scripted()
 
 
+func _set_paused(on: bool) -> void:
+	paused = on
+	if _pause_btn != null:
+		_pause_btn.text = "▶  Пуск" if paused else "❚❚  Пауза"
+
+
+# ----------------------------------------------------------------------------- the look
+
+static func _box(colour: Color, radius := 10, h := 14, v := 8) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = colour
+	sb.set_corner_radius_all(radius)
+	sb.content_margin_left = h
+	sb.content_margin_right = h
+	sb.content_margin_top = v
+	sb.content_margin_bottom = v
+	return sb
+
+
+## One theme for every control: every state set (a chosen tile under the mouse stays readable).
+func _theme() -> Theme:
+	var t := Theme.new()
+	t.default_font_size = 21
+	var clear := _box(Color(0, 0, 0, 0))
+	# a plain button / a tile / a segment: stone at rest, deep blue when chosen (toggle), white text on blue
+	for kind: String in ["Button"]:
+		t.set_stylebox("normal", kind, _box(C_CONTROL))
+		t.set_stylebox("hover", kind, _box(C_HOVER))
+		t.set_stylebox("pressed", kind, _box(C_CHOSEN))
+		t.set_stylebox("hover_pressed", kind, _box(C_CHOSEN_HOVER))
+		t.set_stylebox("disabled", kind, _box(C_CONTROL))
+		t.set_stylebox("focus", kind, clear)
+		t.set_color("font_color", kind, C_INK)
+		t.set_color("font_hover_color", kind, C_INK)
+		t.set_color("font_focus_color", kind, C_INK)
+		t.set_color("font_pressed_color", kind, Color.WHITE)
+		t.set_color("font_hover_pressed_color", kind, Color.WHITE)
+		t.set_color("font_disabled_color", kind, C_SOFT)
+	# the main button: red, white text
+	t.set_type_variation("Main", "Button")
+	t.set_stylebox("normal", "Main", _box(C_MAIN, 10, 18, 10))
+	t.set_stylebox("hover", "Main", _box(C_MAIN_HOVER, 10, 18, 10))
+	t.set_stylebox("pressed", "Main", _box(C_MAIN_HOVER, 10, 18, 10))
+	t.set_stylebox("hover_pressed", "Main", _box(C_MAIN_HOVER, 10, 18, 10))
+	for c: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		t.set_color(c, "Main", Color.WHITE)
+	# a tile of an action: smaller, a little round
+	t.set_type_variation("Tile", "Button")
+	t.set_stylebox("normal", "Tile", _box(C_CONTROL, 8, 12, 7))
+	t.set_stylebox("hover", "Tile", _box(C_HOVER, 8, 12, 7))
+	t.set_stylebox("pressed", "Tile", _box(C_CHOSEN, 8, 12, 7))
+	t.set_stylebox("hover_pressed", "Tile", _box(C_CHOSEN_HOVER, 8, 12, 7))
+	t.set_font_size("font_size", "Tile", 19)
+	# the two modes on top: big, the chosen one blue
+	t.set_type_variation("Mode", "Button")
+	for st: String in ["normal", "hover", "pressed", "hover_pressed"]:
+		var col: Color = {"normal": C_CONTROL, "hover": C_HOVER, "pressed": C_CHOSEN, "hover_pressed": C_CHOSEN_HOVER}[st]
+		t.set_stylebox(st, "Mode", _box(col, 12, 16, 14))
+	t.set_font_size("font_size", "Mode", 22)
+	# fields: filled, no border; focus keeps the colour, a red line inside (the site's rule)
+	var field := _box(C_CONTROL, 10, 14, 9)
+	var focus := _box(C_CONTROL, 10, 14, 9)
+	focus.border_color = C_MAIN
+	focus.set_border_width_all(2)
+	t.set_stylebox("normal", "LineEdit", field)
+	t.set_stylebox("focus", "LineEdit", focus)
+	t.set_color("font_color", "LineEdit", C_INK)
+	t.set_color("font_placeholder_color", "LineEdit", C_SOFT)
+	t.set_color("caret_color", "LineEdit", C_MAIN)
+	t.set_color("selection_color", "LineEdit", Color(C_CHOSEN, 0.25))
+	t.set_color("font_color", "Label", C_INK)
+	# sliders: a stone track, a blue grabber area
+	t.set_stylebox("slider", "HSlider", _box(C_CONTROL, 4, 0, 3))
+	t.set_stylebox("grabber_area", "HSlider", _box(C_CHOSEN, 4, 0, 3))
+	t.set_stylebox("grabber_area_highlight", "HSlider", _box(C_CHOSEN_HOVER, 4, 0, 3))
+	t.set_stylebox("panel", "PanelContainer", _box(C_CARD, 14, 18, 14))
+	t.set_type_variation("Fault", "PanelContainer")
+	t.set_stylebox("panel", "Fault", _box(C_FAULT_BG, 12, 16, 12))
+	t.set_type_variation("Picked", "PanelContainer")
+	var picked := _box(C_CARD, 14, 18, 14)
+	picked.border_color = C_CHOSEN
+	picked.set_border_width_all(3)
+	t.set_stylebox("panel", "Picked", picked)
+	t.set_stylebox("panel", "ScrollContainer", clear)
+	for part: String in ["scroll", "scroll_focus"]:
+		t.set_stylebox(part, "VScrollBar", _box(Color(0, 0, 0, 0), 4, 0, 0))
+	t.set_stylebox("grabber", "VScrollBar", _box(C_HOVER, 4, 4, 4))
+	t.set_stylebox("grabber_highlight", "VScrollBar", _box(C_SOFT, 4, 4, 4))
+	t.set_stylebox("grabber_pressed", "VScrollBar", _box(C_SOFT, 4, 4, 4))
+	return t
+
+
+func _title(text: String, size := 30) -> Label:
+	var l := Label.new()
+	l.text = text
+	if _head_font != null:
+		l.add_theme_font_override("font", _head_font)
+	l.add_theme_font_size_override("font_size", size)
+	return l
+
+
+func _note(text: String, size := 18) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_color_override("font_color", C_SOFT)
+	l.add_theme_font_size_override("font_size", size)
+	return l
+
+
+func _btn(text: String, on_press: Callable, variation := "") -> Button:
+	var b := Button.new()
+	b.text = text
+	b.theme_type_variation = variation
+	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(on_press)
+	return b
+
+
+func _toggle(text: String, on: bool, on_toggle: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.toggle_mode = true
+	b.button_pressed = on
+	b.focus_mode = Control.FOCUS_NONE
+	b.toggled.connect(on_toggle)
+	return b
+
+
+## A segmented choice: one of `options` ([label, value]) is chosen.
+func _seg(options: Array, current: Variant, on_pick: Callable, variation := "") -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var group := ButtonGroup.new()
+	for o: Array in options:
+		var b := Button.new()
+		b.text = o[0]
+		b.toggle_mode = true
+		b.button_group = group
+		b.theme_type_variation = variation
+		b.focus_mode = Control.FOCUS_NONE
+		b.button_pressed = o[1] == current
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func() -> void: on_pick.call(o[1]))
+		box.add_child(b)
+	return box
+
+
+func _line(title: String, control: Control) -> HBoxContainer:
+	var r := HBoxContainer.new()
+	r.add_theme_constant_override("separation", 12)
+	var l := Label.new()
+	l.text = title
+	l.custom_minimum_size = Vector2(120, 0)
+	r.add_child(l)
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r.add_child(control)
+	return r
+
+
+func _slider(lo: float, hi: float, value: float, fmt: String, on_change: Callable) -> HBoxContainer:
+	var r := HBoxContainer.new()
+	r.add_theme_constant_override("separation", 12)
+	var s := HSlider.new()
+	s.min_value = lo
+	s.max_value = hi
+	s.step = 0.05
+	s.value = value
+	s.focus_mode = Control.FOCUS_NONE
+	s.custom_minimum_size = Vector2(0, 32)
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var v := Label.new()
+	v.text = fmt % value
+	v.custom_minimum_size = Vector2(64, 0)
+	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	s.value_changed.connect(func(x: float) -> void:
+		v.text = fmt % x
+		on_change.call(x))
+	r.add_child(s)
+	r.add_child(v)
+	return r
+
+
+func _gap(h := 6) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(0, h)
+	return c
+
+
 # ----------------------------------------------------------------------------- the panel
 
 func _build_panel() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 20
 	add_child(layer)
-	var root := PanelContainer.new()
-	root.position = Vector2(SIZE.x + 8, 8)
-	root.size = Vector2(740, SIZE.y - 16)
-	root.theme = _theme()
-	root.add_theme_stylebox_override("panel", _flat(Color("f4efe6"), 0))
-	layer.add_child(root)
+	var bg := PanelContainer.new()
+	bg.position = Vector2(SIZE.x, 0)
+	bg.size = Vector2(PANEL_W, SIZE.y)
+	bg.theme = _theme()
+	bg.add_theme_stylebox_override("panel", _box(C_PAPER, 0, 28, 24))
+	layer.add_child(bg)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 8)
-	root.add_child(col)
+	col.add_theme_constant_override("separation", 14)
+	bg.add_child(col)
 
-	var pick := OptionButton.new()
-	var all: Array = cfg.get("heroes", []) + cfg.get("proof", [])
-	for h: Dictionary in all:
-		pick.add_item(str(h.get("title", h["id"])))
-	pick.select(maxi(all.map(func(h: Dictionary) -> String: return h["id"]).find(hero_id), 0))
-	pick.item_selected.connect(func(i: int) -> void:
-		hero_id = all[i]["id"]
-		row = "one"
-		_reload())
-	var rows := OptionButton.new()
-	for t: String in ["один", "все герои в ряд", "пробные тела в ряд"]:
-		rows.add_item(t)
-	rows.select(["one", "all", "proof"].find(row))
-	rows.item_selected.connect(func(i: int) -> void:
-		row = ["one", "all", "proof"][i]
-		_reload())
-	col.add_child(_row("Герой", [pick, rows]))
-	var views: Array = []
-	for v: Array in [["Спереди", "front"], ["Влево", "left"], ["Вправо", "right"], ["Сзади", "back"]]:
-		views.append(_button(v[0], func() -> void:
+	# who is on the stage
+	var top := HBoxContainer.new()
+	top.add_child(_title("Мастерская", 34))
+	var where := _note("общая библиотека" if cfg.get("core", false) else "рубрика", 18)
+	where.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	where.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top.add_child(where)
+	col.add_child(top)
+	col.add_child(_seg([["Один герой", "one"], ["Все герои", "all"], ["Пробные тела", "proof"]], row, func(v: String) -> void:
+		row = v
+		_reload()))
+	if row == "one":
+		var heroes := HFlowContainer.new()
+		heroes.add_theme_constant_override("h_separation", 6)
+		heroes.add_theme_constant_override("v_separation", 6)
+		var group := ButtonGroup.new()
+		var list: Array = cfg.get("heroes", [])
+		if list.is_empty() or str(hero_id).begins_with("proof:"):
+			list = list + cfg.get("proof", [])
+		for h: Dictionary in list:
+			var b := Button.new()
+			b.text = str(h.get("title", h["id"])).replace("проба: ", "")
+			b.theme_type_variation = "Tile"
+			b.toggle_mode = true
+			b.button_group = group
+			b.focus_mode = Control.FOCUS_NONE
+			b.button_pressed = h["id"] == hero_id
+			if str(h["id"]).begins_with("proof:"):
+				b.tooltip_text = "пробное тело: " + str(h["id"]).trim_prefix("proof:")
+			b.pressed.connect(func() -> void:
+				hero_id = h["id"]
+				_reload())
+			heroes.add_child(b)
+		col.add_child(heroes)
+	col.add_child(_line("Вид", _seg([["Спереди", "front"], ["Влево", "left"], ["Вправо", "right"], ["Сзади", "back"]], "front",
+		func(v: String) -> void:
 			for id: String in actors:
-				_command({"who": id, "turn": v[1]})))
-	col.add_child(_row("Вид", views))
+				_command({"who": id, "turn": v}))))
 
-	# the clock
-	var clock: Array = []
-	for sp: float in [0.25, 0.5, 1.0]:
-		clock.append(_button("%s×" % ("1" if sp == 1.0 else str(sp)), func() -> void:
-			speed = sp
-			_say("скорость %s×" % str(sp))))
-	clock.append(_button("Пауза", func() -> void:
-		paused = not paused
-		_say("пауза" if paused else "идёт")))
-	clock.append(_button("Шаг", func() -> void:
-		paused = true
-		_steps_wanted += 1))
-	col.add_child(_row("Время", clock))
-	var loop := CheckBox.new()
-	loop.text = "по кругу"
-	loop.toggled.connect(func(on: bool) -> void: _loop = on)
-	var trails := CheckBox.new()
-	trails.text = "след кистей и стоп"
-	trails.toggled.connect(func(on: bool) -> void:
-		_trails = on
-		_trail.clear())
-	var alive := CheckBox.new()
-	alive.text = "дышит"
-	alive.button_pressed = still == false
-	alive.toggled.connect(func(on: bool) -> void:
-		still = not on
-		_set_life())
-	col.add_child(_row("", [loop, trails, alive]))
-
-	var tabs := TabContainer.new()
-	_tabs = tabs
-	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(tabs)
-	tabs.add_child(_mechanics_tab())
-	tabs.add_child(_poses_tab())
-	tabs.set_tab_title(0, "Механика")
-	tabs.set_tab_title(1, "Позы")
-	tabs.current_tab = tab
-	tabs.tab_changed.connect(func(i: int) -> void:
-		tab = i
-		_dirty_state = true
-		if i == 1:
-			_apply_pose()
-		else:
-			_rest())
-
-	_status = Label.new()
-	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.text = "Нажмите действие" if tab == 0 else "Тяните точки на герое; «Фикс» — оставить позу"
+	# the two modes
+	var modes := HBoxContainer.new()
+	modes.add_theme_constant_override("separation", 8)
+	for i in 2:
+		var b := Button.new()
+		b.text = ["Смотреть действия", "Новое действие из поз"][i]
+		b.theme_type_variation = "Mode"
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func() -> void: _show_mode(i))
+		modes.add_child(b)
+		_modes.append(b)
+	col.add_child(_gap(4))
+	col.add_child(modes)
+	_status = _note("", 19)
 	col.add_child(_status)
+	var pages := Control.new()
+	pages.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(pages)
+	for page: Control in [_actions_page(), _poses_page()]:
+		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		pages.add_child(page)
+		_pages.append(page)
 
 
-func _mechanics_tab() -> Control:
+func _show_mode(i: int) -> void:
+	tab = i
+	for k in _modes.size():
+		(_modes[k] as Button).set_pressed_no_signal(k == i)
+		(_pages[k] as Control).visible = k == i
+	_dirty_state = true
+	if i == 1:
+		_say("Тяните точки на герое. Поза нравится — «Запомнить позу» или клавиша F.")
+		_apply_pose()
+	else:
+		_say("Нажмите действие: герой сыграет его из покоя.")
+		_rest(false)
+
+
+func _actions_page() -> Control:
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	var side := OptionButton.new()
-	for sname: String in ["правая", "левая", "обе"]:
-		side.add_item(sname)
-	side.item_selected.connect(func(i: int) -> void: _side = ["right", "left", "both"][i])
-	var elbow := OptionButton.new()
-	for ename: String in ["локоть сам", "вниз", "вверх", "наружу", "внутрь"]:
-		elbow.add_item(ename)
-	elbow.item_selected.connect(func(i: int) -> void: _elbow_say = ELBOWS[i])
-	box.add_child(_row("Сторона", [side, elbow]))
-	box.add_child(_row("Сила", [_slider(0.5, 1.6, 1.0, func(v: float) -> void: _energy = v)]))
-	box.add_child(_row("Скорость", [_slider(0.5, 1.6, 1.0, func(v: float) -> void: _speed = v)]))
-	var over := CheckBox.new()
-	over.text = "поверх (не отпускать прежнее)"
-	over.toggled.connect(func(on: bool) -> void: _over_mode = on)
-	box.add_child(_row("", [over, _button("В покой", _rest)]))
-	_playing_box = HBoxContainer.new()
-	box.add_child(_row("Играет", [_playing_box]))
+	box.add_theme_constant_override("separation", 12)
 	_search = LineEdit.new()
-	_search.placeholder_text = "поиск: имя или название"
-	_search.text_changed.connect(func(_t: String) -> void: _fill_list())
+	_search.placeholder_text = "Найти действие: «помахать», wave…"
+	_search.clear_button_enabled = true
+	_search.text_changed.connect(func(_t: String) -> void: _fill_tiles())
 	box.add_child(_search)
-	_list = ItemList.new()
-	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_list.item_clicked.connect(func(i: int, _at: Vector2, _b: int) -> void:
-		if _list_ids[i] != "":
-			_play(_list_ids[i]))
-	box.add_child(_list)
-	_faults = Label.new()
-	_faults.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_faults.add_theme_color_override("font_color", ACCENT)
+	# how to play it: one compact card above the tiles
+	var how := PanelContainer.new()
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", 8)
+	how.add_child(hv)
+	hv.add_child(_line("Рука", _seg([["Правая", "right"], ["Левая", "left"], ["Обе", "both"]], _side, func(v: String) -> void: _side = v)))
+	hv.add_child(_line("Локоть", _seg([["Сам", ""], ["Вниз", "down"], ["Вверх", "up"], ["Наружу", "out"], ["Внутрь", "in"]], _elbow_say,
+		func(v: String) -> void: _elbow_say = v)))
+	var sliders := HBoxContainer.new()
+	sliders.add_theme_constant_override("separation", 18)
+	for s: Array in [["Сила", _energy, func(v: float) -> void: _energy = v], ["Темп", _speed, func(v: float) -> void: _speed = v]]:
+		var one := HBoxContainer.new()
+		one.add_theme_constant_override("separation", 10)
+		var l := Label.new()
+		l.text = s[0]
+		one.add_child(l)
+		var sl := _slider(0.5, 1.6, s[1], "%.1f×", s[2])
+		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		one.add_child(sl)
+		one.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sliders.add_child(one)
+	hv.add_child(sliders)
+	var orow := HBoxContainer.new()
+	orow.add_theme_constant_override("separation", 8)
+	var over := _toggle("Наложить на то, что играет", _over_mode, func(on: bool) -> void: _over_mode = on)
+	over.tooltip_text = "Обычно герой сначала возвращается в покой. Включите, чтобы, например, махать на ходу."
+	over.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	orow.add_child(over)
+	orow.add_child(_btn("В покой", func() -> void: _rest(true)))
+	hv.add_child(orow)
+	box.add_child(how)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tiles = VBoxContainer.new()
+	_tiles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tiles.add_theme_constant_override("separation", 6)
+	scroll.add_child(_tiles)
+	box.add_child(scroll)
+	_fill_tiles()
+
+	# what plays now, and the faults of the chosen action
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 12)
+	var pl := Label.new()
+	pl.text = "Играет:"
+	prow.add_child(pl)
+	_playing_box = HFlowContainer.new()
+	_playing_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_playing_box.add_theme_constant_override("h_separation", 6)
+	prow.add_child(_playing_box)
+	box.add_child(prow)
+	_faults = PanelContainer.new()
+	_faults.theme_type_variation = "Fault"
+	_faults_text = Label.new()
+	_faults_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_faults_text.add_theme_font_size_override("font_size", 18)
+	_faults.add_child(_faults_text)
+	_faults.visible = false
 	box.add_child(_faults)
-	_fill_list()
 	return box
 
 
-func _fill_list() -> void:
-	if _list == null:
+func _fill_tiles() -> void:
+	if _tiles == null:
 		return
-	_list.clear()
-	_list_ids.clear()
+	for c in _tiles.get_children():
+		c.queue_free()
+	_tile_of.clear()
 	var q := _search.text.strip_edges().to_lower() if _search != null else ""
 	var by_group := {}
 	for id: String in actions():
 		var a: Dictionary = actions()[id]
 		if id.begins_with("_") or id == "rest":
 			continue
-		var title := _title(a, id)
+		var title := _title_of(a, id)
 		if q != "" and not (q in id.to_lower() or q in title.to_lower()):
 			continue
 		by_group.get_or_add(a.get("group", "other"), []).append(id)
-	for g: String in GROUP_TITLES.keys() + by_group.keys().filter(func(k: String) -> bool: return not GROUP_TITLES.has(k)):
-		if not by_group.has(g):
+	var own: Array = world_action_ids.filter(func(id: String) -> bool: return by_group.values().any(func(l: Array) -> bool: return l.has(id)))
+	var order: Array = ["_own"] + GROUP_TITLES.keys() + by_group.keys().filter(func(k: String) -> bool: return not GROUP_TITLES.has(k))
+	var any := false
+	for g: String in order:
+		var ids: Array = own if g == "_own" else by_group.get(g, []).filter(func(id: String) -> bool: return not world_action_ids.has(id))
+		if ids.is_empty():
 			continue
-		var gi := _list.add_item("— " + GROUP_TITLES.get(g, g) + " —")
-		_list.set_item_selectable(gi, false)
-		_list.set_item_custom_fg_color(gi, Color("8a7b66"))
-		_list_ids.append("")
-		var ids: Array = by_group[g]
+		any = true
 		ids.sort()
+		var head := _title("Действия этой рубрики" if g == "_own" else GROUP_TITLES.get(g, g), 21)
+		head.add_theme_color_override("font_color", C_MAIN if g == "_own" else C_INK)
+		_tiles.add_child(head)
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 6)
+		flow.add_theme_constant_override("v_separation", 6)
 		for id: String in ids:
-			var mark := "   [рубрика]" if world_action_ids.has(id) else ""
-			var i := _list.add_item("%s   (%s)%s" % [_title(actions()[id], id), id, mark])
-			_list.set_item_tooltip(i, id)
-			_list_ids.append(id)
-			if id == chosen:
-				_list.select(i)
+			var b := Button.new()
+			b.text = _title_of(actions()[id], id)
+			b.tooltip_text = id
+			b.theme_type_variation = "Tile"
+			b.toggle_mode = true
+			b.focus_mode = Control.FOCUS_NONE
+			b.button_pressed = id == chosen
+			b.pressed.connect(func() -> void: _play(id))
+			flow.add_child(b)
+			_tile_of[id] = b
+		_tiles.add_child(flow)
+		_tiles.add_child(_gap(4))
+	if not any:
+		_tiles.add_child(_note("Ничего не нашлось. Имя действия латиницей или его название по-русски."))
 
 
-static func _title(a: Dictionary, id: String) -> String:
+func _mark_tile(id: String) -> void:
+	for k: String in _tile_of:
+		(_tile_of[k] as Button).set_pressed_no_signal(k == id)
+
+
+static func _title_of(a: Dictionary, id: String) -> String:
 	var t: Variant = a.get("title", id)
 	if t is Dictionary:
 		return str(t.get("ru", t.get("en", id)))
 	return str(t)
 
 
-func _poses_tab() -> Control:
+func _poses_page() -> Control:
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	var hint := Label.new()
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.text = "Точки: кисти, стопы, таз (присесть, сдвинуться), шея (наклон), голова. Правый клик по кисти — вид кисти, колесо — поворот кисти, Shift + правый клик — куда локоть. F — фикс."
-	box.add_child(hint)
-	box.add_child(_row("", [_button("Фикс (F)", _fix), _button("Поза покоя", func() -> void:
+	box.add_theme_constant_override("separation", 12)
+	box.add_child(_note("Синие точки — кисти и стопы, красные — таз, плечи (наклон) и макушка. На кисти: правый клик — ладонь, кулак, ребро, палец; колесо — поворот; Shift + правый клик — локоть.", 18))
+	var actions_row := HBoxContainer.new()
+	actions_row.add_theme_constant_override("separation", 8)
+	var fix := _btn("Запомнить позу  (F)", _fix, "Main")
+	fix.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions_row.add_child(fix)
+	actions_row.add_child(_btn("Показать движение", _play_poses))
+	actions_row.add_child(_btn("В покой", func() -> void:
 		pose_now = rest_pose()
 		_sel = -1
-		_apply_pose()), _button("Проиграть", _play_poses), _button("Очистить", func() -> void:
-		poses.clear()
-		_sel = -1
 		_fill_poses()
-		_save_poses())]))
-	_pose_list = ItemList.new()
-	_pose_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_pose_list.item_selected.connect(func(i: int) -> void: _select_pose(i))
-	box.add_child(_pose_list)
-	box.add_child(_row("", [_button("Выше", func() -> void: _move_pose(-1)), _button("Ниже", func() -> void: _move_pose(1)),
-		_button("Удалить", _delete_pose), _button("Заменить на текущую", func() -> void:
-			if _sel >= 0:
-				poses[_sel]["pose"] = pose_now.duplicate(true)
-				_fill_poses()
-				_save_poses())]))
-	_pose_time_lbl = Label.new()
-	_pose_time = _slider(0.1, 3.0, 0.5, func(v: float) -> void:
-		_pose_time_lbl.text = "%.2f с" % v
-		if _sel >= 0:
-			poses[_sel]["time"] = snappedf(v, 0.05)
-			_fill_poses()
-			_save_poses())
-	box.add_child(_row("Переход", [_pose_time, _pose_time_lbl]))
-	_pose_ease = OptionButton.new()
-	for e: String in EASE_NAMES:
-		_pose_ease.add_item(e)
-	_pose_ease.item_selected.connect(func(i: int) -> void:
-		if _sel >= 0:
-			poses[_sel]["ease"] = EASES[i]
-			_fill_poses()
-			_save_poses())
-	_pose_hold = CheckBox.new()
-	_pose_hold.text = "держать, пока не отпустят"
-	_pose_hold.toggled.connect(func(on: bool) -> void:
-		if _sel >= 0:
-			poses[_sel]["hold"] = on
-			_fill_poses()
-			_save_poses())
-	box.add_child(_row("", [_pose_ease, _pose_hold]))
+		_apply_pose()))
+	box.add_child(actions_row)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_pose_cards = VBoxContainer.new()
+	_pose_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_pose_cards.add_theme_constant_override("separation", 8)
+	scroll.add_child(_pose_cards)
+	box.add_child(scroll)
+	var sv := VBoxContainer.new()
+	sv.add_theme_constant_override("separation", 8)
+	sv.add_child(_title("Сохранить как действие " + ("общей библиотеки" if cfg.get("core", false) else "рубрики"), 21))
 	_save_id = LineEdit.new()
-	_save_id.placeholder_text = "имя: латиница (my_wave)"
+	_save_id.placeholder_text = "имя латиницей: salute"
 	_save_title = LineEdit.new()
-	_save_title.placeholder_text = "название по-русски"
-	box.add_child(_row("Действие", [_save_id, _save_title]))
-	box.add_child(_button("Сохранить как действие " + ("общей библиотеки" if cfg.get("core", false) else "рубрики"), _save_action))
+	_save_title.placeholder_text = "название: отдать честь"
+	var srow := HBoxContainer.new()
+	srow.add_theme_constant_override("separation", 8)
+	_save_id.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_save_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_save_id.custom_minimum_size = Vector2(120, 0)
+	_save_title.custom_minimum_size = Vector2(120, 0)
+	srow.add_child(_save_id)
+	srow.add_child(_save_title)
+	srow.add_child(_btn("Сохранить", _save_action, "Main"))
+	sv.add_child(srow)
+	box.add_child(sv)
 	_fill_poses()
 	return box
 
 
-static func _flat(colour: Color, radius: int) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = colour
-	sb.set_corner_radius_all(radius)
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
-	sb.content_margin_top = 5
-	sb.content_margin_bottom = 5
-	return sb
+## What a pose changes against rest, in words (the card's title).
+func _pose_words(p: Dictionary) -> String:
+	var r := rest_pose()
+	var w: Array = []
+	for ch: String in ["arm_r", "arm_l"]:
+		if JSON.stringify(p.get(ch, {})) != JSON.stringify(r.get(ch, {})):
+			var arm: Dictionary = p.get(ch, {})
+			var extra: Array = []
+			if arm.has("look"):
+				extra.append(LOOK_NAMES.get(arm["look"], arm["look"]))
+			if arm.has("elbow"):
+				extra.append(ELBOW_NAMES.get(arm["elbow"], arm["elbow"]))
+			w.append(("правая рука" if ch == "arm_r" else "левая рука") + (" (" + ", ".join(extra) + ")" if not extra.is_empty() else ""))
+	var lg: Dictionary = p.get("legs", {})
+	if float(lg.get("drop", 0.0)) > 0.01:
+		w.append("присел")
+	if absf(float(lg.get("shift", 0.0))) > 0.01:
+		w.append("сдвинулся")
+	for f: String in ["foot_l", "foot_r"]:
+		var v: Array = lg.get(f, [0, 0])
+		if absf(float(v[0])) > 0.01 or absf(float(v[1])) > 0.01:
+			w.append("левая нога" if f == "foot_l" else "правая нога")
+	if absf(float(p.get("body", {}).get("lean", 0.0))) > 0.5:
+		w.append("наклон %d°" % int(p["body"]["lean"]))
+	if absf(float(p.get("head", 0.0))) > 0.5:
+		w.append("голова %d°" % int(p["head"]))
+	return ", ".join(w) if not w.is_empty() else "как в покое"
 
 
-## Flat and light, like the stage: no borders, no shadows, no grey.
-func _theme() -> Theme:
-	var theme := Theme.new()
-	theme.default_font_size = 22
-	var ink := Color("2a2622")
-	for kind: String in ["Button", "OptionButton"]:
-		theme.set_stylebox("normal", kind, _flat(Color("e2d6bf"), 8))
-		theme.set_stylebox("hover", kind, _flat(Color("d6c7a8"), 8))
-		theme.set_stylebox("pressed", kind, _flat(Color("c4b08a"), 8))
-		theme.set_stylebox("focus", kind, _flat(Color(0, 0, 0, 0), 8))
-		for c: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-			theme.set_color(c, kind, ink)
-	for c: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		theme.set_color(c, "CheckBox", ink)
-	theme.set_stylebox("normal", "LineEdit", _flat(Color("fbf8f2"), 6))
-	theme.set_stylebox("focus", "LineEdit", _flat(Color(0, 0, 0, 0), 6))
-	theme.set_color("font_color", "LineEdit", ink)
-	theme.set_color("font_placeholder_color", "LineEdit", Color("9a8d78"))
-	theme.set_stylebox("panel", "ItemList", _flat(Color("fbf8f2"), 6))
-	theme.set_stylebox("focus", "ItemList", _flat(Color(0, 0, 0, 0), 6))
-	theme.set_stylebox("selected", "ItemList", _flat(Color("e2d6bf"), 4))
-	theme.set_stylebox("selected_focus", "ItemList", _flat(Color("e2d6bf"), 4))
-	theme.set_stylebox("hovered", "ItemList", _flat(Color("efe6d6"), 4))
-	theme.set_color("font_color", "ItemList", ink)
-	theme.set_color("font_selected_color", "ItemList", ink)
-	theme.set_color("font_hovered_color", "ItemList", ink)
-	theme.set_color("font_color", "Label", ink)
-	theme.set_stylebox("panel", "TabContainer", _flat(Color("f4efe6"), 0))
-	theme.set_stylebox("tab_selected", "TabContainer", _flat(Color("e2d6bf"), 8))
-	theme.set_stylebox("tab_unselected", "TabContainer", _flat(Color("efe6d6"), 8))
-	theme.set_stylebox("tab_hovered", "TabContainer", _flat(Color("d6c7a8"), 8))
-	for c: String in ["font_selected_color", "font_unselected_color", "font_hovered_color"]:
-		theme.set_color(c, "TabContainer", ink)
-	theme.set_stylebox("panel", "PopupMenu", _flat(Color("f4efe6"), 6))
-	theme.set_color("font_color", "PopupMenu", ink)
-	theme.set_color("font_hover_color", "PopupMenu", ink)
-	theme.set_stylebox("hover", "PopupMenu", _flat(Color("d6c7a8"), 4))
-	theme.set_stylebox("slider", "HSlider", _flat(Color("d6c7a8"), 4))
-	theme.set_stylebox("grabber_area", "HSlider", _flat(Color("b89f6d"), 4))
-	theme.set_stylebox("grabber_area_highlight", "HSlider", _flat(Color("b89f6d"), 4))
-	return theme
+func _fill_poses() -> void:
+	if _pose_cards == null:
+		return
+	for c in _pose_cards.get_children():
+		c.queue_free()
+	if poses.is_empty():
+		_pose_cards.add_child(_note("Здесь появятся запомненные позы — по карточке на каждую. Из них получится движение."))
+		return
+	var head0 := HBoxContainer.new()
+	var t0 := _title("Позы: %d" % poses.size(), 21)
+	t0.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head0.add_child(t0)
+	head0.add_child(_btn("Очистить все", func() -> void:
+		poses.clear()
+		_sel = -1
+		_fill_poses()
+		_save_poses(), "Tile"))
+	_pose_cards.add_child(head0)
+	for i in poses.size():
+		var p: Dictionary = poses[i]
+		var card := PanelContainer.new()
+		card.theme_type_variation = "Picked" if i == _sel else ""
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 8)
+		card.add_child(v)
+		# row 1: which pose, what it changes, its way in, order
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 8)
+		var open := _btn(str(i + 1), func() -> void: _select_pose(i), "Tile")
+		open.toggle_mode = true
+		open.button_pressed = i == _sel
+		open.custom_minimum_size = Vector2(44, 0)
+		open.tooltip_text = "поставить героя в эту позу, чтобы поправить"
+		head.add_child(open)
+		var what := Label.new()
+		what.text = _pose_words(p["pose"])
+		what.clip_text = true
+		what.tooltip_text = what.text
+		what.mouse_filter = Control.MOUSE_FILTER_PASS
+		what.custom_minimum_size = Vector2(120, 0)
+		what.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		what.add_theme_font_size_override("font_size", 18)
+		head.add_child(what)
+		var t := _slider(0.1, 3.0, float(p["time"]), "%.2f с", func(x: float) -> void:
+			poses[i]["time"] = snappedf(x, 0.05)
+			_save_poses())
+		t.custom_minimum_size = Vector2(210, 0)
+		t.tooltip_text = "сколько секунд герой идёт в эту позу"
+		head.add_child(t)
+		head.add_child(_btn("↑", func() -> void: _move_pose(i, -1), "Tile"))
+		head.add_child(_btn("↓", func() -> void: _move_pose(i, 1), "Tile"))
+		head.add_child(_btn("✕", func() -> void: _delete_pose(i), "Tile"))
+		v.add_child(head)
+		# row 2: how it goes there, and whether it stays
+		var bottom := HBoxContainer.new()
+		bottom.add_theme_constant_override("separation", 8)
+		var ease_row := _seg([[EASE_NAMES[0], "inout"], [EASE_NAMES[1], "out"], [EASE_NAMES[2], "in"], [EASE_NAMES[3], "linear"]],
+			str(p.get("ease", "inout")), func(e: String) -> void:
+				poses[i]["ease"] = e
+				_save_poses(), "Tile")
+		ease_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bottom.add_child(ease_row)
+		var hold := _toggle("Держать", bool(p.get("hold", false)), func(on: bool) -> void:
+			poses[i]["hold"] = on
+			_save_poses())
+		hold.theme_type_variation = "Tile"
+		hold.tooltip_text = "поза стоит, пока действие не отпустят (как «руки в боки»)"
+		bottom.add_child(hold)
+		v.add_child(bottom)
+		if i == _sel:
+			v.add_child(_btn("Заменить позу %d на то, как стоит герой сейчас" % (i + 1), func() -> void:
+				poses[i]["pose"] = pose_now.duplicate(true)
+				_fill_poses()
+				_save_poses()
+				_say("Поза %d заменена." % (i + 1)), "Main"))
+		_pose_cards.add_child(card)
 
 
-func _row(title: String, controls: Array) -> HBoxContainer:
-	var row_box := HBoxContainer.new()
-	if title != "":
-		var l := Label.new()
-		l.text = title
-		l.custom_minimum_size = Vector2(110, 0)
-		row_box.add_child(l)
-	for c: Control in controls:
-		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row_box.add_child(c)
-	return row_box
-
-
-func _button(text: String, on_press: Callable) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.pressed.connect(on_press)
-	return b
-
-
-func _slider(lo: float, hi: float, value: float, on_change: Callable) -> HSlider:
-	var s := HSlider.new()
-	s.min_value = lo
-	s.max_value = hi
-	s.step = 0.05
-	s.value = value
-	s.custom_minimum_size = Vector2(0, 30)
-	s.value_changed.connect(on_change)
-	return s
+## The clock, under the hero on the stage's floor: pause, a frame, the speed, round and round, trail, breathing.
+func _build_clock() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 21
+	add_child(layer)
+	var bar := PanelContainer.new()
+	bar.theme = _theme()
+	bar.add_theme_stylebox_override("panel", _box(Color(C_PAPER, 0.96), 14, 14, 12))
+	bar.position = Vector2(20, SIZE.y - 150)
+	bar.size = Vector2(SIZE.x - 40, 0)
+	layer.add_child(bar)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	bar.add_child(v)
+	var r1 := HBoxContainer.new()
+	r1.add_theme_constant_override("separation", 6)
+	_pause_btn = _btn("❚❚  Пауза", func() -> void: _set_paused(not paused))
+	_pause_btn.custom_minimum_size = Vector2(150, 0)
+	r1.add_child(_pause_btn)
+	r1.add_child(_btn("Кадр ▸", func() -> void:
+		_set_paused(true)
+		_steps_wanted += 1))
+	var sp := _seg([["0.25×", 0.25], ["0.5×", 0.5], ["1×", 1.0]], speed, func(x: float) -> void: speed = x)
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r1.add_child(sp)
+	v.add_child(r1)
+	var r2 := HBoxContainer.new()
+	r2.add_theme_constant_override("separation", 6)
+	for t: Array in [["По кругу", _loop, func(on: bool) -> void: _loop = on],
+			["След кистей и стоп", _trails, func(on: bool) -> void:
+				_trails = on
+				_trail.clear()],
+			["Дыхание", not still, func(on: bool) -> void:
+				still = not on
+				_set_life()]]:
+		var b := _toggle(t[0], t[1], t[2])
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		r2.add_child(b)
+	v.add_child(r2)
 
 
 func _say(text: String) -> void:
@@ -557,6 +907,7 @@ func _play(id: String) -> void:
 		return
 	var act: Dictionary = actions()[id]
 	chosen = id
+	_mark_tile(id)
 	_dirty_state = true
 	_idle = 0
 	_trail.clear()
@@ -586,11 +937,8 @@ func _play(id: String) -> void:
 			for line: Dictionary in lines:          # (a walk: each hero across its own part of the stage)
 				_due_lines.append(line)
 			_pending = {}
-	_say("%s  (%s)%s" % [_title(act, id), id, "   [рубрика]" if world_action_ids.has(id) else ""])
+	_say("%s%s" % [_title_of(act, id), "  · действие рубрики" if world_action_ids.has(id) else ""])
 	_show_faults(id)
-
-
-var _due_lines: Array = []
 
 
 ## The clean switch: every hero lets everything go and goes back to rest (motion.gd play_clean); the line waits.
@@ -602,11 +950,16 @@ func _let_go() -> void:
 		a.motion.play_clean({"id": "_rested", "phases": [{"time": 0.02}]})
 
 
-func _rest() -> void:
+func _rest(say := true) -> void:
 	_pending = {}
+	_due_lines.clear()
 	_let_go()
 	chosen = ""
-	_say("в покое")
+	_mark_tile("")
+	if _faults != null:
+		_faults.visible = false
+	if say:
+		_say("В покое.")
 
 
 func _with_elbow(id: String) -> String:
@@ -629,10 +982,8 @@ static func _walks(act: Dictionary) -> bool:
 	return false
 
 
-## What plays now on the main hero, each with a button that lets it go.
+## What plays now on the main hero, each a tile that lets it go.
 func _refresh_playing() -> void:
-	if _playing_box == null:
-		return
 	if not _due_lines.is_empty() and _pending.is_empty():
 		var calm := true
 		for a: Actor in actors.values():
@@ -641,6 +992,8 @@ func _refresh_playing() -> void:
 			for line: Dictionary in _due_lines:
 				_command(line)
 			_due_lines.clear()
+	if _playing_box == null:
+		return
 	var a := _main()
 	var ids: Array = []
 	if a != null:
@@ -648,28 +1001,32 @@ func _refresh_playing() -> void:
 			if not r.done and not str(r.id).begins_with("_") and r.id != "rest":
 				ids.append(r)
 	var sig := ",".join(ids.map(func(r) -> String: return str(r.id)))
-	if _playing_box.get_meta("sig", "") == sig:
+	if _playing_box.get_meta("sig", "-") == sig:
 		return
 	_playing_box.set_meta("sig", sig)
 	for c in _playing_box.get_children():
 		c.queue_free()
 	if ids.is_empty():
-		var l := Label.new()
-		l.text = "ничего"
-		_playing_box.add_child(l)
+		var none := Label.new()
+		none.text = "ничего"
+		none.add_theme_color_override("font_color", C_SOFT)
+		_playing_box.add_child(none)
 	for r in ids:
-		_playing_box.add_child(_button(str(r.id) + "  ✕", func() -> void:
-			for b: Actor in actors.values():
-				for rr in b.motion.runs:
+		var title: String = _title_of(actions().get(r.id, {}), str(r.id)) if actions().has(r.id) else str(r.id)
+		var b := _btn(title + "   ✕", func() -> void:
+			for h: Actor in actors.values():
+				for rr in h.motion.runs:
 					if rr.id == r.id:
-						b.motion.release(rr)))
+						h.motion.release(rr), "Tile")
+		b.tooltip_text = "отпустить"
+		_playing_box.add_child(b)
 
 
-## The faults the hero check found in this action on the main hero (heroes/<slug>/puppet/actions.json).
+## The faults the hero check found in this action on the main hero (heroes/<slug>/puppet/actions.json), in words.
 func _show_faults(id: String) -> void:
 	if _faults == null:
 		return
-	_faults.text = ""
+	_faults.visible = false
 	var h := _hero_def(hero_id)
 	var f: String = str(h.get("checks", ""))
 	if f == "" or not FileAccess.file_exists(f):
@@ -678,13 +1035,18 @@ func _show_faults(id: String) -> void:
 	if not (data is Dictionary) or not data.get("actions", {}).has(id):
 		return
 	var lim: Dictionary = data.get("limits", {})
-	var parts: Array = []
+	var said := {}
 	for r: Dictionary in data["actions"][id].get("runs", []):
 		for k: String in r.get("faults", {}):
-			parts.append("%s: %s %s (порог %s)" % ["правая" if r.get("side", "right") == "right" else "левая", k,
-				str(r["faults"][k]), str(lim.get(k, "?"))])
-	if not parts.is_empty():
-		_faults.text = "Брак (проверка героя): " + "; ".join(parts)
+			var side := "правой рукой" if r.get("side", "right") == "right" else "левой рукой"
+			said["%s — %s (%s при допуске %s)" % [FAULT_WORDS.get(k, k), side, str(snappedf(float(r["faults"][k]), 0.01)), str(lim.get(k, "?"))]] = true
+	if said.is_empty():
+		return
+	var main: bool = data["actions"][id].get("stage1", false)
+	_faults_text.text = "Проверка героя: брак\n• %s\n%s" % ["\n• ".join(said.keys()),
+		"Это основное действие: из-за него герой не проходит проверку." if main else "Не основное действие: только сообщается, героя не валит."]
+	_faults_text.add_theme_color_override("font_color", C_INK)
+	_faults.visible = true
 
 
 # ----------------------------------------------------------------------------- poses
@@ -725,10 +1087,10 @@ func _apply_pose() -> void:
 func _fix() -> void:
 	var before: Dictionary = poses[-1]["pose"] if not poses.is_empty() else rest_pose()
 	poses.append({"pose": pose_now.duplicate(true), "time": way_time(before, pose_now), "ease": "inout", "hold": false})
-	_sel = poses.size() - 1
+	_sel = -1
 	_fill_poses()
 	_save_poses()
-	_say("поза %d зафиксирована" % poses.size())
+	_say("Поза %d запомнена. Поставьте следующую или нажмите «Показать движение»." % poses.size())
 
 
 ## How long a hand (or a foot, or the body) needs from one pose to the next: the longest way at HAND_PACE.
@@ -751,46 +1113,30 @@ static func way_time(a: Dictionary, b: Dictionary) -> float:
 	return snappedf(clampf(far / HAND_PACE + 0.15, 0.25, 2.0), 0.05)
 
 
-func _fill_poses() -> void:
-	if _pose_list == null:
-		return
-	_pose_list.clear()
-	for i in poses.size():
-		var p: Dictionary = poses[i]
-		_pose_list.add_item("Поза %d   %.2f с, %s%s" % [i + 1, float(p["time"]), EASE_NAMES[EASES.find(p.get("ease", "inout"))],
-			", держать" if p.get("hold", false) else ""])
-	if _sel >= 0 and _sel < poses.size():
-		_pose_list.select(_sel)
-
-
 func _select_pose(i: int) -> void:
-	_sel = i
-	var p: Dictionary = poses[i]
-	pose_now = (p["pose"] as Dictionary).duplicate(true)
-	_pose_time.set_value_no_signal(float(p["time"]))
-	_pose_time_lbl.text = "%.2f с" % float(p["time"])
-	_pose_ease.select(EASES.find(p.get("ease", "inout")))
-	_pose_hold.set_pressed_no_signal(bool(p.get("hold", false)))
-	_apply_pose()
-	_say("поза %d: правьте и нажмите «Заменить на текущую»" % (i + 1))
-
-
-func _move_pose(d: int) -> void:
-	if _sel < 0 or _sel + d < 0 or _sel + d >= poses.size():
+	if i < 0 or i >= poses.size():
 		return
-	var p: Variant = poses[_sel]
-	poses.remove_at(_sel)
-	_sel += d
-	poses.insert(_sel, p)
+	_sel = i
+	pose_now = (poses[i]["pose"] as Dictionary).duplicate(true)
+	_fill_poses()
+	_apply_pose()
+	_say("Герой в позе %d. Поправьте точки и нажмите красную кнопку на её карточке." % (i + 1))
+
+
+func _move_pose(i: int, d: int) -> void:
+	if i + d < 0 or i + d >= poses.size():
+		return
+	var p: Variant = poses[i]
+	poses.remove_at(i)
+	poses.insert(i + d, p)
+	_sel = i + d if _sel == i else _sel
 	_fill_poses()
 	_save_poses()
 
 
-func _delete_pose() -> void:
-	if _sel < 0:
-		return
-	poses.remove_at(_sel)
-	_sel = mini(_sel, poses.size() - 1)
+func _delete_pose(i: int) -> void:
+	poses.remove_at(i)
+	_sel = -1 if _sel == i else (_sel - 1 if _sel > i else _sel)
 	_fill_poses()
 	_save_poses()
 
@@ -823,31 +1169,31 @@ static func poses_action(list: Array, id: String, title: String, base: Dictionar
 
 func _play_poses() -> void:
 	if poses.is_empty():
-		_say("сначала зафиксируйте позы")
+		_say("Сначала запомните хотя бы одну позу.")
 		return
 	var act := poses_action(poses, "_poses", "позы", rest_pose())
 	actions()["_poses"] = act
 	for a: Actor in actors.values():
 		a.motion.play_clean(act, {"side": "right", "duration": 1.5})
-	_say("играют позы: %d" % poses.size())
+	_say("Движение из %d поз. Не нравится переход — поправьте время и плавность на карточке." % poses.size())
 
 
 func _save_action() -> void:
 	var id := _save_id.text.strip_edges()
 	if not RegEx.create_from_string("^[a-z][a-z0-9_]{0,39}$").search(id):
-		_say("имя: латинские строчные буквы, цифры и _, с буквы")
+		_say("Имя — латинские строчные буквы, цифры и _, с буквы: salute, big_wave.")
 		return
 	if poses.is_empty():
-		_say("сначала зафиксируйте позы")
+		_say("Сначала запомните позы.")
 		return
 	var core: bool = cfg.get("core", false)
 	var lib := ProjectSettings.globalize_path("res://actions")
 	if not core and FileAccess.file_exists(lib.path_join(id + ".json")):
-		_say("«%s» — имя из общей библиотеки: выберите другое" % id)
+		_say("«%s» уже есть в общей библиотеке. Выберите другое имя." % id)
 		return
 	var dir: String = str(cfg.get("save_dir", ""))
 	if dir == "":
-		_say("некуда сохранять: откройте мастерскую в папке мира")
+		_say("Некуда сохранять: откройте мастерскую в папке мира.")
 		return
 	DirAccess.make_dir_recursive_absolute(dir)
 	var path := dir.path_join(id + ".json")
@@ -865,8 +1211,8 @@ func _save_action() -> void:
 	f.close()
 	reload_actions()
 	_stamp = _actions_stamp()
-	_fill_list()
-	_say("сохранено: %s%s. Проверка: tadam action check %s --proof" % [path, "  (общая библиотека: меняется у всех миров после выпуска)" if core else "", id])
+	_fill_tiles()
+	_say("Сохранено: «%s» (%s).%s" % [title if title != "" else id, id, " Общая библиотека: изменится во всех мирах после выпуска." if core else " Оно уже в списке действий."])
 
 
 # ----------------------------------------------------------------------------- the dots
@@ -876,10 +1222,12 @@ func _dot_points(a: Actor) -> Dictionary:
 	var out := {"hand_l": p.handle_position("hand_l"), "hand_r": p.handle_position("hand_r"),
 		"foot_l": p.handle_position("foot_l"), "foot_r": p.handle_position("foot_r"),
 		"body": p.body_position()}
+	# the lean: between the shoulders; the head: its crown (two dots on the face read as a face)
+	if p.chains.has("hand_l") and p.chains.has("hand_r"):
+		out["neck"] = (p.chains["hand_l"].a.node.global_position + p.chains["hand_r"].a.node.global_position) * 0.5
 	if p.parts.has("head"):
-		var neck: Vector2 = p.parts["head"].node.global_position
-		out["neck"] = neck
-		out["head"] = p.parts["head"].node.to_global(p.parts["head"].center)
+		var hp = p.parts["head"]
+		out["head"] = hp.node.to_global(Vector2(hp.painted.get_center().x, hp.painted.position.y + hp.painted.size.y * 0.1))
 	return out
 
 
@@ -891,39 +1239,47 @@ func _draw_dots(canvas: Node2D) -> void:
 		for h: String in _trail:
 			var tr: Array = _trail[h]
 			for i in range(1, tr.size()):
-				canvas.draw_line(tr[i - 1], tr[i], Color(ACCENT, float(i) / tr.size() * 0.8), 3.0, true)
+				canvas.draw_line(tr[i - 1], tr[i], Color(C_MAIN, float(i) / tr.size() * 0.8), 3.0, true)
 	if tab != 1:
 		return
 	var pts := _dot_points(a)
 	for k: String in pts:
 		var at: Vector2 = pts[k]
-		var fill := Color(INK, 0.85 if _drag == k else 0.5)
-		if k == "neck" or k == "head":
-			fill = Color(ACCENT, 0.85 if _drag == k else 0.5)
-		canvas.draw_circle(at, DOT, fill, true, -1.0, true)
-		canvas.draw_circle(at, DOT, Color.WHITE, false, 3.0, true)
-	for ch: String in ["arm_l", "arm_r"]:
-		var arm: Dictionary = pose_now.get(ch, {})
-		if arm.has("look") or arm.has("elbow") or arm.has("wrist"):
-			var note: Array = []
+		var col: Color = C_DOT_BODY if k in ["body", "neck", "head"] else C_DOT_LIMB
+		var big: float = DOT * (1.25 if k == _drag or k == _hover else 1.0)
+		canvas.draw_circle(at, big + 3.0, Color.WHITE, true, -1.0, true)
+		canvas.draw_circle(at, big, Color(col, 0.95 if k == _drag or k == _hover else 0.8), true, -1.0, true)
+	var font := ThemeDB.fallback_font
+	var name := _drag if _drag != "" else _hover
+	if name != "":
+		var at2: Vector2 = pts[name] + Vector2(22, -18)
+		var text: String = DOT_NAMES.get(name, name)
+		if name.begins_with("hand"):
+			var arm: Dictionary = pose_now.get("arm_" + name.right(1), {})
+			var extra: Array = []
 			if arm.has("look"):
-				note.append(LOOK_NAMES.get(arm["look"], arm["look"]))
+				extra.append(LOOK_NAMES.get(arm["look"], arm["look"]))
 			if arm.has("wrist"):
-				note.append("%d°" % int(arm["wrist"]))
+				extra.append("поворот %d°" % int(arm["wrist"]))
 			if arm.has("elbow"):
-				note.append("локоть " + str(arm["elbow"]))
-			canvas.draw_string(ThemeDB.fallback_font, pts["hand_" + ch.right(1)] + Vector2(18, -14), ", ".join(note),
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 20, INK)
+				extra.append(ELBOW_NAMES.get(arm["elbow"], arm["elbow"]))
+			if not extra.is_empty():
+				text += " · " + ", ".join(extra)
+		var size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20)
+		if at2.x + size.x + 20 > SIZE.x:
+			at2.x = pts[name].x - size.x - 42
+		canvas.draw_rect(Rect2(at2 + Vector2(-10, -size.y + 2), size + Vector2(20, 10)), C_INK, true)
+		canvas.draw_string(font, at2, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F and tab == 1:
+		if event.keycode == KEY_F and tab == 1 and not (_save_id != null and (_save_id.has_focus() or _save_title.has_focus())):
 			_fix()
 		elif event.keycode == KEY_SPACE:
-			paused = not paused
+			_set_paused(not paused)
 		elif event.keycode == KEY_PERIOD:
-			paused = true
+			_set_paused(true)
 			_steps_wanted += 1
 		return
 	if tab != 1:
@@ -932,6 +1288,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if a == null:
 		return
 	var m := get_global_mouse_position()
+	if event is InputEventMouseMotion:
+		if _drag != "":
+			_drag_to(a, _drag, m + _drag_off)
+		else:
+			_hover = _pick(a, m)
+		return
 	if event is InputEventMouseButton:
 		var e := event as InputEventMouseButton
 		var k := _pick(a, m)
@@ -942,8 +1304,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif not e.pressed:
 				_drag = ""
 		elif e.pressed and e.button_index == MOUSE_BUTTON_RIGHT and k.begins_with("hand"):
-			var ch := "arm_" + k.right(1)
-			var arm: Dictionary = pose_now[ch]
+			var arm: Dictionary = pose_now["arm_" + k.right(1)]
 			if e.shift_pressed:
 				var i := (ELBOWS.find(str(arm.get("elbow", ""))) + 1) % ELBOWS.size()
 				if ELBOWS[i] == "":
@@ -965,8 +1326,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			else:
 				arm2["wrist"] = w
 			_apply_pose()
-	elif event is InputEventMouseMotion and _drag != "":
-		_drag_to(a, _drag, m + _drag_off)
 
 
 func _pick(a: Actor, m: Vector2) -> String:
@@ -1004,7 +1363,7 @@ func _drag_to(a: Actor, k: String, to: Vector2) -> void:
 		var v := to - p.body_position()
 		pose_now["body"]["lean"] = snappedf(clampf(rad_to_deg(atan2(v.x, -v.y)), -45.0, 45.0), 1.0)
 	elif k == "head":
-		var v2: Vector2 = to - (_dot_points(a)["neck"] as Vector2)
+		var v2: Vector2 = to - (p.parts["head"].node.global_position as Vector2)      # round the neck joint
 		pose_now["head"] = snappedf(clampf(rad_to_deg(atan2(v2.x, -v2.y)) - float(pose_now["body"].get("lean", 0.0)), -35.0, 35.0), 1.0)
 	_apply_pose()
 
@@ -1028,10 +1387,10 @@ func _watch_files() -> void:
 	if st != _stamp:
 		_stamp = st
 		reload_actions()
-		_fill_list()
+		_fill_tiles()
 		if tab == 0 and chosen != "" and actions().has(chosen):
 			_play(chosen)
-			_say("файл изменился: %s играет заново" % chosen)
+			_say("Файл изменился — «%s» играет заново." % _title_of(actions()[chosen], chosen))
 	var dir: String = str(cfg.get("state_dir", ""))
 	if dir == "":
 		return
@@ -1050,6 +1409,7 @@ func _watch_files() -> void:
 						_apply_pose()
 				"play":
 					if actions().has(str(c.get("action", ""))):
+						_show_mode(0)
 						_play(str(c["action"]))
 			_dirty_state = true
 
@@ -1095,7 +1455,8 @@ func _write_state() -> void:
 
 # ----------------------------------------------------------------------------- checks of the window itself
 
-## WORKSHOP_SEQ="tab:1@20,drag:hand_r:560:420@40,fix@80,shot:<file>@120": steps it by itself (tests), quits after.
+## WORKSHOP_SEQ="still@5,tab:1@20,drag:hand_r:560:420@40,fix@80,select:1@100,where:<file>@110,shot:<file>@120,quit@130":
+## steps it by itself (tests), quits after.
 var _frames := 0
 var _seq: Array = []
 
@@ -1113,12 +1474,13 @@ func _scripted() -> void:
 		var bits: PackedStringArray = str(e[1]).split(":")
 		match bits[0]:
 			"tab":
-				_tabs.current_tab = int(bits[1])
+				_show_mode(int(bits[1]))
 			"play":
 				_play(bits[1])
 			"drag":
-				var a := _main()
-				_drag_to(a, bits[1], Vector2(float(bits[2]), float(bits[3])))
+				_drag_to(_main(), bits[1], Vector2(float(bits[2]), float(bits[3])))
+			"hover":
+				_hover = bits[1]
 			"fix":
 				_fix()
 			"still":
@@ -1127,7 +1489,7 @@ func _scripted() -> void:
 			"rest":
 				pose_now = rest_pose()
 				_apply_pose()
-			"select":                      # select:<n>: the n-th pose of the list onto the hero (1 = the first)
+			"select":                      # select:<n>: the n-th pose onto the hero (1 = the first)
 				_select_pose(int(bits[1]) - 1)
 			"where":                       # where:<file>: where the main hero's dots are (stage px)
 				var pts := _dot_points(_main())
