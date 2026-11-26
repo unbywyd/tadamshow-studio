@@ -33,7 +33,8 @@ All of it is free: no paid call is made.
 - Channels: `legs` (`drop`, `shift`, `foot_l` / `foot_r` `[out, up]`, `walk`, `seat`, `jump`), `body` (`lean`,
   `chest`), `head` (a tilt in degrees), `arm_l` / `arm_r` / `arms` (`at: [out, down]` arm lengths from the
   shoulder, or `{"to": "chest" | "face" | "hip" | …}`; `look`: palm / fist / back / edge / point; `wrist`;
-  `elbow`: down / up / out / in; `aim`; `contact: true` to touch the body).
+  `elbow`: down / up / out / in; `aim`; `contact: true` to touch the body; `shoulder`: raised in arm lengths,
+  0.1–0.15 is a shrug). The head: a tilt, or `{"tilt": 7, "drop": 0.12}` (drawn into the collar; − stretched up).
 - Any number may swing: `{ "base": 0, "amp": 24, "rate": 2.0 }`. A phase: `time` (s), `ease` (inout / out / in /
   linear), `loop: true` (lasts the call's `duration`). Write it for the RIGHT side: the engine mirrors it.
 - The last phase named `return` brings back what the action moved. Only words, numbers and lists: never a path

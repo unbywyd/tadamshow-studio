@@ -50,6 +50,8 @@ class Part:
 	var fnow := 0                 # ... the frame shown, from 0
 	var vel := 0.0                # its velocity, rad/s
 	var goal := 0.0               # angle the spring pulls to (angle handles)
+	var home := Vector2.ZERO      # where its joint sits in the parent's frame, as drawn
+	var shift := Vector2.ZERO     # ...moved by an action, puppet px in the parent's frame (a shoulder raised, the head drawn in)
 	var squeeze := 1.0            # its drawing's width (a hand seen EDGE ON is the flat hand squeezed across)
 	var rigid := false            # goes straight to its goal, no swing of its own (a skirt whose cloth does the swinging)
 	var idle := 0.0               # share of the idle sway this part gets
@@ -210,6 +212,7 @@ func _build_part(part_name: String, skin_dir: String) -> Part:
 		p.pivot = _v2(joint["at"])
 		# Where the joint sits in the parent's frame: parent_at seen from the parent's own pivot.
 		p.node.position = _v2(joint["parent_at"]) - p.parent.pivot
+		p.home = p.node.position
 		p.rest = p.parent.rest + p.node.position
 		var limits: Array = def.get("limits", [-180.0, 180.0])
 		p.lo = deg_to_rad(limits[0])
@@ -895,6 +898,13 @@ func set_skin(part: String, variant: String, hold := true) -> void:
 
 ## Squeezes a part's drawing across (1 = as drawn), about its joint: a flat hand at 0.4 of its width reads as a
 ## hand turned edge on (clapping, pressed to the side of a box). No drawing of its own is needed.
+## Moves a part's joint on its parent (puppet px, in the parent's frame): a shoulder raised in a shrug, the head
+## drawn into the collar or stretched up. Zero puts it back where it is drawn.
+func set_shift(part: String, v: Vector2) -> void:
+	if parts.has(part):
+		(parts[part] as Part).shift = v
+
+
 func set_squeeze(part: String, k: float) -> void:
 	var p: Part = parts.get(part)
 	if p == null or is_equal_approx(p.squeeze, k):
@@ -987,6 +997,7 @@ func _auto_skins() -> void:
 
 func _step_part(p: Part, sway: float) -> void:
 	var par := p.parent
+	p.node.position = p.home + p.shift
 	# How the joint and the parent moved: accelerations by finite differences over the last steps.
 	var joint: Vector2 = par.xf * p.node.position
 	var acc: Vector2 = ((joint - p.p1 * 2.0 + p.p2) / (DT * DT)).limit_length(max_accel)

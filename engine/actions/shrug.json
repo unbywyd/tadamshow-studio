@@ -5,29 +5,32 @@
  "params": {},
  "phases": [
   {
-   "time": 0.4,
+   "time": 0.28,
+   "ease": "out",
    "arms": {
+    "shoulder": 0.15,
     "at": [
-     0.4,
-     0.42
+     0.36,
+     0.6
     ],
-    "look": "palm"
+    "elbow": "down",
+    "look": "palm",
+    "aim": 10
    },
-   "head": 10,
-   "legs": {
-    "drop": -0.01
+   "head": {
+    "tilt": 7,
+    "drop": 0.14
    }
   },
   {
-   "time": 0.8
+   "time": 0.7
   },
   {
    "name": "return",
-   "time": 0.45,
+   "time": 0.4,
    "arm_r": "rest",
    "arm_l": "rest",
-   "head": "rest",
-   "legs": "rest"
+   "head": "rest"
   }
  ]
 }

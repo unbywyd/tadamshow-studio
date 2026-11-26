@@ -21,13 +21,15 @@ extends RefCounted
 ##               with "speed" in leg lengths a second; the phase lasts as long as the walk
 ##         seat: sit down on something this many leg lengths high (0 = the floor); "rest" stands up
 ##   body  lean: degrees (+ = to the action's side)   chest: degrees
-##   head  a number = tilt in degrees, or { "tilt": ... }
+##   head  a number = tilt in degrees, or { "tilt": ..., "drop": ... }: drop = the head drawn into the collar
+##         (+, shares of its height, at most 0.25) or stretched up (-, at most 0.15)
 ##   (an arm's place may go round: { "base", "amp": [out, down], "rate", "circle": true })
 ##   arm_l / arm_r / arms (both):
 ##         at: [out, down] arm lengths from the shoulder, or { "to": landmark, "dx": .., "dy": .. } (see LANDMARKS)
 ##         wrist: degrees, outward   look: "palm" | "fist" | "back" | "edge" (the hand turned edge on) | "point"
 ##              (the index finger out) | "auto"
 ##         contact: true = may touch the body
+##         shoulder: arm lengths the shoulder is raised (+, at most 0.16: a shrug) or dropped (-, at most 0.08)
 ##         elbow: "down" | "up" | "out" | "in": where the ELBOW points in this pose, said outright (by default the
 ##              engine chooses: under the hand for an arm held out or raised, to the side for one hanging)
 ##         aim: where the HAND points, degrees round the wrist (0 out, 90 down, -90 up, 180 in): the wrist turns to
@@ -244,12 +246,12 @@ func setup(p: Puppet, body: BodyPhysics, floor_at: float, stage_size: Vector2) -
 		chans[ch] = Chan.new()
 	rest["legs"] = {"drop": 0.0, "shift": 0.0, "foot_l": Vector2.ZERO, "foot_r": Vector2.ZERO}
 	rest["body"] = {"lean": 0.0, "chest": 0.0}
-	rest["head"] = {"tilt": 0.0}
+	rest["head"] = {"tilt": 0.0, "drop": 0.0}
 	for ch in ["arm_l", "arm_r"]:
 		var h: String = "hand_" + ch.right(1)
 		var s := _sign(ch)
 		var w: Vector2 = (p.handle_position(h) - home - shoulder[ch]) / arm
-		rest[ch] = {"at": _polar(Vector2(w.x * s, w.y)), "wrist": 0.0, "look": "auto", "contact": false, "aim": 90.0, "aim_w": 0.0}
+		rest[ch] = {"at": _polar(Vector2(w.x * s, w.y)), "wrist": 0.0, "look": "auto", "contact": false, "aim": 90.0, "aim_w": 0.0, "shoulder": 0.0}
 		# which way the hand points against its forearm as drawn: an aimed hand is turned from there
 		var cc: Variant = p.chains[h]
 		var fore: Vector2 = cc.end.node.global_position - cc.b.node.global_position
@@ -1264,6 +1266,15 @@ func _apply() -> void:
 		skirt.goal = clampf(-deg_to_rad(lean) * plumb, skirt.lo, skirt.hi) if cloth != null else 0.0
 	p.set_handle_angle("chest", float(bd["chest"]) + 0.5 * float(bd["lean"]))
 	p.set_handle_angle("head", float(hd["tilt"]) + life * 2.5 * sin(tt * 0.07))
+	# the head drawn into the collar (+) or stretched up (-), in shares of its height; the shoulders raised (+) or
+	# dropped (-) in arm lengths, capped so the arm never leaves its socket by more than a puppet's joint allows
+	var kk: float = maxf(absf(p.scale.y), 0.001)
+	if p.parts.has("head"):
+		var hh: float = (p.parts["head"].painted as Rect2).size.y
+		p.set_shift("head", Vector2(0.0, clampf(float(hd.get("drop", 0.0)), -0.15, 0.25) * hh))
+	for ch2 in ["arm_l", "arm_r"]:
+		var up: float = clampf(float(chans[ch2].now.get("shoulder", 0.0)), -0.08, 0.16)
+		p.set_shift(p.chains["hand_" + ch2.right(1)].a.name, Vector2(0.0, -up * arm / kk))
 	if not phys.airborne:
 		for f: String in foot_home:
 			var lift: Vector2 = lg[f]
