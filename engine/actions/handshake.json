@@ -17,7 +17,8 @@
      "to": "@partner",
      "on": "meet"
     },
-    "look": "edge"
+    "look": "back",
+    "aim": -10
    },
    "body": {
     "lean": 3
@@ -36,7 +37,8 @@
      ],
      "rate": 2.5
     },
-    "look": "edge"
+    "look": "back",
+    "aim": -10
    },
    "head": {
     "base": 5,
