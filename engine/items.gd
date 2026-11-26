@@ -803,8 +803,10 @@ func _z(mo: Object, hand: String, it: Item = null) -> int:
 				near = maxi(near, f2.z)
 		if near > -1000:
 			return near - 1
+	# (under the lower of the two: a hand drawn on a layer below its forearm still closes OVER the handle)
 	var fore: Object = mo.puppet.parts.get("forearm_" + hand.right(1))
-	return (fore.z if fore != null else mo.puppet.parts[hand].z) - 1
+	var hz: int = mo.puppet.parts[hand].z
+	return mini(fore.z, hz) - 1 if fore != null else hz - 1
 
 
 ## How far in front of the body's point a thing held in both hands is carried in profile (to its middle): clear of

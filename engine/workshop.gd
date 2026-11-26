@@ -64,8 +64,13 @@ const C_DOT_BODY := Color("b3362c")
 
 ## kept across a reload of the scene (changing the hero or the row)
 static var cfg: Dictionary = {}
-static var row := "one"             # "one" | "all" | "proof"
-static var hero_id := ""
+static var row := "one"             # "one" | "all" | "proof" | "pair"
+static var hero_id := ""            # (in a pair: the one on the left, who leads)
+static var partner_id := ""         # a pair: the one on the right
+static var pair_x: Array = [0.37, 0.63]   # a pair: where each stands, a share of the stage's width (dragged by
+                                    # the handle under its feet, or the «Расстояние» slider)
+static var pair_edit := 0           # a pair: whose pose the dots change (0 the left one, 1 the right one)
+static var pair_pose: Array = [{}, {}]   # a pair: the pose of each (pose_now is the edited one's)
 static var tab := 0                 # 0 actions, 1 poses
 static var poses: Array = []        # [{pose, time, ease, hold}]
 static var pose_now: Dictionary = {}
@@ -152,7 +157,10 @@ func _ready() -> void:
 	var fit := (SIZE.x / (heroes.size() + 0.6)) / 0.62 / SIZE.y     # (a body with its arms out is about 0.6 of its height wide)
 	for i in heroes.size():
 		var h: Dictionary = heroes[i]
-		acts.append({"id": h["id"], "puppet": h["dir"], "x": (i + 0.8) / (heroes.size() + 0.6),
+		var x: float = (i + 0.8) / (heroes.size() + 0.6)
+		if row == "pair":                        # (a pair: side by side, as far apart as the slider says)
+			x = float(pair_x[i])
+		acts.append({"id": h["id"], "puppet": h["dir"], "x": x,
 			"height": minf(float(h.get("height", 0.36)), fit)})
 	preset = {"floor": 0.84, "seconds": 99999, "actors": acts, "items": [], "script": []}
 	# the window's base is the stage AND the panel: a narrower window shrinks both, a wider one widens the panel
@@ -160,10 +168,10 @@ func _ready() -> void:
 	camera_on = false
 	super._ready()
 	set_physics_process(true)
-	var where := "%s|%s|%s" % [str(cfg.get("world", "")), hero_id, row]
+	var where := "%s|%s|%s|%s" % [str(cfg.get("world", "")), hero_id, row, partner_id if row == "pair" else ""]
 	if where != _logged_where:
 		_log("open" if _logged_where == "" else "hero", "рубрика «%s» · %s" % [str(cfg.get("world_title", "")),
-			"все герои" if row == "all" else ("пробные тела" if row == "proof" else "герой «%s»" % str(_hero_def(hero_id).get("title", hero_id)))])
+			"все герои" if row == "all" else ("пробные тела" if row == "proof" else (_pair_words() if row == "pair" else "герой «%s»" % str(_hero_def(hero_id).get("title", hero_id))))])
 		_logged_where = where
 	_fit_window()
 	_dots = Dots.new()
@@ -175,6 +183,11 @@ func _ready() -> void:
 	_build_clock()
 	if pose_now.is_empty():
 		pose_now = rest_pose()
+	if row == "pair":
+		if (pair_pose[0] as Dictionary).is_empty() and (pair_pose[1] as Dictionary).is_empty():
+			pair_pose[pair_edit] = pose_now      # (into a pair from one hero: its pose stays with it)
+		pose_now = _pose_for(pair_edit)
+		_show_front()
 	var replay := chosen                  # (_show_mode puts everyone at rest, and that forgets the chosen action)
 	_show_mode(tab)
 	if tab == 0 and replay != "" and actions().has(replay):
@@ -221,6 +234,16 @@ func _row_heroes() -> Array:
 	if row == "proof" and not proof.is_empty():
 		var some := proof.filter(func(h: Dictionary) -> bool: return proof_pick.has(h["id"]))
 		return some if not some.is_empty() else proof.slice(0, PROOF_MAX)
+	if row == "pair":
+		var pool: Array = _pair_pool()
+		if pool.size() >= 2:
+			var ids: Array = pool.map(func(h: Dictionary) -> String: return h["id"])
+			if not ids.has(hero_id):
+				hero_id = ids[0]
+			if not ids.has(partner_id) or partner_id == hero_id:
+				partner_id = ids[1] if ids[0] == hero_id else ids[0]
+			return [pool[ids.find(hero_id)], pool[ids.find(partner_id)]]
+		row = "one"
 	for h: Dictionary in world + proof:
 		if h["id"] == hero_id:
 			return [h]
@@ -231,6 +254,131 @@ func _row_heroes() -> Array:
 		hero_id = proof[0]["id"]
 		return [proof[0]]
 	return []
+
+
+## Who can stand in a pair: the rubric's heroes (and the proof bodies, when the rubric has fewer than two).
+func _pair_pool() -> Array:
+	var world: Array = cfg.get("heroes", [])
+	return world if world.size() >= 2 else world + cfg.get("proof", [])
+
+
+## The hero whose pose the dots change: in a pair the one picked («Правлю позу»), else the main one.
+func _edited() -> Actor:
+	if row == "pair":
+		var id: String = hero_id if pair_edit == 0 else partner_id
+		if actors.has(id):
+			return actors[id]
+	return _main()
+
+
+## A pair: this far apart, about the middle between them.
+func _set_pair_dx(d: float) -> void:
+	var mid: float = (float(pair_x[0]) + float(pair_x[1])) * 0.5
+	mid = clampf(mid, 0.05 + d * 0.5, 0.95 - d * 0.5)
+	pair_x = [snappedf(mid - d * 0.5, 0.005), snappedf(mid + d * 0.5, 0.005)]
+
+
+## THE ⇆ UNDER A HERO'S FEET (a pair): dragged along the floor, the hero stands there (the scene is laid out
+## again on release; the two never swap sides: the left one leads).
+var _stand_drag := -1
+var _stand_at := 0.0
+
+
+func _stand_point(k: int) -> Vector2:
+	var a := _pair_actor(k)
+	if a == null:
+		return Vector2(-INF, -INF)
+	return Vector2(a.motion._rest_body.x, floor_y + 22.0)
+
+
+func _stand_to(k: int, x: float) -> void:
+	var share: float = x / SIZE.x
+	var other: float = float(pair_x[1 - k])
+	share = clampf(share, 0.05, other - 0.04) if k == 0 else clampf(share, other + 0.04, 0.95)
+	pair_x[k] = snappedf(share, 0.005)
+	_pair_store()
+	_log("hero", "пара: %s встал на %.2f (расстояние %.2f)" % ["левый" if k == 0 else "правый", share, float(pair_x[1]) - float(pair_x[0])])
+	_reload()
+
+
+## The ⇆ handles take the mouse first (in both modes): true when they did.
+func _stand_mouse(event: InputEvent, m: Vector2) -> bool:
+	if row != "pair":
+		return false
+	if event is InputEventMouseMotion and _stand_drag >= 0:
+		_stand_at = m.x
+		return true
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		if (event as InputEventMouseButton).pressed:
+			for k in 2:
+				if _stand_point(k).distance_to(m) < REACH:
+					_stand_drag = k
+					_stand_at = m.x
+					return true
+		elif _stand_drag >= 0:
+			var k2 := _stand_drag
+			_stand_drag = -1
+			_stand_to(k2, _stand_at)
+			return true
+	return false
+
+
+func _draw_stands(canvas: Node2D) -> void:
+	if row != "pair":
+		return
+	var font := ThemeDB.fallback_font
+	for k in 2:
+		var at := _stand_point(k)
+		if not is_finite(at.x):
+			continue
+		if _stand_drag == k:                     # (where it will stand: a line from the floor up)
+			canvas.draw_line(Vector2(_stand_at, floor_y - 40.0), Vector2(_stand_at, floor_y + 22.0), C_CHOSEN, 3.0, true)
+			at.x = _stand_at
+		canvas.draw_rect(Rect2(at - Vector2(30, 15), Vector2(60, 30)), C_CHOSEN if _stand_drag == k else C_INK, true)
+		canvas.draw_string(font, at + Vector2(-30, 8), "⇆", HORIZONTAL_ALIGNMENT_CENTER, 60, 24, Color.WHITE)
+
+
+## A pair: the left (0) or the right (1) hero.
+func _pair_actor(k: int) -> Actor:
+	return actors.get(hero_id if k == 0 else partner_id, null)
+
+
+## A pair: that one's pose (at rest, if it has none yet).
+func _pose_for(k: int) -> Dictionary:
+	if (pair_pose[k] as Dictionary).is_empty():
+		pair_pose[k] = rest_pose(_pair_actor(k))
+	return pair_pose[k]
+
+
+## A pair: what the dots changed goes back to the edited hero's pose.
+func _pair_store() -> void:
+	if row == "pair":
+		pair_pose[pair_edit] = pose_now
+
+
+## A pair: the other hero's pose is the one the dots change now.
+func _pick_edit(k: int) -> void:
+	if row != "pair" or k == pair_edit:
+		return
+	_pair_store()
+	pair_edit = k
+	pose_now = _pose_for(k)
+	_drag = ""
+	_hover = ""
+	_show_front()
+	_show_edit()
+	_dirty_state = true
+	_say("Правите позу: %s. Точки — на нём." % str(_hero_def(hero_id if k == 0 else partner_id).get("title", "")))
+
+
+var _edit_seg: HBoxContainer
+
+
+func _show_edit() -> void:
+	if _edit_seg == null:
+		return
+	for b: Button in _edit_seg.get_children():
+		b.set_pressed_no_signal(b.get_index() == pair_edit)
 
 
 ## The hero the dots and the faults are about: the chosen one, or the first of the row.
@@ -320,6 +468,11 @@ static func _views_of(h: Dictionary) -> Array:
 	if d != "" and FileAccess.file_exists(d.path_join("back/rig.json")):
 		out.append("back")
 	return out
+
+
+## A pair in words: «пара: «А» слева, «Б» справа».
+func _pair_words() -> String:
+	return "пара: «%s» слева, «%s» справа" % [str(_hero_def(hero_id).get("title", hero_id)), str(_hero_def(partner_id).get("title", partner_id))]
 
 
 func _hero_def(id: String) -> Dictionary:
@@ -659,7 +812,10 @@ func _build_panel() -> void:
 			box.add_child(b)
 	col.add_child(top)
 	col.add_child(box)
-	col.add_child(_seg([["Один герой", "one"], ["Все герои", "all"], ["Пробные тела", "proof"]], row, func(v: String) -> void:
+	var rows: Array = [["Один герой", "one"], ["Все герои", "all"], ["Пробные тела", "proof"]]
+	if _pair_pool().size() >= 2:
+		rows.append(["Пара", "pair"])
+	col.add_child(_seg(rows, row, func(v: String) -> void:
 		row = v
 		_reload()))
 	if row == "one":
@@ -688,6 +844,45 @@ func _build_panel() -> void:
 		var ready: Dictionary = _hero_def(hero_id).get("ready", {})
 		if not ready.is_empty():
 			col.add_child(_ready_box(ready))
+	elif row == "pair":
+		# two heroes side by side: who stands on the left (and leads), who on the right, how far apart
+		for k in 2:
+			var flow := HFlowContainer.new()
+			flow.add_theme_constant_override("h_separation", 6)
+			flow.add_theme_constant_override("v_separation", 6)
+			var group2 := ButtonGroup.new()
+			for h: Dictionary in _pair_pool():
+				var hid: String = h["id"]
+				var b := Button.new()
+				b.text = str(h.get("title", hid)).replace("проба: ", "")
+				b.theme_type_variation = "Tile"
+				b.toggle_mode = true
+				b.button_group = group2
+				b.focus_mode = Control.FOCUS_NONE
+				b.button_pressed = hid == (hero_id if k == 0 else partner_id)
+				b.pressed.connect(func() -> void:
+					_pair_store()
+					if k == 0:
+						if hid == partner_id:
+							partner_id = hero_id
+							pair_pose.reverse()
+						hero_id = hid
+					else:
+						if hid == hero_id:
+							hero_id = partner_id
+							pair_pose.reverse()
+						partner_id = hid
+					_reload())
+				flow.add_child(b)
+			col.add_child(_line("Слева" if k == 0 else "Справа", flow))
+		var dist := _slider(0.05, 0.7, float(pair_x[1]) - float(pair_x[0]), "%.2f", func(x: float) -> void: _set_pair_dx(x), func() -> void:
+			_pair_store()
+			_log("hero", "пара: расстояние %.2f" % (float(pair_x[1]) - float(pair_x[0])))
+			_reload())
+		(dist.get_child(0) as HSlider).step = 0.01
+		dist.tooltip_text = "как далеко они стоят: доля ширины сцены (или тяните героя за ⇆ под ногами)"
+		col.add_child(_line("Расстояние", dist))
+		col.add_child(_note("Героя можно тащить вбок за ⇆ у его ног.", 16))
 	elif row == "proof":
 		# which proof bodies stand side by side: at most four, so they do not crowd into a mess
 		var picks := HFlowContainer.new()
@@ -985,6 +1180,11 @@ func _poses_page() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
 	box.add_child(_note("Синие точки — кисти и стопы, красные — таз, плечи (наклон) и макушка. На кисти: правый клик — ладонь, кулак, ребро, палец; колесо — поворот; Shift + правый клик — локоть.", 18))
+	if row == "pair":
+		_edit_seg = _seg([[str(_hero_def(hero_id).get("title", hero_id)) + " (слева)", 0], [str(_hero_def(partner_id).get("title", partner_id)) + " (справа)", 1]],
+			pair_edit, func(k: int) -> void: _pick_edit(k), "Tile")
+		box.add_child(_line("Правлю позу", _edit_seg))
+		box.add_child(_note("«Запомнить позу» запоминает обоих сразу: в каждой карточке — поза левого и правого.", 16))
 	var actions_row := HBoxContainer.new()
 	actions_row.add_theme_constant_override("separation", 8)
 	var fix := _btn("Запомнить позу  (F)", _fix, "Main")
@@ -992,7 +1192,10 @@ func _poses_page() -> Control:
 	actions_row.add_child(fix)
 	actions_row.add_child(_btn("Показать движение", _play_poses))
 	actions_row.add_child(_btn("В покой", func() -> void:
-		pose_now = rest_pose()
+		pose_now = rest_pose(_edited())
+		if row == "pair":
+			pair_pose = [rest_pose(_pair_actor(0)), rest_pose(_pair_actor(1))]
+			pose_now = pair_pose[pair_edit]
 		_sel = -1
 		_fill_poses()
 		_apply_pose()))
@@ -1121,6 +1324,8 @@ func _fill_poses() -> void:
 		head.add_child(open)
 		var what := Label.new()
 		what.text = _pose_words(p["pose"])
+		if row == "pair":
+			what.text = "слева: %s · справа: %s" % [_pose_words(p["pose"]), _pose_words(p.get("partner", {}))]
 		what.clip_text = true
 		what.tooltip_text = what.text
 		what.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -1160,8 +1365,14 @@ func _fill_poses() -> void:
 		v.add_child(bottom)
 		if i == _sel:
 			v.add_child(_btn("Заменить позу %d на то, как стоит герой сейчас" % (i + 1), func() -> void:
-				poses[i]["pose"] = _in_angles(pose_now)
-				_log("pose", "заменена поза %d: %s" % [i + 1, _pose_words(poses[i]["pose"])], poses[i]["pose"])
+				if row == "pair":
+					_pair_store()
+					poses[i]["pose"] = _in_angles(_pose_for(0), _pair_actor(0))
+					poses[i]["partner"] = _in_angles(_pose_for(1), _pair_actor(1))
+				else:
+					poses[i]["pose"] = _in_angles(pose_now)
+					poses[i].erase("partner")
+				_log("pose", "заменена поза %d: %s" % [i + 1, _pose_words(poses[i]["pose"])], poses[i])
 				_fill_poses()
 				_save_poses()
 				_say("Поза %d заменена." % (i + 1)), "Main"))
@@ -1536,8 +1747,8 @@ func _show_faults(id: String) -> void:
 # ----------------------------------------------------------------------------- poses
 
 ## The rest pose of the main hero, in the action format (numbers only, nothing "rest").
-func rest_pose() -> Dictionary:
-	var a := _main()
+func rest_pose(who: Actor = null) -> Dictionary:
+	var a := who if who != null else _edited()
 	var p := {"legs": {"drop": 0.0, "shift": 0.0, "foot_l": [0.0, 0.0], "foot_r": [0.0, 0.0]}, "body": {"lean": 0.0}, "head": 0.0}
 	# (the shoulders and the head's drop are said in a pose only when moved: a pose without them is at rest there)
 	for ch: String in ["arm_l", "arm_r"]:
@@ -1552,12 +1763,16 @@ func rest_pose() -> Dictionary:
 func _apply_pose() -> void:
 	_pending = {}
 	_due_lines.clear()
-	var ph := _full(pose_now)
-	ph["time"] = 0.12
-	var hold := _full(pose_now)
-	hold["time"] = 1.0
-	hold["loop"] = true
+	_pair_store()
 	for a: Actor in actors.values():
+		var mine: Dictionary = pose_now
+		if row == "pair":                        # (a pair: each its own pose)
+			mine = _pose_for(0 if a.id == hero_id else 1)
+		var ph := _full(mine)
+		ph["time"] = 0.12
+		var hold := _full(mine)
+		hold["time"] = 1.0
+		hold["loop"] = true
 		a.playing.clear()
 		a.going = {}
 		for r in a.motion.runs:
@@ -1571,9 +1786,9 @@ func _apply_pose() -> void:
 
 ## The pose with its arms said in ANGLES, read from the hero as it stands now (what the person sees is what is
 ## kept: the elbow's side is in the numbers, so the pose is the same on a tall hero and a short one).
-func _in_angles(pose: Dictionary) -> Dictionary:
+func _in_angles(pose: Dictionary, who: Actor = null) -> Dictionary:
 	var out := pose.duplicate(true)
-	var a := _main()
+	var a := who if who != null else _edited()
 	if a == null:
 		return out
 	for ch: String in ["arm_l", "arm_r"]:
@@ -1725,7 +1940,12 @@ func _hero_info() -> String:
 		out.append("О герое: " + "; ".join(about))
 	if dir != "" and FileAccess.file_exists(dir.path_join("portrait.png")):
 		out.append("Портрет героя (открой его): " + dir.path_join("portrait.png"))
-	if row != "one":
+	if row == "pair":
+		var b: Dictionary = _hero_def(partner_id)
+		out.append("На сцене %s (второй: %s)" % [_pair_words(), partner_id])
+		if str(b.get("dir", "")) != "" and FileAccess.file_exists(str(b["dir"]).path_join("portrait.png")):
+			out.append("Портрет второго: " + str(b["dir"]).path_join("portrait.png"))
+	elif row != "one":
 		out.append("На сцене: %s" % ("все герои рубрики" if row == "all" else "пробные тела"))
 	return "\n".join(out)
 
@@ -1753,7 +1973,9 @@ func _copy_for_ai(which: int) -> void:
 	if _copying or poses.is_empty():
 		return
 	_copying = true
+	_pair_store()
 	var keep := pose_now.duplicate(true)
+	var keep_pair: Array = pair_pose.duplicate(true)
 	var keep_sel := _sel
 	var dir: String = str(cfg.get("state_dir", "")).path_join("shots")
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -1761,9 +1983,11 @@ func _copy_for_ai(which: int) -> void:
 	_say("Снимаю %s…" % ("позу %d" % (which + 1) if which >= 0 else "позы"))
 	var pics: Array = []
 	for i: int in idx:
-		var same: bool = tab == 1 and JSON.stringify(poses[i]["pose"]) == JSON.stringify(_in_angles(pose_now))
+		var same: bool = tab == 1 and JSON.stringify(poses[i]["pose"]) == JSON.stringify(_in_angles(_pose_for(0), _pair_actor(0)) if row == "pair" else _in_angles(pose_now))
+		if row == "pair" and same:
+			same = JSON.stringify(poses[i].get("partner", {})) == JSON.stringify(_in_angles(_pose_for(1), _pair_actor(1)))
 		if not same:                       # (the pose already on the hero is taken as it stands: nothing moves)
-			pose_now = (poses[i]["pose"] as Dictionary).duplicate(true)
+			_put_pose(i)
 			_apply_pose()
 		pics.append(await _snap_hero())
 	var files: Array = []
@@ -1775,15 +1999,30 @@ func _copy_for_ai(which: int) -> void:
 	if which < 0 and pics.size() > 1:
 		sheet = dir.path_join("poses.png")
 		_strip(pics).save_png(sheet)
+	pair_pose = keep_pair
 	pose_now = keep
+	if row == "pair":
+		pair_pose[pair_edit] = pose_now
 	_sel = keep_sel
 	_apply_pose()
 	var lines: Array = [_hero_info()]
-	if which >= 0:
+	var units := "руки — углы в градусах: raise 0 вниз, 90 в сторону, 180 вверх; elbow + сгиб в ту же сторону; ноги и тело — в длинах ноги"
+	if row == "pair":
+		var a0 := _pair_actor(0)
+		var b0 := _pair_actor(1)
+		var gap0: float = (absf(b0.motion._rest_body.x - a0.motion._rest_body.x) - _half_width(a0) - _half_width(b0)) / maxf(0.5 * (a0.arm + b0.arm), 1.0)
+		lines.append("Поза для двоих: обе позы записаны как стоят (у каждого arm_r — рука справа на экране); при сохранении правый пишется зеркально в <id>_b. Расстояние: pair.gap %.2f" % gap0)
+	if which >= 0 and row == "pair":
+		var pp: Dictionary = poses[which]
+		lines.append("Поза %d из %d — вот так я хочу. Слева: %s. Справа: %s" % [which + 1, poses.size(), _pose_words(pp["pose"]), _pose_words(pp.get("partner", {}))])
+		lines.append("Картинка (открой её): %s" % files[0])
+		lines.append("Слева числами (%s): %s" % [units, JSON.stringify(pp["pose"])])
+		lines.append("Справа числами: %s" % JSON.stringify(pp.get("partner", {})))
+	elif which >= 0:
 		var p: Dictionary = poses[which]
 		lines.append("Поза %d из %d — вот так я хочу: %s" % [which + 1, poses.size(), _pose_words(p["pose"])])
 		lines.append("Картинка (открой её): %s" % files[0])
-		lines.append("Поза числами (руки — углы в градусах: raise 0 вниз, 90 в сторону, 180 вверх; elbow + сгиб в ту же сторону; ноги и тело — в длинах ноги): %s" % JSON.stringify(p["pose"]))
+		lines.append("Поза числами (%s): %s" % [units, JSON.stringify(p["pose"])])
 	else:
 		lines.append("Движение из %d поз — вот так я хочу:" % poses.size())
 		if sheet != "":
@@ -1793,7 +2032,12 @@ func _copy_for_ai(which: int) -> void:
 			lines.append("%d. %.2f с, %s%s — %s" % [k + 1, float(p2["time"]), EASE_WORDS.get(str(p2.get("ease", "inout")), "плавно"),
 				", держать" if bool(p2.get("hold", false)) else "", _pose_words(p2["pose"])])
 			lines.append("   картинка: %s" % files[k])
-			lines.append("   числами: %s" % JSON.stringify(p2["pose"]))
+			if row == "pair":
+				lines.append("   справа: %s" % _pose_words(p2.get("partner", {})))
+				lines.append("   слева числами: %s" % JSON.stringify(p2["pose"]))
+				lines.append("   справа числами: %s" % JSON.stringify(p2.get("partner", {})))
+			else:
+				lines.append("   числами: %s" % JSON.stringify(p2["pose"]))
 		lines.append("Все позы файлом: %s · черновик действия: tadam action from-poses <id> --title \"…\"" % str(cfg.get("state_dir", "")).path_join("poses.json"))
 	DisplayServer.clipboard_set("\n".join(lines))
 	_log("copy", "скопировано для ИИ: %s" % ("поза %d" % (which + 1) if which >= 0 else "все позы (%d)" % poses.size()))
@@ -1818,13 +2062,15 @@ func _snap_hero() -> Image:
 	still = was_still
 	_set_life()
 	# the hero's box on the stage (its dots, and a margin), in the picture's pixels
-	var a := _main()
-	var pts := _dot_points(a)
 	var lo := Vector2(INF, INF)
 	var hi := Vector2(-INF, -INF)
-	for k: String in pts:
-		lo = lo.min(pts[k])
-		hi = hi.max(pts[k])
+	for a: Actor in ([_pair_actor(0), _pair_actor(1)] if row == "pair" else [_main()]):
+		if a == null:
+			continue
+		var pts := _dot_points(a)
+		for k: String in pts:
+			lo = lo.min(pts[k])
+			hi = hi.max(pts[k])
 	var vis: Vector2 = get_viewport().get_visible_rect().size
 	var kx: float = float(img.get_width()) / vis.x
 	var ky: float = float(img.get_height()) / vis.y
@@ -1883,6 +2129,20 @@ static func _head_tilt(pose: Dictionary) -> float:
 
 
 func _fix() -> void:
+	if row == "pair":                            # a pair: both poses at once, the way as long as the longer one
+		_pair_store()
+		var ka := _in_angles(_pose_for(0), _pair_actor(0))
+		var kb := _in_angles(_pose_for(1), _pair_actor(1))
+		var ba: Dictionary = poses[-1]["pose"] if not poses.is_empty() else rest_pose(_pair_actor(0))
+		var bb: Dictionary = poses[-1].get("partner", rest_pose(_pair_actor(1))) if not poses.is_empty() else rest_pose(_pair_actor(1))
+		var e := {"pose": ka, "partner": kb, "time": maxf(way_time(ba, ka), way_time(bb, kb)), "ease": "inout", "hold": false}
+		poses.append(e)
+		_log("pose", "запомнена поза %d (%s): слева %s; справа %s" % [poses.size(), _pair_words(), _pose_words(ka), _pose_words(kb)], e)
+		_sel = -1
+		_fill_poses()
+		_save_poses()
+		_say("Поза %d запомнена для обоих. Поставьте следующую или нажмите «Показать движение»." % poses.size())
+		return
 	var before: Dictionary = poses[-1]["pose"] if not poses.is_empty() else rest_pose()
 	var kept := _in_angles(pose_now)
 	poses.append({"pose": kept, "time": way_time(before, kept), "ease": "inout", "hold": false})
@@ -1917,11 +2177,69 @@ func _select_pose(i: int) -> void:
 	if i < 0 or i >= poses.size():
 		return
 	_sel = i
-	pose_now = (poses[i]["pose"] as Dictionary).duplicate(true)
+	_put_pose(i)
 	_show_front()
 	_fill_poses()
 	_apply_pose()
 	_say("Герой в позе %d. Поправьте точки и нажмите красную кнопку на её карточке." % (i + 1))
+
+
+## The i-th pose onto the hero (a pair: each its own half of it).
+func _put_pose(i: int) -> void:
+	if row == "pair":
+		pair_pose[0] = (poses[i]["pose"] as Dictionary).duplicate(true)
+		pair_pose[1] = (poses[i].get("partner", rest_pose(_pair_actor(1))) as Dictionary).duplicate(true)
+		pose_now = pair_pose[pair_edit]
+	else:
+		pose_now = (poses[i]["pose"] as Dictionary).duplicate(true)
+
+
+## A pair: the list of poses of one of them (0 the left one, 1 the right one), timing and all.
+func _half_list(k: int) -> Array:
+	var out: Array = []
+	for p: Dictionary in poses:
+		var e: Dictionary = p.duplicate(true)
+		e.erase("partner")
+		if k == 1:
+			e["pose"] = (p.get("partner", rest_pose(_pair_actor(1))) as Dictionary).duplicate(true)
+		out.append(e)
+	return out
+
+
+## A pose for the other side: what an action played mirrored ("side": "left") turns back into this pose.
+## Arms and feet are said outward from their own side, so only the sides swap; a lean and a tilt turn round.
+static func mirror_pose(p: Dictionary) -> Dictionary:
+	var out := p.duplicate(true)
+	out.erase("arm_l")
+	out.erase("arm_r")
+	if p.has("arm_r"):
+		out["arm_l"] = (p["arm_r"] as Dictionary).duplicate(true) if p["arm_r"] is Dictionary else p["arm_r"]
+	if p.has("arm_l"):
+		out["arm_r"] = (p["arm_l"] as Dictionary).duplicate(true) if p["arm_l"] is Dictionary else p["arm_l"]
+	if p.get("legs", null) is Dictionary:
+		var lg: Dictionary = (p["legs"] as Dictionary).duplicate(true)
+		for key: String in ["foot", "hip", "knee"]:
+			var l: Variant = lg.get(key + "_l", null)
+			var r: Variant = lg.get(key + "_r", null)
+			lg.erase(key + "_l")
+			lg.erase(key + "_r")
+			if r != null:
+				lg[key + "_l"] = r
+			if l != null:
+				lg[key + "_r"] = l
+		if lg.has("shift"):
+			lg["shift"] = -float(lg["shift"])
+		out["legs"] = lg
+	if p.get("body", null) is Dictionary:
+		for k: String in ["lean", "chest"]:
+			if (p["body"] as Dictionary).has(k):
+				out["body"][k] = -float(p["body"][k])
+	var h: Variant = p.get("head", null)
+	if h is float or h is int:
+		out["head"] = -float(h)
+	elif h is Dictionary and (h as Dictionary).has("tilt"):
+		out["head"]["tilt"] = -float(h["tilt"])
+	return out
 
 
 func _move_pose(i: int, d: int) -> void:
@@ -1975,6 +2293,14 @@ func _play_poses() -> void:
 		return
 	var act := poses_action(poses, "_poses", "позы", rest_pose())
 	actions()["_poses"] = act
+	if row == "pair":                            # each its own half (both as they stand: no mirroring here)
+		_pair_store()
+		for k in 2:
+			var half := poses_action(_half_list(k), "_poses", "позы", rest_pose(_pair_actor(k)))
+			if _pair_actor(k) != null:
+				_pair_actor(k).motion.play_clean(half, {"side": "right", "duration": 1.5})
+		_say("Движение пары из %d поз." % poses.size())
+		return
 	for a: Actor in actors.values():
 		a.motion.play_clean(act, {"side": "right", "duration": 1.5})
 	_say("Движение из %d поз. Не нравится переход — поправьте время и плавность на карточке." % poses.size())
@@ -2000,6 +2326,9 @@ func _save_action() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	var path := dir.path_join(id + ".json")
 	var title := _save_title.text.strip_edges()
+	if row == "pair":
+		_save_pair(id, title, dir, core)
+		return
 	var act := poses_action(poses, id, title if title != "" else id, rest_pose())
 	if FileAccess.file_exists(path):
 		var old: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -2016,6 +2345,50 @@ func _save_action() -> void:
 	_stamp = _actions_stamp()
 	_fill_tiles()
 	_say("Сохранено: «%s» (%s).%s" % [title if title != "" else id, id, " Общая библиотека: изменится во всех мирах после выпуска." if core else " Оно уже в списке действий."])
+
+
+## A pair saved: the left one's half leads (`<id>`, with "pair": how far apart, and its partner), the right
+## one's is `<id>_b` ("partner_only"). The stage plays the partner MIRRORED (its near hand is its left), so its
+## half is written mirrored: played, it turns back into the poses that were set here.
+func _save_pair(id: String, title: String, dir: String, core: bool) -> void:
+	var a := _pair_actor(0)
+	var b := _pair_actor(1)
+	if a == null or b == null:
+		return
+	var id_b := id + "_b"
+	if not core and FileAccess.file_exists(ProjectSettings.globalize_path("res://actions").path_join(id_b + ".json")):
+		_say("«%s» уже есть в общей библиотеке. Выберите другое имя." % id_b)
+		return
+	_pair_store()
+	var dx: float = absf(b.motion._rest_body.x - a.motion._rest_body.x)
+	var gap: float = snappedf(clampf((dx - _half_width(a) - _half_width(b)) / maxf(0.5 * (a.arm + b.arm), 1.0), -0.5, 3.0), 0.01)
+	var name: String = title if title != "" else id
+	var lead := poses_action(_half_list(0), id, name, rest_pose(a))
+	lead["group"] = "two"
+	lead["pair"] = {"gap": gap, "view": "front", "partner": id_b}
+	var half_b: Array = _half_list(1)
+	for e: Dictionary in half_b:
+		e["pose"] = mirror_pose(e["pose"])
+	var other := poses_action(half_b, id_b, name + " (второй в паре)", mirror_pose(rest_pose(b)))
+	other["group"] = "two"
+	other["partner_only"] = true
+	for pair: Array in [[lead, dir.path_join(id + ".json")], [other, dir.path_join(id_b + ".json")]]:
+		var act: Dictionary = pair[0]
+		var path: String = pair[1]
+		if FileAccess.file_exists(path):
+			var old: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if old is Dictionary:                # (its passport stays: params, author ...)
+				for k: String in old:
+					if not act.has(k) or (k == "title" and title == ""):
+						act[k] = old[k]
+		var f := FileAccess.open(path, FileAccess.WRITE)
+		f.store_string(JSON.stringify(act, " ", false) + "\n")
+		f.close()
+	_log("save", "сохранено действие для двоих «%s» + «%s» из %d поз (%s, расстояние %.2f): %s" % [id, id_b, poses.size(), _pair_words(), gap, dir], lead["pair"])
+	reload_actions()
+	_stamp = _actions_stamp()
+	_fill_tiles()
+	_say("Сохранено для двоих: «%s» (%s и %s). В «Смотреть действия» левый начнёт, правый ответит." % [name, id, id_b])
 
 
 # ----------------------------------------------------------------------------- the dots
@@ -2039,7 +2412,8 @@ func _dot_points(a: Actor) -> Dictionary:
 
 
 func _draw_dots(canvas: Node2D) -> void:
-	var a := _main()
+	_draw_stands(canvas)
+	var a := _edited()
 	if a == null:
 		return
 	if _trails:
@@ -2093,9 +2467,16 @@ func _unhandled_input(event: InputEvent) -> void:
 ## The dots take the mouse BEFORE the stage's own layers (titles, effects: full-screen controls that would eat
 ## every click), but only over the stage and not over the clock under the hero.
 func _input(event: InputEvent) -> void:
-	if tab != 1 or not (event is InputEventMouse):
+	if not (event is InputEventMouse):
 		return
-	var a := _main()
+	if row == "pair" and (_stand_drag >= 0 or _drag == ""):
+		var m0: Vector2 = get_canvas_transform().affine_inverse() * (event as InputEventMouse).position
+		if (m0.x < SIZE.x or _stand_drag >= 0) and _stand_mouse(event, m0):
+			get_viewport().set_input_as_handled()
+			return
+	if tab != 1:
+		return
+	var a := _edited()
 	if a == null:
 		return
 	var m: Vector2 = get_canvas_transform().affine_inverse() * (event as InputEventMouse).position   # (the event's own spot, never the OS cursor)
@@ -2292,7 +2673,7 @@ func _write_state() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(dir)
 	var a := _main()
-	var st := {"world": cfg.get("world", ""), "world_title": cfg.get("world_title", ""), "hero": hero_id, "row": row, "tab": ["mechanics", "poses"][tab], "action": chosen, "side": _side, "elbow": _elbow_say,
+	var st := {"world": cfg.get("world", ""), "world_title": cfg.get("world_title", ""), "hero": hero_id, "row": row, "partner": partner_id if row == "pair" else "", "pair_edit": pair_edit, "tab": ["mechanics", "poses"][tab], "action": chosen, "side": _side, "elbow": _elbow_say,
 		"view": a.view if a != null else "front", "pose": pose_now, "poses": poses.size(), "pose_selected": _sel + 1,
 		"cmd_seen": _cmd_seen, "at": Time.get_datetime_string_from_system(false, true)}
 	var f := FileAccess.open(dir.path_join("state.json"), FileAccess.WRITE)
@@ -2350,7 +2731,7 @@ func _scripted() -> void:
 			"elbow":
 				_pick_elbow(bits[1] if bits.size() > 1 else "")
 			"drag":
-				_drag_to(_main(), bits[1], Vector2(float(bits[2]), float(bits[3])))
+				_drag_to(_edited(), bits[1], Vector2(float(bits[2]), float(bits[3])))
 			"hover":
 				_hover = bits[1]
 			"world":                       # world:<n>: switch to the n-th rubric of the list (0 = the first)
@@ -2369,7 +2750,7 @@ func _scripted() -> void:
 				ev.global_position = ev.position
 				Input.parse_input_event(ev)
 			"dot":                         # dot:<name>:<file>: where that dot is now
-				var pts2 := _dot_points(_main())
+				var pts2 := _dot_points(_edited())
 				var df := FileAccess.open(":".join(bits.slice(2)), FileAccess.WRITE)
 				df.store_string(JSON.stringify([(pts2[bits[1]] as Vector2).x, (pts2[bits[1]] as Vector2).y]))
 				df.close()
@@ -2381,10 +2762,23 @@ func _scripted() -> void:
 			"rest":
 				pose_now = rest_pose()
 				_apply_pose()
+			"partner":                     # partner:<id>: the one on the right of the pair
+				partner_id = bits[1]
+				_reload()
+			"dx":                          # dx:<share>: how far apart the pair stands
+				_set_pair_dx(float(bits[1]))
+				_reload()
+			"stand":                       # stand:<k>:<x>: as dragging the ⇆ under that hero's feet to x (stage px)
+				_stand_to(int(bits[1]), float(bits[2]))
+			"edit":                        # edit:0 / edit:1: whose pose the dots change, as «Правлю позу» does
+				_pick_edit(int(bits[1]))
+			"save":                        # save:<id>: as «Сохранить» does
+				_save_id.text = bits[1]
+				_save_action()
 			"select":                      # select:<n>: the n-th pose onto the hero (1 = the first)
 				_select_pose(int(bits[1]) - 1)
 			"where":                       # where:<file>: where the main hero's dots are (stage px)
-				var pts := _dot_points(_main())
+				var pts := _dot_points(_edited())
 				var out := {}
 				for k: String in pts:
 					out[k] = [(pts[k] as Vector2).x, (pts[k] as Vector2).y]

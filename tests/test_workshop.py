@@ -356,3 +356,43 @@ def test_a_pose_and_the_log_are_copied_for_the_assistant(tmp_path):
     log = Path(logc).read_text(encoding="utf-8")
     assert "«" in log and "wave" in log and "log.jsonl" in log, log
     assert (d / "log.jsonl").is_file()
+
+
+@needs_godot
+def test_a_pose_for_two_is_set_fixed_and_saved_as_a_pair(tmp_path):
+    """«Пара»: two heroes side by side, the dots on the one picked («Правлю позу»), one «Запомнить» keeps both
+    poses; «Сохранить» writes the lead (<id>, with "pair") and the partner (<id>_b, mirrored, "partner_only"),
+    and played from the list the partner's hand goes where it was set."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    cmd = workshop.command(d / "config.json")
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    a0, b0 = (tmp_path / "a0.json").as_posix(), (tmp_path / "b0.json").as_posix()
+    out = _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": f"still@5,row:pair@8,tab:1@30,where:{a0}@60,edit:1@62,where:{b0}@64,quit@66"})
+    assert Path(a0).exists() and Path(b0).exists(), out[-2000:]
+    pa, pb = json.loads(Path(a0).read_text()), json.loads(Path(b0).read_text())
+    assert pb["body"][0] > pa["body"][0] + 60                # (side by side: the partner on the right)
+    meet = [(pa["hand_r"][0] + pb["hand_l"][0]) / 2, (pa["body"][1] + pb["body"][1]) / 2 - 40]
+    a1, b1 = (tmp_path / "a1.json").as_posix(), (tmp_path / "b1.json").as_posix()
+    shot = (tmp_path / "pair.png").as_posix()
+    seq = (f"still@5,row:pair@8,tab:1@30,edit:0@40,drag:hand_r:{meet[0] - 8:.0f}:{meet[1]:.0f}@50,"
+           f"edit:1@90,drag:hand_l:{meet[0] + 8:.0f}:{meet[1]:.0f}@100,fix@200,save:shake_two@210,"
+           f"tab:0@230,play:shake_two@240,edit:0@372,where:{a1}@373,edit:1@374,where:{b1}@375,shot:{shot}@376,stand:1:600@390,state@430,quit@432")
+    out = _godot(cmd[1:], timeout=180, env={"WORKSHOP_SEQ": seq})
+    poses, _ = workshop.read_poses(root)
+    assert len(poses) == 1 and "partner" in poses[0], out[-2000:]
+    assert poses[0]["pose"]["arm_r"]["raise"] > 30 and poses[0]["partner"]["arm_l"]["raise"] > 30
+    lead = json.loads((root / "actions" / "shake_two.json").read_text(encoding="utf-8"))
+    half = json.loads((root / "actions" / "shake_two_b.json").read_text(encoding="utf-8"))
+    assert lead["group"] == "two" and lead["pair"]["partner"] == "shake_two_b"
+    assert half["partner_only"] and "arm_r" in half["phases"][0]     # (mirrored: its near hand is written as the right)
+    # played as a pair: both near hands came up to where they were set, and met
+    qa, qb = json.loads(Path(a1).read_text()), json.loads(Path(b1).read_text())
+    assert abs(qa["hand_r"][1] - meet[1]) < 30 and abs(qb["hand_l"][1] - meet[1]) < 30, (meet, qa, qb)
+    assert qa["hand_r"][0] < qb["hand_l"][0] + 10 and abs(qa["hand_r"][0] - qb["hand_l"][0]) < 40, (qa, qb)
+    st = workshop.read_state(root)
+    assert st["row"] == "pair" and st["partner"] == "visitor"
+    assert "расстояние" in (d / "log.jsonl").read_text(encoding="utf-8")       # (the ⇆ dragged: the right one moved)

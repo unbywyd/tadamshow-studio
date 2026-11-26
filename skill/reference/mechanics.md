@@ -79,6 +79,14 @@ plays back exactly that, on any body.)
    `actions/` on this computer and says so, and the site plays the script without it until it learns world
    actions. Tell the person before a script relies on one.
 
+**A pose for two** (a handshake, a hug): the row «Пара» puts two heroes side by side. The person drags each one
+along the floor by the ⇆ under its feet, or uses the «Расстояние» slider, to set how far apart they stand. «Правлю
+позу» picks whose dots are shown, and one «Фикс» keeps both poses: in `poses.json` each entry has `pose` (left) and
+`partner` (right), both as they stand, so `arm_r` is the hand on the screen's right. «Сохранить» writes two files.
+`<id>` is the left hero's half, with `"pair": {"gap", "view": "front", "partner": "<id>_b"}` and the gap measured
+from where they stood. `<id>_b` is the right hero's half, `partner_only`, written MIRRORED because the stage plays
+the partner with `side: left`. Refine both files the same way as above, and keep `<id>_b` mirrored.
+
 What the window shows is written to `.tadam/workshop/state.json` (hero, action, the pose in these measures):
 read it when the person says «вот это поправь». Be honest: you judge motion by the table and the storyboard; the
 person judges the feel. Walks and runs are not poses: they are the `gait` of a walk (step, lift, sway, arm swing).
