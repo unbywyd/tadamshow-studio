@@ -3,10 +3,10 @@
  "title": "обнять за плечи",
  "group": "two",
  "pair": {
-  "gap": -0.05,
+  "gap": 0.15,
   "view": "front",
   "partner": "side_hug_b",
-  "over": true
+  "over": false
  },
  "params": {
   "side": "right"
