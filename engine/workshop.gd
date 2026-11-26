@@ -292,10 +292,8 @@ func _why_not(id: String) -> String:
 	var a: Dictionary = actions().get(id, {})
 	if (a.get("group", "") == "two" or a.has("pair") or a.get("partner_only", false)) and (cfg.get("heroes", []) as Array).size() < 2:
 		return "Для двоих: в рубрике один герой, играть не с кем."
-	if a.get("partner_only", false):
-		return "Ответ партнёра: играется сам, когда другой герой делает своё (толкнуть, обнять)."
-	if str(a.get("params", {}).get("to", "")) == "@meet" or id == "receive":
-		return "Передать из рук в руки: в сцене это «give» между двумя героями."
+	if (id in ["give", "receive"]) and (cfg.get("heroes", []) as Array).size() < 2:
+		return "Из рук в руки: в рубрике один герой, передавать некому."
 	if (_hero_def(hero_id).get("ready", {}).get("bad", []) as Array).has(id):
 		return "У этого героя с браком: проверка нашла ошибки (нажмите — покажу какие)."
 	return ""
@@ -1189,7 +1187,8 @@ func _play(id: String) -> void:
 		return
 	var act: Dictionary = actions()[id]
 	# an action for two with one hero on the stage: the rubric's heroes come out together, and it plays again
-	if (act.has("pair") or act.get("partner_only", false)) and actors.size() < 2 and (cfg.get("heroes", []) as Array).size() >= 2:
+	var for_two: bool = act.has("pair") or act.get("partner_only", false) or id in ["give", "receive"]
+	if for_two and actors.size() < 2 and (cfg.get("heroes", []) as Array).size() >= 2:
 		chosen = id
 		row = "all"
 		_reload()
@@ -1201,11 +1200,30 @@ func _play(id: String) -> void:
 	_trail.clear()
 	_clear_props()
 	var lines: Array = []
-	if act.has("pair") and actors.size() >= 2:   # for two: the main hero with the one beside it (both play)
-		var other: String = actors.keys().filter(func(x: String) -> bool: return x != _main().id)[0]
-		lines.append({"who": _main().id, "do": id, "with": other, "energy": _energy, "speed": _speed, "duration": 2.5})
+	var paired: bool = actors.size() >= 2 and (act.has("pair") or act.get("partner_only", false) or id in ["give", "receive"])
+	if paired:                                   # for two: the main hero with the one beside it (both play)
+		var me: String = _main().id
+		var other: String = actors.keys().filter(func(x: String) -> bool: return x != me)[0]
+		if act.get("partner_only", false):       # the answering half (pushed, hugged): the other one starts it
+			var lead := ""
+			for k2: String in actions():
+				if str(actions()[k2].get("pair", {}).get("partner", "")) == id:
+					lead = k2
+			if lead != "":
+				lines.append({"who": other, "do": lead, "with": me, "energy": _energy, "speed": _speed, "duration": 2.5})
+		elif id == "give" or id == "receive":     # hand to hand: a mug goes over (receive: the other one gives it)
+			var giver: String = me if id == "give" else other
+			var pid := "item_mug_" + giver
+			items.add(pid, "mug", actors[giver].puppet.body_position(), {"ground_z": actors[giver].z})
+			items.watch(actors[giver].motion)
+			items.watch(actors[me if giver == other else other].motion)
+			items.hold_now(actors[giver].motion, "hand_r", pid)
+			_props.append(pid)
+			lines.append({"who": giver, "give": other if giver == me else me})
+		else:
+			lines.append({"who": me, "do": id, "with": other, "energy": _energy, "speed": _speed, "duration": 2.5})
 	for aid: String in actors:
-		if act.has("pair") and actors.size() >= 2:
+		if paired:
 			break
 		var line := {"who": aid, "energy": _energy, "speed": _speed}
 		if act.get("params", {}).has("side"):
@@ -1220,7 +1238,7 @@ func _play(id: String) -> void:
 		if act.has("test_items"):
 			line = _with_props(act, id, actors[aid], line)
 		lines.append(line)
-	var own_lines: bool = act.has("pair") or act.has("test_items")   # (each hero its own things, its own line)
+	var own_lines: bool = paired or act.has("test_items")   # (each hero its own things, its own line)
 	if _over_mode:
 		for line: Dictionary in lines:
 			_command(line)

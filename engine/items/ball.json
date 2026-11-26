@@ -1,0 +1,12 @@
+{
+ "id": "ball",
+ "title": "мяч",
+ "size": 0.065,
+ "hold": "palm",
+ "grip": [
+  0.5,
+  0.5
+ ],
+ "bounce": 0.65,
+ "round": true
+}

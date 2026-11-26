@@ -1,0 +1,17 @@
+{
+ "id": "wheel",
+ "title": "руль",
+ "size": 0.1,
+ "hold": "both",
+ "grip": [
+  0.5,
+  0.5
+ ],
+ "span": 0.95,
+ "bounce": 0.3,
+ "round": true,
+ "carry": [
+  0,
+  0.5
+ ]
+}

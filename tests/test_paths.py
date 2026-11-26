@@ -113,8 +113,9 @@ def test_engine_has_nothing_it_must_not():
     for bad in ("media/", "puppets/", "demo.", "headtest", "selftest", "handles.gd", "export_presets"):
         assert not any(n.startswith(bad) or ("/" + bad) in n or n.startswith(bad) for n in names), bad
     assert not any(re.search(r"\.(ogv|mp4|avi|mp3)$", n) for n in names)
-    for owner_made in ("ball", "book", "crate", "mug", "shovel", "sword", "wheel"):
-        assert not (eng / "items" / f"{owner_made}.png").exists()
+    # the things in hands (ball, book, crate, mug, sword, wheel) ship since 26.11: drawn anew by the owner's own Vexelkit
+    # set (the earlier OpenAI pictures never did); the shovel nobody uses stays out
+    assert not (eng / "items" / "shovel.png").exists()
     assert not any(n.startswith("hands/") and "sheet" in n for n in names)     # only the cut gloves, no source sheets
 
 

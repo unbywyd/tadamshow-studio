@@ -1,0 +1,18 @@
+{
+ "id": "crate",
+ "title": "ящик",
+ "size": 0.13,
+ "hold": "both",
+ "grip": [
+  0.5,
+  0.45
+ ],
+ "span": 1.0,
+ "bounce": 0.1,
+ "heavy": true,
+ "carry": [
+  0,
+  0.93
+ ],
+ "hands": "edge"
+}
