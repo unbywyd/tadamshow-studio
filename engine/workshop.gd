@@ -40,7 +40,8 @@ const FAULT_WORDS := {"wrong": "локоть или колено выгнули�
 	"skirt": "юбка проходит сквозь ноги", "torn": "юбка рвётся", "jerk": "дёргается"}
 const DOT_NAMES := {"hand_l": "левая кисть", "hand_r": "правая кисть", "foot_l": "левая стопа", "foot_r": "правая стопа",
 	"body": "таз: присесть, сдвинуться", "neck": "середина плеч: наклон корпуса", "head": "макушка: вбок — наклон, вниз — втянуть голову",
-	"shoulder_l": "левое плечо: вверх — поднять", "shoulder_r": "правое плечо: вверх — поднять"}
+	"shoulder_l": "левое плечо: вверх — поднять", "shoulder_r": "правое плечо: вверх — поднять",
+	"elbow_l": "левый локоть: тяните — согнуть в любую сторону", "elbow_r": "правый локоть: тяните — согнуть в любую сторону"}
 const PANEL_W := 760.0
 const DOT := 14.0
 const REACH := 40.0
@@ -1179,7 +1180,7 @@ static func _title_of(a: Dictionary, id: String) -> String:
 func _poses_page() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
-	box.add_child(_note("Синие точки — кисти и стопы, красные — таз, плечи (наклон) и макушка. На кисти: правый клик — ладонь, кулак, ребро, палец; колесо — поворот; Shift + правый клик — локоть.", 18))
+	box.add_child(_note("Синие точки — кисти, локти (маленькие) и стопы, красные — таз, плечи (наклон) и макушка. Локоть тяните, чтобы согнуть руку в нужную сторону: он остаётся там, пока двигаете кисть. На кисти: правый клик — ладонь, кулак, ребро, палец; колесо — поворот.", 18))
 	if row == "pair":
 		_edit_seg = _seg([[str(_hero_def(hero_id).get("title", hero_id)) + " (слева)", 0], [str(_hero_def(partner_id).get("title", partner_id)) + " (справа)", 1]],
 			pair_edit, func(k: int) -> void: _pick_edit(k), "Tile")
@@ -1804,6 +1805,32 @@ func _in_angles(pose: Dictionary, who: Actor = null) -> Dictionary:
 	return out
 
 
+var _bend: Dictionary = {}           # arm -> the side its elbow is bent to while its hand is dragged (1 / -1)
+
+
+## Where the elbow is for a hand at `target`: two bones from the shoulder, the elbow on the `bend` side of the
+## line from the shoulder to the hand (out of reach: the arm straight toward it).
+static func _ik_elbow(sh: Vector2, target: Vector2, l1: float, l2: float, bend: float) -> Vector2:
+	var d: float = clampf(sh.distance_to(target), absf(l1 - l2) + 0.5, l1 + l2 - 0.5)
+	var cos_a: float = clampf((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0)
+	return sh + Vector2.from_angle((target - sh).angle() + bend * acos(cos_a)) * l1
+
+
+## An arm by its elbow and its hand on the stage: the pose gets it in angles (what is kept: «raise», «elbow»).
+func _set_arm(a: Actor, ch: String, elbow_at: Vector2, hand_at: Vector2) -> void:
+	var c: Variant = a.puppet.chains["hand_" + ch.right(1)]
+	var s: float = a.motion._sign(ch)
+	var up: float = (elbow_at - a.puppet.joint_position(c.a.name)).angle()
+	var fo: float = (hand_at - elbow_at).angle()
+	if not (pose_now.get(ch, null) is Dictionary):
+		pose_now[ch] = {}
+	pose_now[ch]["raise"] = snappedf(rad_to_deg(wrapf((PI / 2.0 - up) * s, -PI, PI)), 1.0)
+	pose_now[ch]["elbow"] = snappedf(rad_to_deg(wrapf((up - fo) * s, -PI, PI)), 1.0)
+	pose_now[ch].erase("at")
+	if pose_now[ch].get("elbow", null) is String:
+		pose_now[ch].erase("elbow")
+
+
 ## Before a hand is moved by hand again, its arm goes back from angles to a place (the dots pull places).
 func _arm_to_place(a: Actor, ch: String) -> void:
 	if not (pose_now.get(ch, null) is Dictionary) or not pose_now[ch].has("raise"):
@@ -2405,9 +2432,10 @@ func _dot_points(a: Actor) -> Dictionary:
 	if p.parts.has("head"):
 		var hp = p.parts["head"]
 		out["head"] = hp.node.to_global(Vector2(hp.painted.get_center().x, hp.painted.position.y + hp.painted.size.y * 0.1))
-	for sd: String in ["l", "r"]:              # the shoulders: on the upper arm's joint
+	for sd: String in ["l", "r"]:              # the shoulders: on the upper arm's joint; the elbows: on theirs
 		if p.chains.has("hand_" + sd):
 			out["shoulder_" + sd] = p.chains["hand_" + sd].a.node.global_position
+			out["elbow_" + sd] = p.joint_position(p.chains["hand_" + sd].b.name)
 	return out
 
 
@@ -2427,7 +2455,7 @@ func _draw_dots(canvas: Node2D) -> void:
 	for k: String in pts:
 		var at: Vector2 = pts[k]
 		var col: Color = C_DOT_BODY if k in ["body", "neck", "head", "shoulder_l", "shoulder_r"] else C_DOT_LIMB
-		var big: float = DOT * (1.25 if k == _drag or k == _hover else 1.0)
+		var big: float = DOT * (1.25 if k == _drag or k == _hover else 1.0) * (0.75 if k.begins_with("elbow") else 1.0)
 		canvas.draw_circle(at, big + 3.0, Color.WHITE, true, -1.0, true)
 		canvas.draw_circle(at, big, Color(col, 0.95 if k == _drag or k == _hover else 0.8), true, -1.0, true)
 	var font := ThemeDB.fallback_font
@@ -2554,12 +2582,41 @@ func _drag_to(a: Actor, k: String, to: Vector2) -> void:
 	var mo: MotionScript = a.motion
 	var p: Puppet = a.puppet
 	if k.begins_with("hand"):
-		var ch := "arm_" + k.right(1)
-		_arm_to_place(a, ch)
-		var sh: Vector2 = mo._shoulder_at(ch, p.body_position())
-		var d := (to - sh) / mo.arm
-		d = d.limit_length(1.0)
-		pose_now[ch]["at"] = [snappedf(d.x * mo._sign(ch), 0.01), snappedf(d.y, 0.01)]
+		# the arm is set in ANGLES, the elbow staying on the side it is bent to now (a place for the hand let the
+		# engine pick the elbow, and it flipped over as the hand went up)
+		var c: Variant = p.chains["hand_" + k.right(1)]
+		var sh0: Vector2 = p.joint_position(c.a.name)
+		var el0: Vector2 = p.joint_position(c.b.name)
+		var wr0: Vector2 = p.joint_position(c.end.name)
+		var target: Vector2 = to - (p.handle_position(k) - wr0)       # (the dot is on the hand, the arm ends at the wrist)
+		var ch3 := "arm_" + k.right(1)
+		# (the side is the POSE's: the drawn arm lags behind a fast mouse, and read from it the elbow flipped to and fro)
+		var bend: float = 0.0
+		var l1: float = sh0.distance_to(el0)
+		var l2: float = el0.distance_to(wr0)
+		if absf((wr0 - sh0).normalized().cross((el0 - sh0).normalized())) > 0.25:
+			bend = signf((wr0 - sh0).cross(el0 - sh0))          # (an arm clearly bent: as it is drawn)
+		else:                                                   # (straight: the elbow out and down, never into the body)
+			var best := -INF
+			for b: float in [1.0, -1.0]:
+				var e: Vector2 = _ik_elbow(sh0, target, l1, l2, b)
+				var score: float = (e.x - sh0.x) * mo._sign(ch3) + (e.y - sh0.y)
+				if score > best:
+					best = score
+					bend = b
+		var e_now: Variant = pose_now.get(ch3, {}).get("elbow", null)
+		if (e_now is float or e_now is int) and absf(float(e_now)) >= 1.0:
+			bend = signf(float(e_now)) * mo._sign(ch3)
+		elif _bend.has(ch3):
+			bend = _bend[ch3]
+		_bend[ch3] = bend if bend != 0.0 else 1.0
+		_set_arm(a, ch3, _ik_elbow(sh0, target, l1, l2, _bend[ch3]), target)
+	elif k.begins_with("elbow"):
+		var c2: Variant = p.chains["hand_" + k.right(1)]
+		var sh2: Vector2 = p.joint_position(c2.a.name)
+		var up_len: float = sh2.distance_to(p.joint_position(c2.b.name))
+		_set_arm(a, "arm_" + k.right(1), sh2 + (to - sh2).normalized() * up_len, p.joint_position(c2.end.name))
+		_bend.erase("arm_" + k.right(1))         # (the side is the one the elbow was pulled to: in the pose now)
 	elif k.begins_with("foot"):
 		var home: Vector2 = mo.foot_home.get(k, p.handle_position(k))
 		var off := (to - home) / mo.leg

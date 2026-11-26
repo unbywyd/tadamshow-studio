@@ -12,12 +12,17 @@ const POSES := [[30, 0], [90, 0], [140, 35], [22, 80], [45, -70], [90, 90], [90,
 
 func _initialize() -> void:
 	var dir := ""
+	var poses: Array = POSES
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--hero="):
 			dir = a.trim_prefix("--hero=")
+		if a.begins_with("--poses="):            # --poses=161:-8,150:20 (raise:elbow, degrees)
+			poses = []
+			for pr: String in a.trim_prefix("--poses=").split(","):
+				poses.append([float(pr.get_slice(":", 0)), float(pr.get_slice(":", 1))])
 	var rows: Array = []
 	var worst := 0.0
-	for pose: Array in POSES:
+	for pose: Array in poses:
 		for ch: String in ["arm_r", "arm_l"]:
 			var p := Puppet.new()
 			root.add_child(p)

@@ -396,3 +396,49 @@ def test_a_pose_for_two_is_set_fixed_and_saved_as_a_pair(tmp_path):
     st = workshop.read_state(root)
     assert st["row"] == "pair" and st["partner"] == "visitor"
     assert "расстояние" in (d / "log.jsonl").read_text(encoding="utf-8")       # (the ⇆ dragged: the right one moved)
+
+
+@needs_godot
+def test_the_elbow_is_set_by_hand_and_stays_where_it_was_put(tmp_path):
+    """The elbow dot bends the arm the other way with the hand left where it is; the hand dragged on after that,
+    fast, keeps the elbow on the side it was put (it never flips over by itself)."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    cmd = workshop.command(d / "config.json")
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    w0 = (tmp_path / "w0.json").as_posix()
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": f"still@5,tab:1@20,where:{w0}@40,quit@42"})
+    p0 = json.loads(Path(w0).read_text())
+    sx, sy = p0["shoulder_r"]
+    bx, by = p0["body"]
+    w1, w2, w3 = ((tmp_path / f"w{i}.json").as_posix() for i in (1, 2, 3))
+    hand = (bx + 10, sy + 60)                     # across the chest
+    first = f"still@5,tab:1@20,drag:hand_r:{hand[0]:.0f}:{hand[1]:.0f}@40,where:{w1}@90,"
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": first + "quit@92"})
+    q1 = json.loads(Path(w1).read_text())
+    # the elbow pulled to its mirror over the line from the shoulder to the hand
+    sh, hd, el = q1["shoulder_r"], q1["hand_r"], q1["elbow_r"]
+    ux, uy = hd[0] - sh[0], hd[1] - sh[1]
+    n = (ux * ux + uy * uy) ** 0.5
+    ux, uy = ux / n, uy / n
+    t = (el[0] - sh[0]) * ux + (el[1] - sh[1]) * uy
+    fx, fy = sh[0] + t * ux, sh[1] + t * uy
+    mirror = (2 * fx - el[0], 2 * fy - el[1])
+    seq = first + f"drag:elbow_r:{mirror[0]:.0f}:{mirror[1]:.0f}@100,where:{w2}@150,"
+    path = [(sx + 40 + 5 * i, sy - 20 - 9 * i) for i in range(12)]     # then up and out (in reach), a step a frame
+    seq += "".join(f"drag:hand_r:{x:.0f}:{y:.0f}@{160 + i}," for i, (x, y) in enumerate(path))
+    seq += f"where:{w3}@220,state@220,quit@222"
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
+    q2, q3 = (json.loads(Path(w).read_text()) for w in (w2, w3))
+    side = lambda q: (q["hand_r"][0] - q["shoulder_r"][0]) * (q["elbow_r"][1] - q["shoulder_r"][1]) \
+        - (q["hand_r"][1] - q["shoulder_r"][1]) * (q["elbow_r"][0] - q["shoulder_r"][0])
+    assert side(q1) * side(q2) < 0, (q1, q2)                  # the elbow went over to the other side
+    # (the hand turns with the forearm: its middle moves by about the hand's size, the wrist stays)
+    assert abs(q2["hand_r"][0] - q1["hand_r"][0]) < 45 and abs(q2["hand_r"][1] - q1["hand_r"][1]) < 45
+    assert side(q3) * side(q2) > 0, (q2, q3)                  # and stayed there as the hand went on
+    assert abs(q3["hand_r"][0] - path[-1][0]) < 30 and abs(q3["hand_r"][1] - path[-1][1]) < 30
+    arm = workshop.read_state(root)["pose"]["arm_r"]
+    assert "raise" in arm and "elbow" in arm and "at" not in arm
