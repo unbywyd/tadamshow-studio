@@ -103,6 +103,9 @@ var _playing_box: HFlowContainer
 var _tiles: VBoxContainer
 var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
+var _how_card: Control
+var _tiles_scroll: ScrollContainer
+var _how_hint: Label
 var _how_title: Label                # «Как сыграть «…»»: what the card's buttons change
 var _how_note: Label
 var _side_row: Control
@@ -626,8 +629,26 @@ func _actions_page() -> Control:
 	_search.clear_button_enabled = true
 	_search.text_changed.connect(func(_t: String) -> void: _fill_tiles())
 	box.add_child(_search)
-	# how to play it: one compact card above the tiles
+	# 1. the actions: the first thing to press
+	var step := _note("Нажмите любое действие — герой сыграет его. Потом под списком можно выбрать руку, локоть, силу и темп.", 16)
+	step.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_how_hint = step
+	box.add_child(step)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tiles_scroll = scroll
+	_tiles = VBoxContainer.new()
+	_tiles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tiles.add_theme_constant_override("separation", 6)
+	scroll.add_child(_tiles)
+	box.add_child(scroll)
+	_fill_tiles()
+
+
+	# 2. how to play the chosen one: shown only once an action is chosen, under the list
 	var how := PanelContainer.new()
+	_how_card = how
 	var hv := VBoxContainer.new()
 	hv.add_theme_constant_override("separation", 8)
 	how.add_child(hv)
@@ -658,24 +679,12 @@ func _actions_page() -> Control:
 	hv.add_child(sliders)
 	var orow := HBoxContainer.new()
 	orow.add_theme_constant_override("separation", 8)
-	var over := _toggle("Наложить на то, что играет", _over_mode, func(on: bool) -> void: _over_mode = on)
-	over.tooltip_text = "Обычно герой сначала возвращается в покой. Включите, чтобы, например, махать на ходу."
+	var over := _toggle("Следующее — поверх этого", _over_mode, func(on: bool) -> void: _over_mode = on)
+	over.tooltip_text = "Обычно перед новым действием герой возвращается в покой. Включите, чтобы следующее действие легло поверх этого: например, махать на ходу."
 	over.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	orow.add_child(over)
 	orow.add_child(_btn("В покой", func() -> void: _rest(true)))
 	hv.add_child(orow)
-	box.add_child(how)
-	_update_how()
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_tiles = VBoxContainer.new()
-	_tiles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_tiles.add_theme_constant_override("separation", 6)
-	scroll.add_child(_tiles)
-	box.add_child(scroll)
-	_fill_tiles()
 
 	# what plays now, and the faults of the chosen action
 	var prow := HBoxContainer.new()
@@ -688,6 +697,7 @@ func _actions_page() -> Control:
 	_playing_box.add_theme_constant_override("h_separation", 6)
 	prow.add_child(_playing_box)
 	box.add_child(prow)
+	box.add_child(_how_card)
 	_faults = PanelContainer.new()
 	_faults.theme_type_variation = "Fault"
 	_faults_text = Label.new()
@@ -696,6 +706,7 @@ func _actions_page() -> Control:
 	_faults.add_child(_faults_text)
 	_faults.visible = false
 	box.add_child(_faults)
+	_update_how()
 	return box
 
 
@@ -750,6 +761,12 @@ func _fill_tiles() -> void:
 func _mark_tile(id: String) -> void:
 	for k: String in _tile_of:
 		(_tile_of[k] as Button).set_pressed_no_signal(k == id)
+	if _tile_of.has(id) and _tiles_scroll != null:      # (the card opens under the list: keep the tile in sight)
+		var t: Control = _tile_of[id]
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if is_instance_valid(t) and is_instance_valid(_tiles_scroll):
+			_tiles_scroll.ensure_control_visible(t)
 
 
 static func _title_of(a: Dictionary, id: String) -> String:
@@ -1035,11 +1052,10 @@ static func _has_arms(act: Dictionary) -> bool:
 func _update_how() -> void:
 	if _how_title == null:
 		return
-	if chosen == "" or not actions().has(chosen):
-		_how_title.text = "Как сыграть"
-		_how_note.text = "Сначала нажмите действие ниже. Потом эти кнопки сразу переиграют его по-новому."
-		_side_row.visible = true
-		_elbow_row.visible = true
+	var some := chosen != "" and actions().has(chosen)
+	_how_card.visible = some
+	_how_hint.visible = not some
+	if not some:
 		return
 	var act: Dictionary = actions()[chosen]
 	var sided: bool = act.get("params", {}).has("side")
