@@ -218,3 +218,38 @@ def test_the_window_keeps_a_pose_and_gives_it_back(tmp_path):
     assert at[0] > 0 and -1.0 <= at[1] <= 1.0
     st = workshop.read_state(root)
     assert st["hero"] == "archivist" and st["poses"] == 1
+
+
+def test_the_window_lists_the_rubrics_and_never_mixes_them(tmp_path):
+    root = _world(tmp_path)
+    twin = tmp_path / "twin"
+    shutil.copytree(EXAMPLE, twin, ignore=shutil.ignore_patterns(".tadam"))
+    cfg = workshop.config(root, with_proof=False)
+    roots = [w["root"] for w in cfg["worlds"]]
+    assert roots[0] == root.resolve().as_posix() and twin.resolve().as_posix() in roots
+    assert cfg["world_title"] and cfg["world"] == roots[0]
+    for w in cfg["worlds"]:          # each rubric its own heroes, actions and poses
+        assert w["state_dir"].startswith(w["root"]) and w["actions_dir"].startswith(w["root"])
+        assert all(h["dir"].startswith(w["root"]) for h in w["heroes"])
+
+
+@needs_godot
+def test_the_dots_follow_the_real_mouse(tmp_path):
+    """A press on the hand's dot, a drag and a release as real mouse events (through the stage's own layers,
+    which once ate every click): the hand goes up."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    cmd = workshop.command(d / "config.json", window=(1480, 1280))
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    before = (tmp_path / "before.json").as_posix()
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": f"still@5,tab:1@20,dot:hand_r:{before}@60,quit@62"})
+    x, y = json.loads(Path(before).read_text())
+    after = (tmp_path / "after.json").as_posix()
+    seq = (f"still@5,tab:1@20,press:{x:.0f}:{y:.0f}@60,move:{x + 10:.0f}:{y - 120:.0f}@64,"
+           f"move:{x + 30:.0f}:{y - 300:.0f}@68,release:{x + 30:.0f}:{y - 300:.0f}@72,dot:hand_r:{after}@150,quit@152")
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
+    ax, ay = json.loads(Path(after).read_text())
+    assert ay < y - 150, ((x, y), (ax, ay))

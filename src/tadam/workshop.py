@@ -33,11 +33,10 @@ def state_dir(root: Path | str) -> Path:
     return World(root).work_dir() / "workshop"
 
 
-def config(root: Path | str | None, hero: str | None = None, core: bool = False, with_proof: bool = True) -> dict:
+def _heroes_of(root: Path | str) -> list[dict]:
     heroes = []
-    if root is not None:
-        w = World(root)
-        for s in w.heroes():
+    w = World(root)
+    for s in w.heroes():
             pdir = w.puppet_dir(s)
             if not (pdir / "rig.json").is_file():
                 continue
@@ -51,6 +50,65 @@ def config(root: Path | str | None, hero: str | None = None, core: bool = False,
             heroes.append({"id": s, "title": str(title), "dir": pdir.resolve().as_posix(),
                            "height": float(h) if isinstance(h, (int, float)) else 0.42,
                            "checks": (pdir / "actions.json").resolve().as_posix()})
+    return heroes
+
+
+def world_title(root: Path | str) -> str:
+    data, _ = read_json(Path(root) / "world.json")
+    t = data.get("title") if isinstance(data, dict) else None
+    if isinstance(t, dict):
+        return str(t.get("ru") or t.get("en") or Path(root).name)
+    return str(t or Path(root).name)
+
+
+def recent_file() -> Path:
+    return engine_dir().parent / "out" / "workshop" / "recent.json"
+
+
+def known_worlds(current: Path | str | None) -> list[Path]:
+    """The rubrics the window can switch between: this one, the world folders beside it, the ones opened lately,
+    and the kit's own sample world. Each keeps its own heroes, actions and poses."""
+    found: list[Path] = []
+
+    def add(p: Path) -> None:
+        p = Path(p).resolve()
+        if (p / "world.json").is_file() and p not in found:
+            found.append(p)
+    if current is not None:
+        add(Path(current))
+        parent = Path(current).resolve().parent
+        for d in sorted(parent.iterdir()) if parent.is_dir() else []:
+            if d.is_dir() and not d.name.startswith("."):
+                add(d)
+    rec, _ = read_json(recent_file())
+    for r in rec if isinstance(rec, list) else []:
+        if isinstance(r, str):
+            add(Path(r))
+    ex = engine_dir().parent / "examples"
+    for d in sorted(ex.iterdir()) if ex.is_dir() else []:
+        if d.is_dir():
+            add(d)
+    return found
+
+
+def remember(root: Path | str) -> None:
+    rec, _ = read_json(recent_file())
+    rec = [r for r in (rec if isinstance(rec, list) else []) if isinstance(r, str)]
+    me = Path(root).resolve().as_posix()
+    rec = [me] + [r for r in rec if r != me]
+    write_json(recent_file(), rec[:12], indent=1)
+
+
+def world_entry(root: Path | str, core: bool = False) -> dict:
+    root = Path(root).resolve()
+    acts = (root / "actions").as_posix()
+    return {"root": root.as_posix(), "title": world_title(root), "heroes": _heroes_of(root),
+            "state_dir": state_dir(root).resolve().as_posix(), "actions_dir": acts,
+            "save_dir": (engine_dir() / "actions").resolve().as_posix() if core else acts}
+
+
+def config(root: Path | str | None, hero: str | None = None, core: bool = False, with_proof: bool = True) -> dict:
+    heroes = _heroes_of(root) if root is not None else []
     bodies = []
     if with_proof or not heroes:
         broot = proof.ensure(log=lambda *_: None)
@@ -69,6 +127,9 @@ def config(root: Path | str | None, hero: str | None = None, core: bool = False,
         cfg["save_dir"] = cfg["actions_dir"]
     if core:
         cfg["save_dir"] = (engine_dir() / "actions").resolve().as_posix()
+    cfg["world"] = Path(root).resolve().as_posix() if root is not None else ""
+    cfg["world_title"] = world_title(root) if root is not None else ""
+    cfg["worlds"] = [world_entry(r, core) for r in known_worlds(root)]
     return cfg
 
 
@@ -80,6 +141,8 @@ def command(cfg_file: Path, window: tuple[int, int] = WINDOW) -> list[str]:
 def open_window(root: Path | str | None, hero: str | None = None, core: bool = False, wait: bool = False):
     engine.ensure_imported()
     cfg = config(root, hero, core)
+    if root is not None:
+        remember(root)
     base = state_dir(root) if root is not None else engine_dir().parent / "out" / "workshop"
     base.mkdir(parents=True, exist_ok=True)
     f = base / "config.json"

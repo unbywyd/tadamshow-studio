@@ -484,15 +484,41 @@ func _build_panel() -> void:
 	col.add_theme_constant_override("separation", 14)
 	bg.add_child(col)
 
-	# who is on the stage
+	# the rubric: whose heroes, actions and poses these are (never mixed: one rubric at a time)
 	var top := HBoxContainer.new()
-	top.add_child(_title("Мастерская", 34))
-	var where := _note("общая библиотека" if cfg.get("core", false) else "рубрика", 18)
-	where.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	where.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	top.add_child(where)
+	top.add_theme_constant_override("separation", 12)
+	var head := VBoxContainer.new()
+	head.add_theme_constant_override("separation", 0)
+	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(_note("Мастерская" + (" · общая библиотека" if cfg.get("core", false) else "") + " · рубрика", 18))
+	var wt := str(cfg.get("world_title", ""))
+	var name := _title("«%s»" % wt if wt != "" else "Рубрика не выбрана", 32)
+	name.clip_text = true
+	head.add_child(name)
+	top.add_child(head)
+	var worlds: Array = cfg.get("worlds", [])
+	var box := HFlowContainer.new()
+	box.add_theme_constant_override("h_separation", 6)
+	box.add_theme_constant_override("v_separation", 6)
+	box.visible = false
+	if worlds.size() > 1 or (worlds.size() == 1 and str(worlds[0]["root"]) != str(cfg.get("world", ""))):
+		var change := _toggle("Сменить рубрику", false, func(on: bool) -> void: box.visible = on)
+		change.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(change)
+		var group := ButtonGroup.new()
+		for w: Dictionary in worlds:
+			var b := Button.new()
+			b.text = "%s  · %d" % [str(w["title"]), (w.get("heroes", []) as Array).size()]
+			b.tooltip_text = "%s\nгероев: %d" % [str(w["root"]), (w.get("heroes", []) as Array).size()]
+			b.theme_type_variation = "Tile"
+			b.toggle_mode = true
+			b.button_group = group
+			b.focus_mode = Control.FOCUS_NONE
+			b.button_pressed = str(w["root"]) == str(cfg.get("world", ""))
+			b.pressed.connect(func() -> void: _switch_world(w))
+			box.add_child(b)
 	col.add_child(top)
+	col.add_child(box)
 	col.add_child(_seg([["Один герой", "one"], ["Все герои", "all"], ["Пробные тела", "proof"]], row, func(v: String) -> void:
 		row = v
 		_reload()))
@@ -548,6 +574,26 @@ func _build_panel() -> void:
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		pages.add_child(page)
 		_pages.append(page)
+
+
+## Another rubric: its heroes, its actions, its poses (each rubric keeps its own .tadam/workshop).
+func _switch_world(w: Dictionary) -> void:
+	_save_poses()
+	for k: String in ["heroes", "state_dir", "actions_dir", "save_dir"]:
+		cfg[k] = w[k]
+	cfg["world"] = w["root"]
+	cfg["world_title"] = w["title"]
+	world_actions_dir = str(w["actions_dir"])
+	_actions.clear()
+	var hs: Array = w.get("heroes", [])
+	hero_id = str(hs[0]["id"]) if not hs.is_empty() else ""
+	row = "one"
+	poses = []
+	pose_now = {}
+	chosen = ""
+	_cmd_seen = 0
+	_load_poses()
+	get_tree().reload_current_scene()
 
 
 func _show_mode(i: int) -> void:
@@ -1281,19 +1327,31 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_PERIOD:
 			_set_paused(true)
 			_steps_wanted += 1
-		return
-	if tab != 1:
+
+
+## The dots take the mouse BEFORE the stage's own layers (titles, effects: full-screen controls that would eat
+## every click), but only over the stage and not over the clock under the hero.
+func _input(event: InputEvent) -> void:
+	if tab != 1 or not (event is InputEventMouse):
 		return
 	var a := _main()
 	if a == null:
 		return
 	var m := get_global_mouse_position()
+	if (m.x >= SIZE.x or m.y >= SIZE.y - 160.0) and _drag == "":
+		_hover = ""
+		return
+	if _dots_mouse(event, a, m):
+		get_viewport().set_input_as_handled()
+
+
+func _dots_mouse(event: InputEvent, a: Actor, m: Vector2) -> bool:
 	if event is InputEventMouseMotion:
 		if _drag != "":
 			_drag_to(a, _drag, m + _drag_off)
-		else:
-			_hover = _pick(a, m)
-		return
+			return true
+		_hover = _pick(a, m)
+		return false
 	if event is InputEventMouseButton:
 		var e := event as InputEventMouseButton
 		var k := _pick(a, m)
@@ -1301,8 +1359,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			if e.pressed and k != "":
 				_drag = k
 				_drag_off = _dot_points(a)[k] - m
-			elif not e.pressed:
+				return true
+			if not e.pressed and _drag != "":
 				_drag = ""
+				return true
+			return false
 		elif e.pressed and e.button_index == MOUSE_BUTTON_RIGHT and k.begins_with("hand"):
 			var arm: Dictionary = pose_now["arm_" + k.right(1)]
 			if e.shift_pressed:
@@ -1318,6 +1379,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				else:
 					arm["look"] = LOOKS[j]
 			_apply_pose()
+			return true
 		elif e.pressed and e.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN] and k.begins_with("hand"):
 			var arm2: Dictionary = pose_now["arm_" + k.right(1)]
 			var w := clampf(float(arm2.get("wrist", 0.0)) + (5.0 if e.button_index == MOUSE_BUTTON_WHEEL_UP else -5.0), -80.0, 80.0)
@@ -1326,6 +1388,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			else:
 				arm2["wrist"] = w
 			_apply_pose()
+			return true
+	return false
 
 
 func _pick(a: Actor, m: Vector2) -> String:
@@ -1445,7 +1509,7 @@ func _write_state() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(dir)
 	var a := _main()
-	var st := {"hero": hero_id, "row": row, "tab": ["mechanics", "poses"][tab], "action": chosen,
+	var st := {"world": cfg.get("world", ""), "world_title": cfg.get("world_title", ""), "hero": hero_id, "row": row, "tab": ["mechanics", "poses"][tab], "action": chosen,
 		"view": a.view if a != null else "front", "pose": pose_now, "poses": poses.size(), "pose_selected": _sel + 1,
 		"cmd_seen": _cmd_seen, "at": Time.get_datetime_string_from_system(false, true)}
 	var f := FileAccess.open(dir.path_join("state.json"), FileAccess.WRITE)
@@ -1457,8 +1521,8 @@ func _write_state() -> void:
 
 ## WORKSHOP_SEQ="still@5,tab:1@20,drag:hand_r:560:420@40,fix@80,select:1@100,where:<file>@110,shot:<file>@120,quit@130":
 ## steps it by itself (tests), quits after.
-var _frames := 0
-var _seq: Array = []
+static var _frames := 0
+static var _seq: Array = []
 
 
 func _scripted() -> void:
@@ -1481,6 +1545,27 @@ func _scripted() -> void:
 				_drag_to(_main(), bits[1], Vector2(float(bits[2]), float(bits[3])))
 			"hover":
 				_hover = bits[1]
+			"world":                       # world:<n>: switch to the n-th rubric of the list (0 = the first)
+				_switch_world(cfg["worlds"][int(bits[1])])
+			"press", "move", "release":    # press:x:y: a real mouse event, through the whole input pipeline
+				var at := Vector2(float(bits[1]), float(bits[2]))
+				var ev: InputEventMouse
+				if bits[0] == "move":
+					ev = InputEventMouseMotion.new()
+					(ev as InputEventMouseMotion).button_mask = MOUSE_BUTTON_MASK_LEFT
+				else:
+					ev = InputEventMouseButton.new()
+					(ev as InputEventMouseButton).button_index = MOUSE_BUTTON_LEFT
+					(ev as InputEventMouseButton).pressed = bits[0] == "press"
+				ev.position = get_viewport().get_screen_transform().affine_inverse() * at if false else at
+				ev.global_position = ev.position
+				Input.warp_mouse(at)
+				Input.parse_input_event(ev)
+			"dot":                         # dot:<name>:<file>: where that dot is now
+				var pts2 := _dot_points(_main())
+				var df := FileAccess.open(":".join(bits.slice(2)), FileAccess.WRITE)
+				df.store_string(JSON.stringify([(pts2[bits[1]] as Vector2).x, (pts2[bits[1]] as Vector2).y]))
+				df.close()
 			"fix":
 				_fix()
 			"still":
