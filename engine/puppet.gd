@@ -947,6 +947,19 @@ func set_frames_speed(part: String, k: float) -> void:
 		p.fspeed = clampf(k, 0.0, 8.0)
 
 
+## The frames' clock of every part another puppet of the same hero has too (a turn puts in the drawing of another
+## view: its frames go on from where the old view's were, at the same speed).
+func take_frames(from: Variant) -> void:
+	if from == null or from == self:
+		return
+	for q: Part in _framed:
+		var o: Part = from.parts.get(q.name)
+		if o != null and not o.frames.is_empty():
+			q.ftime = o.ftime
+			q.fspeed = o.fspeed
+			_show_frame(q)
+
+
 ## A part's frames from the first one again (a "once" round plays once more).
 func restart_frames(part: String) -> void:
 	var p: Part = parts.get(part)

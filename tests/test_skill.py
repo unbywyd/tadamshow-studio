@@ -7,6 +7,7 @@ import json
 import re
 from pathlib import Path
 
+from tadam.paths import engine_dir
 from tadam import check, schema, setmake
 from tadam.paths import kit_root
 from tadam.world import write_json
@@ -44,8 +45,11 @@ def test_the_world_and_set_examples_fit(world):
     wj, src = blocks(SKILL / "reference" / "world-folder.md")
     assert schema.validate("world", wj) == []
     assert schema.validate("sources", src) == []
-    (kit,) = blocks(SKILL / "reference" / "puppets-and-sets.md")
+    kit, life = blocks(SKILL / "reference" / "puppets-and-sets.md")
     assert setmake.validate_kit(kit) == []
+    life_gd = (engine_dir() / "life.gd").read_text(encoding="utf-8")       # the living set's kinds are the engine's
+    for b in life["life"]:
+        assert f'"{b["kind"]}"' in life_gd and (b.get("type") is None or f'"{b["type"]}"' in life_gd), b
 
 
 def test_the_step_example_fits_the_schema():

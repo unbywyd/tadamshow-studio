@@ -50,6 +50,22 @@ A puppet made again (`tadam hero make`) or a set painted again writes its JSON a
 the old frames are left lying. `tadam check` names them (`frames_unused`): cut the strip again for the new
 drawing, or take them away with `--off`.
 
+## From the script
+
+A line of a shot (`shots[i].camera[]`, like `do`) changes the frames while the episode plays:
+
+```json
+{"at": 1.5, "who": "vis", "frames": {"chest": 2}}
+{"after": "go", "of": "vis", "who": "vis", "frames": {"chest": 1}}
+{"at": 0, "piece": "lamp", "frames": 0}
+{"at": 3, "piece": "lamp", "frames": "again"}
+```
+
+A number is the speed: 1 as the record says, 2 twice as fast, 0.5 half, **0 stands still** on the frame of
+that moment. `"again"` plays the round from its first frame (a `once` drawing plays once more: a flame that
+flares, a door that slams). A hero's speed stays when it turns (the other view's drawing goes on from the same
+place). `tadam check` says when the part or the piece is not frames.
+
 ## What it is not for
 
 - **The head and the hands** cannot be frames: a recorded face and mouth go into the head, and the engine draws

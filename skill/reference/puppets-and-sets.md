@@ -84,6 +84,26 @@ kit.json:
 - Keep 2–5 pieces; leave the middle free for the heroes.
 - `set.json` may also have `points` (named places: `{"door": {"x": 0.8, "y": 0.9}}`) that shots use with `at`.
 
+**A living set** (free, no pictures painted): `set.json` → `"life"`, a list of ready behaviours on its pieces and
+places (shares of the picture). The engine runs them the same in every film:
+
+```json
+{
+  "life": [
+    {"kind": "sway", "piece": "lamp", "deg": 4, "period": 3.0},
+    {"kind": "glow", "at": [0.14, 0.41], "radius": 0.08, "color": [1, 0.85, 0.55], "energy": 0.45, "flicker": 0.15},
+    {"kind": "particles", "type": "steam", "at": [0.62, 0.55], "amount": 12}
+  ]
+}
+```
+
+`sway` (a lamp on its cord, a sign), `bob` (a boat), `spin` (a wheel), `drift` (clouds across), `blink` (a light
+that goes out for a moment), `glow` (fire, a lamp, windows), `particles` (`smoke`, `steam`, `dust`, `fireflies`,
+`rain`, `snow`, `leaves`, `sparks`), `ripple` (water, heat). Every field is described at the top of
+`engine/life.gd`. A piece from `set make` lies over an empty room, so it may move. Look at the result with
+`tadam frames <episode> --shot <id> --around <s>`: a thing that moves all the time draws the eye, keep it slow.
+A change inside a drawing (a flame, a flag) is [frames](frames.md).
+
 ## Media
 
 `media/` holds music (`theme.mp3`), ambience and props a hero holds (`cup.png`, transparent). Only what you have

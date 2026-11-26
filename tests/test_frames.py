@@ -330,3 +330,44 @@ def test_in_the_window_a_step_on_and_back_shows_the_same_frame(world, tmp_path):
     assert "PLAYER done" in out and "SCRIPT ERROR" not in out, out[-2000:]
     assert "PLAYER seq shift+right at sh3 105" in out and "PLAYER seq shift+left at sh3 45" in out
     assert [_dominant(x) for x in (a, b, c)] == ["g", "r", "g"]
+
+
+def _sh3_lines(world: Path, lines: list) -> None:
+    s = json.loads((world / "episodes" / "1" / "script.json").read_text(encoding="utf-8"))
+    s["shots"][2]["camera"] = lines
+    write_json(world / "episodes" / "1" / "script.json", s)
+
+
+def _colours_at(world: Path, tmp_path: Path, times: list, capsys) -> list:
+    out = []
+    for t in times:
+        f = tmp_path / f"at{t}.png"
+        assert cli.main(["--world", str(world), "frames", "1", "--shot", "sh3", "--at", str(t), "--out", str(f)]) == 0
+        capsys.readouterr()
+        out.append(_dominant(str(f)))
+    return out
+
+
+@needs_godot
+def test_the_script_stops_and_restarts_a_pieces_frames(world, tmp_path, capsys):
+    """2 frames a second (r g b r): stopped at 0.6 s it stays on g; "again" at 1.0 s starts from r."""
+    crate = world / "sets" / "barn" / "crate.png"
+    strip.cut(World(world), crate, _strip_of(crate, RGB[:3], tmp_path / "s.png"), 3, fps=2, replace_first=True)
+    _sh3_lines(world, [{"at": 0.6, "piece": "crate", "frames": 0}])
+    assert cli.main(["--world", str(world), "check", "1"]) == 0
+    capsys.readouterr()
+    assert _colours_at(world, tmp_path, [1.25, 1.75], capsys) == ["g", "g"]
+    _sh3_lines(world, [{"at": 1.0, "piece": "crate", "frames": "again"}])
+    assert _colours_at(world, tmp_path, [1.25, 1.75], capsys) == ["r", "g"]
+
+
+@needs_godot
+def test_the_script_stops_a_heroes_frames(world, tmp_path, capsys):
+    """The cow's chest at 2 frames a second: as drawn it is b at 1.25 s; stopped at 0.6 s it stays g."""
+    part = world / "heroes" / "cow" / "puppet" / "parts" / "chest.png"
+    strip.cut(World(world), part, _strip_of(part, RGB[:3], tmp_path / "s.png"), 3, fps=2, replace_first=True)
+    assert _colours_at(world, tmp_path, [1.25], capsys) == ["b"]
+    _sh3_lines(world, [{"at": 0.6, "who": "cow", "frames": {"chest": 0}}])
+    assert cli.main(["--world", str(world), "check", "1"]) == 0
+    capsys.readouterr()
+    assert _colours_at(world, tmp_path, [1.25, 1.75], capsys) == ["g", "g"]
