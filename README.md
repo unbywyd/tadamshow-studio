@@ -101,6 +101,8 @@ tadam play 1 [--shot sh3 --at 1.5 --paused]       # a window plays the episode w
                                                   # it plays changes to the world at once
 tadam play where                                  # where the window stopped: shot, second, picture, what every
                                                   # hero plays, the script lines at work (skill: watching.md)
+tadam strip <drawing.png> --template 4            # a drawing that is FRAMES shown in turn (a flame, cloth, a wing):
+tadam strip <drawing.png> <strip.png> --count 4   # the strip to start from, then the cut; free (skill: frames.md)
 tadam film 1                                      # a draft MP4 (picture, narration, music, subtitles)
 tadam hero check cow                              # every action of the engine on the hero (hero make runs it;
                                                   # ~30 s, a hero in a skirt 1-2 min)

@@ -6,6 +6,7 @@ import shutil
 
 import pytest
 from jsonschema import Draft202012Validator
+from PIL import Image
 
 from tadam import check, cli, schema, scenecheck
 from tadam.world import write_json
@@ -59,6 +60,18 @@ SPOIL = {
     "set_missing": (script(lambda s: s["film"].update(set="attic")), None),
     "set_invalid": (lambda r: edit(r, "sets/barn/set.json", lambda d: d.update(floor=5)), None),
     "set_file_missing": (lambda r: (r / "sets/barn/crate.png").unlink(), None),
+    "frames_invalid": (lambda r: edit(r, "sets/barn/set.json",
+                                      lambda d: d["pieces"][0].update(frames={"count": 1})), None),
+    "frames_size": (lambda r: (Image.new("RGBA", (20, 20)).save(r / "sets/barn/crate.f2.png"),
+                               edit(r, "sets/barn/set.json", lambda d: d["pieces"][0].update(frames={"count": 2}))),
+                    None),
+    "frames_ignored": (lambda r: edit(r, "heroes/cow/puppet/rig.json",
+                                      lambda d: d["parts"]["head"].update(frames={"count": 2})), None),
+    "frames_heavy": (lambda r: ([Image.new("RGBA", (2000, 1600)).save(r / f"sets/barn/crate{k}.png")
+                                 for k in ("", ".f2", ".f3", ".f4", ".f5", ".f6", ".f7", ".f8")],
+                                edit(r, "sets/barn/set.json", lambda d: d["pieces"][0].update(frames={"count": 8}))),
+                     None),
+    "frames_unused": (lambda r: Image.new("RGBA", (200, 150)).save(r / "sets/barn/crate.f2.png"), None),
     "media_missing": (script(lambda s: s["film"]["music"].update(file="nope.mp3")), None),
     "name_case": (script(lambda s: s["film"]["music"].update(file="Theme.mp3")), None),
     "episode_missing": (lambda r: None, "7"),

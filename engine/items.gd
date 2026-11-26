@@ -19,6 +19,8 @@ extends RefCounted
 ##                             a number: degrees, the way it is drawn turned this much (an umbrella over the head)
 ##     hands  "edge": held with flat hands turned edge on (the sides of a crate), not with fists
 ##     bounce how much of its speed it keeps when it hits the floor (a ball 0.6, a crate 0.1)
+##     frames {"count": 4, "fps": 8}: its picture is frames shown in turn (<id>.f2.png ... beside it, the same size:
+##            engine/frames.gd; a torch's flame). Not for a thing with "bellows".
 ##     heavy  true: lifted slowly, the hero strains (actions read it as the param "heavy")
 ##     fit    its size by the HERO who has it, not by the stage: its longest side is this many of the hero's arm
 ##            lengths ("fit_by": "shoulder": shares of the height of its shoulders over the floor). An instrument
@@ -49,6 +51,7 @@ extends RefCounted
 ## layer of the hero that holds it (so it is sorted with the hand), and when it is let go it stays at that hero's
 ## depth. Its position is always in the frame of the layer it is on; `world` (the stage) moves points between them.
 
+const Frames := preload("res://frames.gd")
 const GRAVITY := 2900.0       # stage px / s^2 (a hero 0.34 of the stage is about 1.5 m)
 const BLEND := 0.12           # seconds a taken item takes to settle into the fist
 const REST_SPEED := 30.0      # px/s: slower than this on the floor, it lies still
@@ -67,6 +70,7 @@ class Item:
 	var vel := Vector2.ZERO
 	var spin := 0.0
 	var holder: Object = null       # the motion (hero) that holds it
+	var reel: Variant = null        # its drawing is frames (the card's "frames": engine/frames.gd)
 	var hands: Array = []           # "hand_r", ... (two for "both")
 	var blend := 1.0                # 0 -> 1 while settling into the fist
 	var from_pos := Vector2.ZERO
@@ -120,6 +124,7 @@ func add(id: String, card: String, at: Vector2, extra: Dictionary = {}) -> Item:
 	it.grip = Vector2(g[0], g[1])
 	it.node = Sprite2D.new()
 	it.node.texture = ImageTexture.create_from_image(img)
+	it.reel = Frames.reel(it.node, ProjectSettings.globalize_path(base + ".png"), img, def.get("frames"))
 	it.node.centered = false
 	it.node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	it.node.scale = Vector2.ONE * it.k
@@ -215,6 +220,8 @@ func step(dt: float) -> void:
 		c[2] -= 1
 	catching = catching.filter(func(c: Array) -> bool: return c[2] > 0)
 	for it: Item in items.values():
+		if it.reel != null:
+			it.reel.step(dt)
 		if it.holder == null and not it.resting and it.vel.length() > 300.0:     # (only a thing flying through the air)
 			for c: Array in catching:
 				var mo: Object = c[0]

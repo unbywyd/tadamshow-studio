@@ -603,6 +603,8 @@ func reset() -> void:
 
 func step(dt: float, floor_y_world: float) -> void:
 	floor_local = (puppet as Node2D).to_local(Vector2(0.0, floor_y_world)).y
+	if mesh.texture != part.sprite.texture:
+		mesh.texture = part.sprite.texture       # (the skirt's drawing is frames, frames.gd: the cloth shows the same one)
 	_step_drape(dt)
 
 

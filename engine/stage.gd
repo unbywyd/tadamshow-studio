@@ -22,7 +22,9 @@ extends Node2D
 ##   "pieces": [{ "id": "crate", "image": "crate.png", "rect": [x, y, w, h], "base": 0.71 }]   SET PIECES: parts of
 ##                                     the background cut out (tools/cut_piece.py), drawn over it in place, sorted in
 ##                                     depth with the heroes by `base` (where it stands on the ground, share of the
-##                                     stage height; "front": true = always in front, a foreground frame)
+##                                     stage height; "front": true = always in front, a foreground frame);
+##                                     "frames": {"count": 4, "fps": 6} = its drawing is frames shown in turn
+##                                     (crate.f2.png ... beside the image: engine/frames.gd)
 ##   "actors": [{ "id": "hag", "puppet": "hag", "x": 0.38, "height": 0.42, "clip": "head.ogv", ("depth" | "y" | "at")
 ##                "props": { "shovel": { "image": "shovel.png", "hand": "right", "length": 1.6, "grip": 0.72 } } }]
 ##         x = share of the stage width, height = neck-to-sole as a share of the stage height (at the front edge),
@@ -107,6 +109,7 @@ const Space := preload("res://space.gd")
 const Cam := preload("res://camera.gd")
 const Live := preload("res://live.gd")
 const Focus := preload("res://focus.gd")
+const Frames := preload("res://frames.gd")
 
 const SIZE := Vector2(720, 1280)
 const TURN_TIME := 0.2        # seconds a turn takes
@@ -228,6 +231,7 @@ var space: Space
 var points: Dictionary = {}           # name -> {x, y, ...} (shares of the stage, on the ground)
 var pieces: Array = []                # [{id, layer, z}]
 var _piece_nodes: Dictionary = {}     # piece id -> {holder, sprite, rect} (engine/life.gd moves them)
+var _reels: Array = []                # set pieces whose drawing is frames (engine/frames.gd)
 var life: Life                        # the living background
 var _covered: Dictionary = {}         # "element/hero" already reported covering a face
 var light: Light                      # colour of the picture, the light's shadows and rims (engine/light.gd)
@@ -983,6 +987,8 @@ func _physics_process(_delta: float) -> void:
 		a.motion.step()
 		_mouth_step(a)
 	items.step(1.0 / 60.0)
+	for reel: Variant in _reels:
+		reel.step(1.0 / 60.0)
 	life.step(step_no)
 	light.step(step_no)
 	var heard: Array = []
@@ -1801,6 +1807,11 @@ func _add_piece(pd: Dictionary) -> void:
 	# and is drawn over it, so a hero is either in front of the desk and all on it, or behind them all
 	pieces.append({"id": pd.get("id", ""), "layer": layer, "z": z, "bias": float(pd.get("bias", 0.25))})
 	_piece_nodes[pd.get("id", "")] = {"holder": holder, "sprite": s, "rect": rect}
+	# "frames": the piece's drawing is several, shown in turn (a flame, a flag: engine/frames.gd)
+	var reel: Variant = Frames.reel(s, _scene_file(pd["image"]), image, pd.get("frames"))
+	if reel != null:
+		_reels.append(reel)
+		_piece_nodes[pd.get("id", "")]["reel"] = reel
 
 
 ## Each layer gets its depth's transform and its place in the drawing order (deeper first). At the same depth a

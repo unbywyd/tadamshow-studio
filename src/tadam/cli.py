@@ -133,6 +133,29 @@ def build_parser() -> argparse.ArgumentParser:
     fr.add_argument("--span", type=float, default=1.0, help="(--around) over how many seconds (1.0)")
     fr.add_argument("--out", help="the PNG to write (default: .tadam/frames/<episode>/...)")
     fr.add_argument("--json", action="store_true", help="print the paths as JSON")
+    sp = sub.add_parser("strip", help="a drawing that is FRAMES shown in turn (a flame, a wing, cloth that stirs): "
+                                      "tadam strip <drawing.png> --template 4, then tadam strip <drawing.png> "
+                                      "<strip.png> --count 4 --fps 8",
+                        description="A puppet's part (heroes/<hero>/puppet/parts/<part>.png) or a set piece "
+                                    "(sets/<set>/<piece>.png) may be several drawings shown in turn, round and "
+                                    "round. A strip is `count` equal cells in a row, each the whole canvas of the "
+                                    "drawing; --template writes one to start from. Free: nothing is painted here.")
+    sp.add_argument("drawing", help="the first drawing: a part of a puppet or the image of a set piece")
+    sp.add_argument("strip", nargs="?", help="the strip to cut into frames")
+    sp.add_argument("--template", type=int, metavar="N", help="write a strip of N cells, the drawing in each "
+                                                              "(redraw cells 2..N in it)")
+    sp.add_argument("--count", type=int, help="how many cells the strip has (2..16)")
+    sp.add_argument("--fps", type=float, default=8.0, help="frames a second, 0.5..30 (8)")
+    sp.add_argument("--mode", choices=["loop", "pingpong", "once"], default="loop",
+                    help="loop 1 2 3 4 1 2.. (default), pingpong 1 2 3 4 3 2 1.., once: up to the last and stays")
+    sp.add_argument("--offset", type=float, default=0.0, help="the share of the round it starts at, 0..1 (so that "
+                                                              "two drawings do not tick together)")
+    sp.add_argument("--order", help="its own order with holds instead of --mode: 1,1,1,1,2,3,2 (a blink)")
+    sp.add_argument("--replace-first", action="store_true",
+                    help="write the strip's first cell over the drawing (default: the drawing stays as it is)")
+    sp.add_argument("--off", action="store_true", help="one picture again: remove the frames and the record")
+    sp.add_argument("--out", help="(--template) the strip to write (default: .tadam/strip/...)")
+    sp.add_argument("--json", action="store_true", help="print the result as JSON")
     fm = sub.add_parser("film", help="a draft MP4 of the episode (picture, narration, music, subtitles)")
     show_args(fm)
     fm.add_argument("--out", help="the MP4 (default: .tadam/films/<episode>.mp4)")
@@ -413,6 +436,52 @@ def cmd_play_where(a) -> int:
     else:
         _out(where.text(rep))
     return 0 if rep.get("found") else 1
+
+
+def cmd_strip(a) -> int:
+    import json
+    from pathlib import Path
+    from tadam import strip
+    from tadam.world import WorldError
+    w = _world(a)
+    image = Path(a.drawing)
+    if not image.is_absolute():
+        image = (w.root / image) if (w.root / image).exists() or not image.exists() else image.resolve()
+    if a.off:
+        res = strip.clear(w, image)
+        text = (f"{res['drawing']} is one picture again" + (f" (removed {', '.join(res['removed'])})"
+                                                           if res["removed"] else ""))
+    elif a.template:
+        res = strip.template(w, image, a.template, Path(a.out) if a.out else None)
+        text = (f"the strip to start from: {res['strip']}\n{res['cells']} cells of {res['cell'][0]}x{res['cell'][1]}, "
+                f"the drawing in each. Redraw cells 2..{res['cells']} (keep every cell's size and the place of the "
+                f"joint), then: tadam strip {res['drawing']} <strip.png> --count {res['cells']} --fps 8")
+    else:
+        if not a.strip or not a.count:
+            _out("tadam strip <drawing.png> --template 4      a strip to start from\n"
+                 "tadam strip <drawing.png> <strip.png> --count 4 [--fps 8 --mode loop --offset 0.25]\n"
+                 "tadam strip <drawing.png> --off              one picture again")
+            return 2
+        order = None
+        if a.order:
+            try:
+                order = [int(v) for v in a.order.split(",") if v.strip()]
+            except ValueError:
+                raise WorldError("--order: frame numbers with commas, like 1,1,1,2,3,2") from None
+        res = strip.cut(w, image, Path(a.strip), a.count, a.fps, a.mode, a.offset, order, a.replace_first)
+        text = (f"{res['drawing']} is {a.count} frames at {a.fps:g} a second ({res['where']})\n"
+                + "\n".join("  " + f for f in res["frames"]))
+        if res["first"] == "kept_differs":
+            text += ("\nthe strip's first cell differs from the drawing: the drawing was left as it is, it is frame 1 "
+                     "(--replace-first writes the cell over it)")
+        elif res["first"] == "replaced":
+            text += f"\nthe drawing was replaced by the strip's first cell; the old one is kept in {res['before']}"
+        if res.get("hero"):
+            text += (f"\nthe puppet's rig.json changed: play its actions again, `tadam hero check {res['hero']}` "
+                     f"(free, about half a minute)")
+        text += "\nsee it: tadam play <episode>   ·   check: tadam check"
+    _out(json.dumps(res, ensure_ascii=False, indent=2) if a.json else text)
+    return 0
 
 
 def cmd_frames(a) -> int:
@@ -844,7 +913,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     from tadam.submissions import Refused, missing_lines
     try:
         return {"new": cmd_new, "hero": cmd_hero, "set": cmd_set, "check": cmd_check, "play": cmd_play,
-                "frames": cmd_frames, "film": cmd_film, "cover": cmd_cover, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
+                "frames": cmd_frames, "strip": cmd_strip, "film": cmd_film, "cover": cmd_cover, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
                 "rules": cmd_rules, "push": cmd_push, "pull": cmd_pull, "diff": cmd_diff, "status": cmd_status,
                 "submit": cmd_submit, "withdraw": cmd_withdraw, "reply": cmd_reply, "unpublish": cmd_unpublish,
                 "studio-version": cmd_studio_version, "review": cmd_review}[a.command](a)
