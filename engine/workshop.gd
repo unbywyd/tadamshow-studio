@@ -39,7 +39,8 @@ const FAULT_WORDS := {"wrong": "локоть или колено выгнули�
 	"item_floor": "предмет уходит под пол", "cross": "локоть неудачно переходит на другую сторону",
 	"skirt": "юбка проходит сквозь ноги", "torn": "юбка рвётся", "jerk": "дёргается"}
 const DOT_NAMES := {"hand_l": "левая кисть", "hand_r": "правая кисть", "foot_l": "левая стопа", "foot_r": "правая стопа",
-	"body": "таз: присесть, сдвинуться", "neck": "плечи: наклон корпуса", "head": "макушка: наклон головы"}
+	"body": "таз: присесть, сдвинуться", "neck": "середина плеч: наклон корпуса", "head": "макушка: вбок — наклон, вниз — втянуть голову",
+	"shoulder_l": "левое плечо: вверх — поднять", "shoulder_r": "правое плечо: вверх — поднять"}
 const PANEL_W := 760.0
 const DOT := 14.0
 const REACH := 40.0
@@ -168,9 +169,10 @@ func _ready() -> void:
 	_build_clock()
 	if pose_now.is_empty():
 		pose_now = rest_pose()
+	var replay := chosen                  # (_show_mode puts everyone at rest, and that forgets the chosen action)
 	_show_mode(tab)
-	if tab == 0 and chosen != "" and actions().has(chosen):
-		_play.call_deferred(chosen)
+	if tab == 0 and replay != "" and actions().has(replay):
+		_play.call_deferred(replay)
 	_stamp = _actions_stamp()
 	_set_life()
 	_write_state()
@@ -288,10 +290,12 @@ func _ready_box(ready: Dictionary) -> Control:
 ## to hold (the workshop puts no things on the stage yet), or the hero's own check found it faulty.
 func _why_not(id: String) -> String:
 	var a: Dictionary = actions().get(id, {})
-	if (a.get("group", "") == "two" or a.has("pair")) and _hero_count() < 2:
-		return "Для двоих: включите «Все герои», если героев в рубрике двое и больше."
-	if a.has("test_items") or str(a.get("params", {}).get("item", "")) != "":
-		return "С предметом: в мастерской предметов пока нет, рука тянется в пустоту."
+	if (a.get("group", "") == "two" or a.has("pair") or a.get("partner_only", false)) and (cfg.get("heroes", []) as Array).size() < 2:
+		return "Для двоих: в рубрике один герой, играть не с кем."
+	if a.get("partner_only", false):
+		return "Ответ партнёра: играется сам, когда другой герой делает своё (толкнуть, обнять)."
+	if str(a.get("params", {}).get("to", "")) == "@meet" or id == "receive":
+		return "Передать из рук в руки: в сцене это «give» между двумя героями."
 	if (_hero_def(hero_id).get("ready", {}).get("bad", []) as Array).has(id):
 		return "У этого героя с браком: проверка нашла ошибки (нажмите — покажу какие)."
 	return ""
@@ -1034,8 +1038,13 @@ func _pose_words(p: Dictionary) -> String:
 			w.append("левая нога" if f == "foot_l" else "правая нога")
 	if absf(float(p.get("body", {}).get("lean", 0.0))) > 0.5:
 		w.append("наклон %d°" % int(p["body"]["lean"]))
-	if absf(float(p.get("head", 0.0))) > 0.5:
-		w.append("голова %d°" % int(p["head"]))
+	if absf(_head_tilt(p)) > 0.5:
+		w.append("голова %d°" % int(_head_tilt(p)))
+	if p.get("head", 0.0) is Dictionary and float(p["head"].get("drop", 0.0)) > 0.01:
+		w.append("голова втянута")
+	for ch2: String in ["arm_l", "arm_r"]:
+		if float(p.get(ch2, {}).get("shoulder", 0.0)) > 0.01:
+			w.append("левое плечо вверх" if ch2 == "arm_l" else "правое плечо вверх")
 	return ", ".join(w) if not w.is_empty() else "как в покое"
 
 
@@ -1179,13 +1188,25 @@ func _play(id: String) -> void:
 	if not actions().has(id):
 		return
 	var act: Dictionary = actions()[id]
+	# an action for two with one hero on the stage: the rubric's heroes come out together, and it plays again
+	if (act.has("pair") or act.get("partner_only", false)) and actors.size() < 2 and (cfg.get("heroes", []) as Array).size() >= 2:
+		chosen = id
+		row = "all"
+		_reload()
+		return
 	chosen = id
 	_mark_tile(id)
 	_dirty_state = true
 	_idle = 0
 	_trail.clear()
+	_clear_props()
 	var lines: Array = []
+	if act.has("pair") and actors.size() >= 2:   # for two: the main hero with the one beside it (both play)
+		var other: String = actors.keys().filter(func(x: String) -> bool: return x != _main().id)[0]
+		lines.append({"who": _main().id, "do": id, "with": other, "energy": _energy, "speed": _speed, "duration": 2.5})
 	for aid: String in actors:
+		if act.has("pair") and actors.size() >= 2:
+			break
 		var line := {"who": aid, "energy": _energy, "speed": _speed}
 		if act.get("params", {}).has("side"):
 			line["side"] = _side
@@ -1196,10 +1217,19 @@ func _play(id: String) -> void:
 		else:
 			line["do"] = _with_elbow(id)
 			line["duration"] = 2.5
+		if act.has("test_items"):
+			line = _with_props(act, id, actors[aid], line)
 		lines.append(line)
+	var own_lines: bool = act.has("pair") or act.has("test_items")   # (each hero its own things, its own line)
 	if _over_mode:
 		for line: Dictionary in lines:
 			_command(line)
+	elif own_lines:
+		_let_go()
+		_pending = {}
+		_due_lines.clear()
+		for line: Dictionary in lines:
+			_due_lines.append(line)
 	else:
 		_let_go()
 		_pending = {"who": "all"}
@@ -1266,6 +1296,59 @@ func _update_how() -> void:
 	_elbow_row.visible = elbowed
 	_how_title.text = "Как сыграть «%s»" % _title_of(act, chosen)
 	_how_note.text = "Нажатие сразу переигрывает. Рука — справа или слева на экране." if sided else "Нажатие сразу переигрывает."
+
+
+## THINGS for an action that needs one (its "test_items": what the engine's own check gives it): on the floor
+## where the hero reaches (take, lift), in the hand (drink, put, throw, slash, the wheel), worn (an instrument:
+## then it is simply the stage's "play"). Taken away again when another action is chosen.
+var _props: Array = []
+
+
+func _clear_props() -> void:
+	for pid: String in _props:
+		if items != null and items.items.has(pid):
+			items.remove(pid)
+	_props.clear()
+
+
+func _with_props(act: Dictionary, id: String, a: Actor, line: Dictionary) -> Dictionary:
+	var defs: Array = act.get("test_items", [])
+	if id.begins_with("play_") and not defs.is_empty():          # an instrument: the stage hands it over and plays it
+		var l := {"who": a.id, "play": str(defs[0]["card"]), "for": 3.0, "energy": _energy, "speed": _speed}
+		return l
+	var main_id := ""
+	for d: Dictionary in defs:
+		var pid := "%s_%s_%s" % [str(d["id"]), str(d["card"]), a.id]
+		var x: float = a.puppet.body_position().x
+		if d.has("at"):
+			var at: Array = d["at"]
+			var out: float = a.motion.floor_reach_x("arm_r") if at[0] is String and at[0] == "reach" else float(at[0]) * a.motion.arm
+			x += out * a.motion._sign("arm_r")
+		items.add(pid, str(d["card"]), Vector2(x, floor_y - 20.0), {"ground_z": a.z}.merged(d.get("def", {})))
+		items.watch(a.motion)
+		_props.append(pid)
+		if d.has("held"):
+			var hand: String = str(d["held"])
+			if hand == "wear":
+				items.wear_now(a.motion, pid)
+			else:
+				items.hold_now(a.motion, "both" if hand == "both" else "hand_" + hand.left(1), pid)
+		if str(d["id"]) == "item":
+			main_id = pid
+	var l2 := line.duplicate()
+	match id:
+		"take", "lift":
+			l2.erase("do")
+			l2["take"] = main_id
+		"put":
+			l2.erase("do")
+			l2["put"] = true
+		"throw":
+			l2.erase("do")
+			l2["throw"] = true
+		_:
+			l2["item"] = main_id
+	return l2
 
 
 ## The clean switch: every hero lets everything go and goes back to rest (motion.gd play_clean); the line waits.
@@ -1381,6 +1464,7 @@ func _show_faults(id: String) -> void:
 func rest_pose() -> Dictionary:
 	var a := _main()
 	var p := {"legs": {"drop": 0.0, "shift": 0.0, "foot_l": [0.0, 0.0], "foot_r": [0.0, 0.0]}, "body": {"lean": 0.0}, "head": 0.0}
+	# (the shoulders and the head's drop are said in a pose only when moved: a pose without them is at rest there)
 	for ch: String in ["arm_l", "arm_r"]:
 		var at := Vector2(0.1, 0.95)
 		if a != null and a.motion.rest.has(ch):
@@ -1393,9 +1477,9 @@ func rest_pose() -> Dictionary:
 func _apply_pose() -> void:
 	_pending = {}
 	_due_lines.clear()
-	var ph := pose_now.duplicate(true)
+	var ph := _full(pose_now)
 	ph["time"] = 0.12
-	var hold := pose_now.duplicate(true)
+	var hold := _full(pose_now)
 	hold["time"] = 1.0
 	hold["loop"] = true
 	for a: Actor in actors.values():
@@ -1408,6 +1492,22 @@ func _apply_pose() -> void:
 		a.motion.runs = a.motion.runs.filter(func(r) -> bool: return not r.done)
 		a.motion.play({"id": "_pose", "phases": [ph, hold]})
 	_dirty_state = true
+
+
+## A pose as it plays: what it does not say (a shoulder, the head's drop) is at rest, not left where it was.
+static func _full(pose: Dictionary) -> Dictionary:
+	var out := pose.duplicate(true)
+	for ch: String in ["arm_l", "arm_r"]:
+		if out.get(ch, null) is Dictionary and not out[ch].has("shoulder"):
+			out[ch]["shoulder"] = 0.0
+	var h: Variant = out.get("head", 0.0)
+	out["head"] = h if h is Dictionary else {"tilt": float(h), "drop": 0.0}
+	return out
+
+
+static func _head_tilt(pose: Dictionary) -> float:
+	var h: Variant = pose.get("head", 0.0)
+	return float(h.get("tilt", 0.0)) if h is Dictionary else float(h)
 
 
 func _fix() -> void:
@@ -1435,7 +1535,9 @@ static func way_time(a: Dictionary, b: Dictionary) -> float:
 			far = maxf(far, 1.5 * Vector2(p[0], p[1]).distance_to(Vector2(q[0], q[1])))
 	if a.get("body", null) is Dictionary and b.get("body", null) is Dictionary:
 		far = maxf(far, absf(float(a["body"].get("lean", 0.0)) - float(b["body"].get("lean", 0.0))) / 40.0)
-	far = maxf(far, absf(float(a.get("head", 0.0)) - float(b.get("head", 0.0))) / 50.0)
+	far = maxf(far, absf(_head_tilt(a) - _head_tilt(b)) / 50.0)
+	for ch3: String in ["arm_l", "arm_r"]:
+		far = maxf(far, absf(float(a.get(ch3, {}).get("shoulder", 0.0)) - float(b.get(ch3, {}).get("shoulder", 0.0))) * 3.0)
 	return snappedf(clampf(far / HAND_PACE + 0.15, 0.25, 2.0), 0.05)
 
 
@@ -1550,10 +1652,14 @@ func _dot_points(a: Actor) -> Dictionary:
 		"body": p.body_position()}
 	# the lean: between the shoulders; the head: its crown (two dots on the face read as a face)
 	if p.chains.has("hand_l") and p.chains.has("hand_r"):
-		out["neck"] = (p.chains["hand_l"].a.node.global_position + p.chains["hand_r"].a.node.global_position) * 0.5
+		var lift: float = (float(pose_now.get("arm_l", {}).get("shoulder", 0.0)) + float(pose_now.get("arm_r", {}).get("shoulder", 0.0))) * 0.5
+		out["neck"] = (p.chains["hand_l"].a.node.global_position + p.chains["hand_r"].a.node.global_position) * 0.5 				+ Vector2(0.0, lift * a.motion.arm)          # (where the shoulders are at rest: a shrug does not move it)
 	if p.parts.has("head"):
 		var hp = p.parts["head"]
 		out["head"] = hp.node.to_global(Vector2(hp.painted.get_center().x, hp.painted.position.y + hp.painted.size.y * 0.1))
+	for sd: String in ["l", "r"]:              # the shoulders: on the upper arm's joint
+		if p.chains.has("hand_" + sd):
+			out["shoulder_" + sd] = p.chains["hand_" + sd].a.node.global_position
 	return out
 
 
@@ -1571,7 +1677,7 @@ func _draw_dots(canvas: Node2D) -> void:
 	var pts := _dot_points(a)
 	for k: String in pts:
 		var at: Vector2 = pts[k]
-		var col: Color = C_DOT_BODY if k in ["body", "neck", "head"] else C_DOT_LIMB
+		var col: Color = C_DOT_BODY if k in ["body", "neck", "head", "shoulder_l", "shoulder_r"] else C_DOT_LIMB
 		var big: float = DOT * (1.25 if k == _drag or k == _hover else 1.0)
 		canvas.draw_circle(at, big + 3.0, Color.WHITE, true, -1.0, true)
 		canvas.draw_circle(at, big, Color(col, 0.95 if k == _drag or k == _hover else 0.8), true, -1.0, true)
@@ -1707,8 +1813,25 @@ func _drag_to(a: Actor, k: String, to: Vector2) -> void:
 		var v := to - p.body_position()
 		pose_now["body"]["lean"] = snappedf(clampf(rad_to_deg(atan2(v.x, -v.y)), -45.0, 45.0), 1.0)
 	elif k == "head":
-		var v2: Vector2 = to - (p.parts["head"].node.global_position as Vector2)      # round the neck joint
-		pose_now["head"] = snappedf(clampf(rad_to_deg(atan2(v2.x, -v2.y)) - float(pose_now["body"].get("lean", 0.0)), -35.0, 35.0), 1.0)
+		# round the neck joint: aside tilts it; pulled down toward the neck, the head is drawn into the collar
+		var hp: Variant = p.parts["head"]
+		var drop_now: float = float(pose_now["head"].get("drop", 0.0)) if pose_now["head"] is Dictionary else 0.0
+		var hh: float = (hp.painted as Rect2).size.y * absf(p.scale.y)
+		var neck: Vector2 = (hp.node.global_position as Vector2) - Vector2(0.0, drop_now * hh)    # (where it sits undrawn)
+		var v2: Vector2 = to - neck
+		var crown_len: float = absf(hp.painted.position.y + hp.painted.size.y * 0.1) * absf(p.scale.y)
+		var tilt: float = snappedf(clampf(rad_to_deg(atan2(v2.x, -v2.y)) - float(pose_now["body"].get("lean", 0.0)), -35.0, 35.0), 1.0)
+		var drop: float = snappedf(clampf((crown_len - v2.length()) / maxf(hh, 1.0), -0.15, 0.25), 0.01)
+		pose_now["head"] = tilt if absf(drop) < 0.02 else {"tilt": tilt, "drop": drop}
+	elif k.begins_with("shoulder"):
+		var ch2 := "arm_" + k.right(1)
+		var up_now: float = float(pose_now[ch2].get("shoulder", 0.0))
+		var home_y: float = p.chains["hand_" + k.right(1)].a.node.global_position.y + up_now * mo.arm
+		var up: float = snappedf(clampf((home_y - to.y) / mo.arm, -0.08, 0.16), 0.01)
+		if absf(up) < 0.01:
+			pose_now[ch2].erase("shoulder")
+		else:
+			pose_now[ch2]["shoulder"] = up
 	_apply_pose()
 
 

@@ -242,7 +242,11 @@ def way_time(a: dict, b: dict) -> float:
     ba, bb = a.get("body"), b.get("body")
     if isinstance(ba, dict) and isinstance(bb, dict):
         far = max(far, abs(_num(ba.get("lean", 0)) - _num(bb.get("lean", 0))) / 40.0)
-    far = max(far, abs(_num(a.get("head", 0)) - _num(b.get("head", 0))) / 50.0)
+    tilt = lambda h: _num(h.get("tilt", 0)) if isinstance(h, dict) else _num(h)
+    far = max(far, abs(tilt(a.get("head", 0)) - tilt(b.get("head", 0))) / 50.0)
+    for ch in ("arm_l", "arm_r"):
+        if isinstance(a.get(ch), dict) and isinstance(b.get(ch), dict):
+            far = max(far, 3.0 * abs(_num(a[ch].get("shoulder", 0)) - _num(b[ch].get("shoulder", 0))))
     return round(round(min(max(far / HAND_PACE + 0.15, 0.25), 2.0) / 0.05) * 0.05, 2)
 
 
@@ -257,7 +261,13 @@ def from_poses(poses: list[dict], aid: str, title: str | None = None, group: str
     phases, used = [], []
     prev: dict = base or {}
     for p in poses:
-        pose = p.get("pose") or {}
+        pose = json.loads(json.dumps(p.get("pose") or {}))
+        # a shoulder raised (or the head drawn in) in the pose before and not in this one goes back down here
+        for ch in ("arm_l", "arm_r"):
+            if isinstance(prev.get(ch), dict) and isinstance(pose.get(ch), dict) and "shoulder" in prev[ch]                     and "shoulder" not in pose[ch]:
+                pose[ch]["shoulder"] = 0.0
+        if isinstance(prev.get("head"), dict) and not isinstance(pose.get("head"), dict):
+            pose["head"] = {"tilt": _num(pose.get("head", 0)), "drop": 0.0}
         t = float(p["time"]) if keep_times and p.get("time") else way_time(prev or pose, pose)
         ph: dict = {"time": round(t, 2)}
         if p.get("ease", "inout") in EASES and p.get("ease", "inout") != "inout":
