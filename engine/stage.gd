@@ -149,7 +149,6 @@ const CROSS_REACH := 0.80        # how far out (arm lengths) a hand is when its 
 
 class Actor:
 	var id: String
-	var hand_driven := false          # moved by another player (the workshop's angles player): no motion step
 	var fspeed := {}                  # part -> the speed of its frames a script line set ({"frames": {...}})
 	var dir := ""                     # the hero's folder
 	var height := 0.45                # neck to sole, share of the stage height
@@ -1021,8 +1020,7 @@ func _physics_process(_delta: float) -> void:
 			a.back_to = []
 			_turn(a, v)
 		a.motion.measuring = a.turning.is_empty()
-		if not a.hand_driven:
-			a.motion.step()
+		a.motion.step()
 		_mouth_step(a)
 	items.step(1.0 / 60.0)
 	for reel: Variant in _reels:
