@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tadam import resolve, schema, scenecheck, sources, words
+from tadam import resolve, schema, scenecheck, sources, strip, words
 from tadam.issues import Issue
 from tadam.paths import engine_dir
 from tadam.world import EPISODE, SLUG, World, exact, is_safe_name, read_json
@@ -48,6 +48,11 @@ CODES = {
     "set_missing": ("error", "the script names a set the world does not have"),
     "set_invalid": ("error", "a set.json is malformed"),
     "set_file_missing": ("error", "a picture a set names does not exist"),
+    "frames_invalid": ("error", "a 'frames' record (a drawing shown as frames in turn) is malformed"),
+    "frames_size": ("error", "a frame is not the size of the drawing's first frame"),
+    "frames_ignored": ("warning", "a 'frames' record on a part that cannot be frames (the head, a hand)"),
+    "frames_heavy": ("warning", "the frames of one drawing are very large (memory on a phone)"),
+    "frames_unused": ("warning", "frames' files that no 'frames' record shows (left by a puppet or set made again)"),
     "media_missing": ("error", "a music, ambience or prop file the script names is not in media/"),
     "name_case": ("error", "a name differs from the file's name only in letter case"),
     "episode_missing": ("error", "no such episode folder"),
@@ -211,8 +216,14 @@ class _Run:
             for v in (p.get("variants") or {}) if isinstance(p, dict) else {}:
                 if exact(pdir, f"parts/{n}.{v}.png") != "ok":
                     missing.append(f"{n}.{v}.png")
+            if isinstance(p, dict) and "frames" in p:
+                missing += self.frames(pdir / "parts", f"{n}.png", p["frames"], f"{rel}/rig.json parts.{n}",
+                                       None if strip.can_have(n) else n)
         if missing:
             self.add("puppet_parts_missing", f"{rel}/parts", f"missing: {', '.join(missing[:8])}", level)
+        self.frames_unused(pdir / "parts", f"{rel}/parts", {
+            f"{n}.png": p.get("frames") if isinstance(p, dict) and strip.can_have(n) else None
+            for n, p in (rig.get("parts") or {}).items()})
         rep, err = read_json(pdir / "report.json")
         if not (isinstance(rep, dict) and rep.get("passed") is True):
             why = "no report.json" if err else "the audit found problems (report.json)"
@@ -276,6 +287,9 @@ class _Run:
                                             all(isinstance(x, (int, float)) for x in r)):
                     problems.append(f"{key}[{i}].rect must be [x, y, w, h]")
                 files.append((f"{key}[{i}].image", p["image"]))
+                if "frames" in p and key == "pieces" and is_safe_name(p["image"]):
+                    for name in self.frames(sd, p["image"], p["frames"], f"{rel} {key}[{i}]", None):
+                        self.add("set_file_missing", f"{rel} {key}[{i}].frames", f"no file sets/{slug}/{name}")
                 if isinstance(p.get("under"), str):
                     files.append((f"{key}[{i}].under", p["under"]))
         for path, name in files:
@@ -289,6 +303,37 @@ class _Run:
                 self.add("set_file_missing", f"{rel} {path}", f"no file sets/{slug}/{name}")
         for p in problems:
             self.add("set_invalid", rel, p)
+        self.frames_unused(sd, f"sets/{slug}", {
+            p["image"]: p.get("frames") for p in (st.get("pieces") if isinstance(st.get("pieces"), list) else [])
+            if isinstance(p, dict) and isinstance(p.get("image"), str) and "/" not in p["image"]})
+
+    def frames_unused(self, folder: Path, where: str, records: dict):
+        left = strip.unused(folder, records)
+        if left:
+            self.add("frames_unused", where, f"no 'frames' record shows {', '.join(left[:6])}"
+                     + (f" and {len(left) - 6} more" if len(left) > 6 else "")
+                     + ": cut the strip again (`tadam strip <drawing> <strip> --count N`) or take them away "
+                       "(`tadam strip <drawing> --off`)")
+
+    def frames(self, folder: Path, first: str, rec: object, where: str, cannot: str | None) -> list[str]:
+        """A drawing's "frames" record (tadam.strip, engine/frames.gd): the record, the sizes, the weight.
+        Returns the frames' files that are missing (the caller reports them its own way)."""
+        if cannot:
+            self.add("frames_ignored", where, f"the {cannot} cannot be frames: the engine shows its first drawing")
+            return []
+        bad = strip.problems(rec)
+        for b in bad:
+            self.add("frames_invalid", where, b)
+        if bad:
+            return []
+        st = strip.files_state(folder, first, rec)
+        for s in st["size"]:
+            self.add("frames_size", where, s + ": every frame is the whole canvas of the drawing "
+                     "(`tadam strip` cuts them so)")
+        if st["pixels"] > strip.HEAVY:
+            self.add("frames_heavy", where, f"{rec['count']} frames of {first} are {st['pixels'] / 1e6:.0f} "
+                     f"megapixels together: fewer frames or a smaller drawing")
+        return st["missing"]
 
     # ------------------------------------------------------------------ an episode
     def episode(self, n: str):

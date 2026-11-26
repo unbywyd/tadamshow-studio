@@ -20,6 +20,7 @@ extends Node2D
 const IK := preload("res://ik.gd")
 const Springs := preload("res://springs.gd")
 const Rivet := preload("res://rivet.gd")
+const Frames := preload("res://frames.gd")
 
 const DT := 1.0 / 60.0
 const POLE_DOWN := 2.4            # how steeply down the elbow line goes (its slope: 2.4 = 67 degrees)
@@ -42,6 +43,11 @@ class Part:
 	var back: Texture2D           # ... and the shadow inside that hole
 	var hat: Texture2D            # head only: a hat worn on top of a recorded head (then nothing else is painted)
 	var skin := ""                # the one shown now
+	var frames: Array = []        # FRAMES of the first drawing (rig "frames", frames.gd): textures, [0] = that drawing
+	var fspec: Dictionary = {}    # ... their order and speed
+	var ftime := 0.0              # ... seconds played (times the speed)
+	var fspeed := 1.0             # ... 1 = as the rig says, 0 = stands still
+	var fnow := 0                 # ... the frame shown, from 0
 	var vel := 0.0                # its velocity, rad/s
 	var goal := 0.0               # angle the spring pulls to (angle handles)
 	var squeeze := 1.0            # its drawing's width (a hand seen EDGE ON is the flat hand squeezed across)
@@ -126,6 +132,7 @@ var wrong_longest := 0           # the longest such run
 var _idle_mix := 0.0
 var _skin_held: Dictionary = {}  # part name -> true: its drawing was chosen by hand, not by the automatic rule
 var _rivets: Array[Node2D] = []
+var _framed: Array[Part] = []    # the parts whose drawing is frames
 
 
 # ----------------------------------------------------------------------------- building
@@ -168,6 +175,7 @@ func _clear() -> void:
 	chains.clear()
 	order.clear()
 	_rivets.clear()
+	_framed.clear()
 	root = null
 
 
@@ -267,7 +275,30 @@ func _build_part(part_name: String, skin_dir: String) -> Part:
 			other.generate_mipmaps()
 			p.skins[v] = {"texture": ImageTexture.create_from_image(other),
 				"position": Vector2(-pad, -pad) - _v2(variants[v]["at"])}
+	# FRAMES of the first drawing (rig "frames"): <part>.f2.png ... on the same canvas, shown in turn. Not for the
+	# head (a face and a mouth are put into it) and not for hands (drawn here by `hand_style`).
+	if def.has("frames") and image != null and part_name != "head" and not part_name.begins_with("hand_"):
+		_load_frames(p, def["frames"], skin_dir.path_join(part_name), image.get_size())
 	return _finish_part(p)
+
+
+func _load_frames(p: Part, def: Variant, stem: String, size: Vector2i) -> void:
+	var sp: Dictionary = Frames.spec(def)
+	if sp.is_empty():
+		return
+	var texs: Array = [p.sprite.texture]
+	for k in range(2, int(sp["count"]) + 1):
+		var im := _load_image("%s.f%d.png" % [stem, k])
+		if im == null or im.get_size() != size:
+			# (half a round would look broken: the part stays one drawing)
+			push_warning("Puppet: frame %d of '%s' is missing or not the size of the first one" % [k, p.name])
+			return
+		im.generate_mipmaps()
+		texs.append(ImageTexture.create_from_image(im))
+	p.frames = texs
+	p.fspec = sp
+	_framed.append(p)
+	_show_frame(p)
 
 
 func _finish_part(p: Part, pin := true) -> Part:
@@ -766,6 +797,9 @@ func step() -> void:
 	for i in range(1, order.size()):
 		_step_part(order[i], sway)
 	_auto_skins()
+	for p: Part in _framed:
+		p.ftime += DT * p.fspeed
+		_show_frame(p)
 
 
 ## A hand with no fingers, in the painted hand's own colour (`hand_style`): it hangs from the wrist `wrist` (image
@@ -876,6 +910,49 @@ func _apply_squeeze(p: Part) -> void:
 
 func release_skin(part: String) -> void:
 	_skin_held.erase(part)
+
+
+# ----------------------------------------------------------------------------- frames
+
+## The frame of a part's first drawing that its time asks for. While the part shows another drawing (a variant)
+## the frames go on unseen: it comes back to the frame of that moment.
+func _show_frame(p: Part) -> void:
+	var i: int = Frames.at(p.fspec, p.ftime)
+	if i == p.fnow:
+		return
+	p.fnow = i
+	p.skins[""]["texture"] = p.frames[i]
+	if p.skin == "":
+		p.sprite.texture = p.frames[i]
+
+
+## The parts whose drawing is frames (rig "frames"), parents first.
+func framed_parts() -> Array[String]:
+	var out: Array[String] = []
+	for p: Part in _framed:
+		out.append(p.name)
+	return out
+
+
+## The frame a part shows now, from 1 (0: its drawing is one picture).
+func frame_of(part: String) -> int:
+	var p: Part = parts.get(part)
+	return 0 if p == null or p.frames.is_empty() else p.fnow + 1
+
+
+## How fast a part's frames go: 1 = as its rig says, 0 = they stand still, 2 = twice as fast.
+func set_frames_speed(part: String, k: float) -> void:
+	var p: Part = parts.get(part)
+	if p != null and not p.frames.is_empty():
+		p.fspeed = clampf(k, 0.0, 8.0)
+
+
+## A part's frames from the first one again (a "once" round plays once more).
+func restart_frames(part: String) -> void:
+	var p: Part = parts.get(part)
+	if p != null and not p.frames.is_empty():
+		p.ftime = 0.0
+		_show_frame(p)
 
 
 ## The automatic choice of drawings. One rule so far: a hand held clearly higher than its elbow shows its palm,

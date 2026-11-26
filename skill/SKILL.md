@@ -35,7 +35,8 @@ edit files there, the server keeps the last pushed copy, the owner approves what
    a hero that fails a stage-1 action is **drawn again, never tuned**. Look at
    `.tadam/heroes/<slug>/puppet/check.jpg` yourself (check pictures and logs stay in `.tadam/`, never sent).
 4. **The set**: `tadam new set <slug>`, describe the room and the pieces in `kit.json`, then `tadam set make
-   <slug>` (price first) or `--placeholder` (free).
+   <slug>` (price first) or `--placeholder` (free). A drawing that should live a little (a flame, a flag, cloth,
+   a wing) becomes frames shown in turn: `tadam strip`, see [frames](reference/frames.md).
    **Every picture and sound has its source in `sources.json`** at the world root, declared the moment the file
    appears: `own` (the person made it), `generated` + `tool`, `licensed` + `licence` + `url`. `hero make`,
    `set make` and `tadam cover` (the cover from a frame, free) write their own entries; you add the rest
