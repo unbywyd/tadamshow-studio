@@ -117,7 +117,7 @@ var held := Springs.Params.new(170.0, 9.0, 0.0, 0.35)     # everything else: wob
 ## every pose; "stump" = the top third of the painted hand, rounded off (no fingers); "none" = no hand at all; "ball" = a round knob; "mitten" = a mitten with a thumb
 ## (these two drawn here); "glove" = THE SHARED GLOVES, the same drawings for every hero (_glove_hand). Drawn here, in the colour of the hero's own painted hand, ONE
 ## drawing for every pose: nothing is swapped, a fist and an open hand look the same, a thing held lies behind it.
-static var hand_style := "stump"       # (the default since 21.11: wooden puppets need no fingers)
+static var hand_style := "glove"       # (the default since 26.11: the owner wants one pair of gloves on every hero, no stumps)
 var rig: Dictionary = {}
 var parts: Dictionary = {}       # name -> Part
 var chains: Dictionary = {}      # handle name -> Chain

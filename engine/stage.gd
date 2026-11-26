@@ -39,8 +39,10 @@ extends Node2D
 ##   "light": {"at": [x, y]}           a light: heroes cast shadows of their shape away from it and get a lit edge
 ##   "grade": "evening", "vignette": 0.3   the colour of the whole picture (engine/light.gd)
 ##   "music", "ambience", "sfx"        sound (engine/sound.gd)
-##   "hands": "stump" (default)        hands with no fingers, one drawing for every pose: the top of the painted hand,
-##            | "one" | "none" | "drawn" rounded off; or the painted hand only; or none; or as painted (puppet.gd)
+##   "hands": "glove" (default)        THE SHARED GLOVES, the same on every hero (engine/hands/<"gloves">: "glove"
+##                                     plain black, "piying_red", "piying_black", "piying_black_long" with a pattern)
+##            | "stump" | "one" | "none" | "drawn": no fingers (the top of the painted hand rounded off); the painted
+##            hand only; none; as painted (puppet.gd)
 ##   "script": [{ "at": 1.5, "who": "hag", ...commands }]      `at` in seconds ("time": "share" -> 0..1 of the scene);
 ##              "who": "all" = every actor
 ## WHEN a line happens, four ways (docs/framework-tz.md 7.1); "delay": seconds after that:
@@ -288,8 +290,8 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	spec = parsed
-	# hands: "stump" (default) | "one" | "none" | "ball" | "mitten" | "drawn" (as painted: palm, fist, edge)
-	var hs: String = str(spec.get("hands", "stump"))
+	# hands: "glove" (default, the shared gloves) | "stump" | "one" | "none" | "ball" | "mitten" | "drawn" (as painted)
+	var hs: String = str(spec.get("hands", "glove"))
 	Puppet.pin_style = str(spec.get("pins", "dot"))      # "peg": the shared wooden peg on every bend; "knot"
 	Puppet.glove_set = str(spec.get("gloves", "glove"))   # the shared glove set (engine/hands/<set>), "hands": "glove"
 	Puppet.leather = float(spec.get("leather", 1.0))     # below 1: lit-through leather (a shadow theatre)

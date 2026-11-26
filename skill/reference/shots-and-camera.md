@@ -82,8 +82,9 @@ shrug, spread; angry, cry, laugh, surprised; dance_arms, dance_twist; bow, curts
 
 ## Stage options (`film.stage` or a shot's `stage`)
 
-`faces: "board"` (the recorded face in an oval of the painted head — the house look), `hands` (`stump` default,
-`one`, `mitten`, `ball`, `none`, `drawn`), `walk: "front"`, `parallax`, `vignette` (0–1), `grade` (`day`,
+`faces: "board"` (the recorded face in an oval of the painted head — the house look), `hands` (`glove` default:
+the shared gloves, the same on every hero; `gloves` picks the pair: `glove` plain black, `piying_red`,
+`piying_black`, `piying_black_long`; or `stump`, `one`, `mitten`, `ball`, `none`, `drawn`), `walk: "front"`, `parallax`, `vignette` (0–1), `grade` (`day`,
 `evening`, `night`, `alarm`), `closest` (how near the camera may go).
 
 ## Looking at your work

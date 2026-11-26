@@ -109,11 +109,19 @@ def test_engine_main_scene_is_the_stage():
 def test_engine_has_nothing_it_must_not():
     eng = paths.engine_dir()
     names = [p.relative_to(eng).as_posix() for p in eng.rglob("*") if p.is_file() and ".godot" not in p.parts]
-    for bad in ("media/", "hands/", "puppets/", "demo.", "headtest", "selftest", "handles.gd", "export_presets"):
+    # hands/ ships since 26.11: the shared gloves every hero wears (the owner's own generations; he said to commit them)
+    for bad in ("media/", "puppets/", "demo.", "headtest", "selftest", "handles.gd", "export_presets"):
         assert not any(n.startswith(bad) or ("/" + bad) in n or n.startswith(bad) for n in names), bad
     assert not any(re.search(r"\.(ogv|mp4|avi|mp3)$", n) for n in names)
     for owner_made in ("ball", "book", "crate", "mug", "shovel", "sword", "wheel"):
         assert not (eng / "items" / f"{owner_made}.png").exists()
+    assert not any(n.startswith("hands/") and "sheet" in n for n in names)     # only the cut gloves, no source sheets
+
+
+def test_engine_has_the_default_gloves():
+    gl = paths.engine_dir() / "hands" / "glove"
+    for f in ("hands.json", "back.png", "edge.png", "fist.png", "palm.png", "point.png"):
+        assert (gl / f).is_file(), f
 
 
 def test_title_card_draws_cyrillic(tmp_path):
