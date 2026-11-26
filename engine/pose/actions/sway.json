@@ -1,0 +1,40 @@
+{
+ "id": "sway",
+ "title": "покачать бёдрами",
+ "old": "dance_twist",
+ "phases": [
+  {
+   "time": 0.3,
+   "pose": {
+    "body": {
+     "drop": 0.05
+    },
+    "arms": {
+     "raise": 30,
+     "elbow": 40
+    }
+   }
+  },
+  {
+   "time": 2.4,
+   "swing": {
+    "body.shift": {
+     "amp": 0.1,
+     "rate": 1.2
+    },
+    "body.tilt": {
+     "amp": -5,
+     "rate": 1.2
+    },
+    "head.tilt": {
+     "amp": 4,
+     "rate": 1.2
+    }
+   }
+  },
+  {
+   "time": 0.4,
+   "pose": "rest"
+  }
+ ]
+}

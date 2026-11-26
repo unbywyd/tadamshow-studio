@@ -1,0 +1,38 @@
+{
+ "id": "forehead",
+ "title": "ладонь ко лбу",
+ "old": "facepalm",
+ "covers_face": true,
+ "phases": [
+  {
+   "time": 0.4,
+   "pose": {
+    "arm_r": {
+     "raise": 30,
+     "elbow": 120,
+     "hand": "palm"
+    },
+    "head": -8
+   },
+   "contact": {
+    "hand_r": {
+     "to": "forehead",
+     "else": {
+      "to": "forehead",
+      "dx": -0.6
+     }
+    }
+   }
+  },
+  {
+   "time": 0.9
+  },
+  {
+   "time": 0.5,
+   "contact": {
+    "hand_r": "free"
+   },
+   "pose": "rest"
+  }
+ ]
+}

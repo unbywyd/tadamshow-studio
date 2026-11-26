@@ -1,0 +1,36 @@
+{
+ "id": "hips",
+ "title": "руки в боки",
+ "old": "hips",
+ "phases": [
+  {
+   "time": 0.45,
+   "pose": {
+    "arms": {
+     "raise": 45,
+     "elbow": -70,
+     "hand": "fist"
+    }
+   },
+   "contact": {
+    "hand_r": {
+     "to": "hip"
+    },
+    "hand_l": {
+     "to": "hip"
+    }
+   }
+  },
+  {
+   "time": 1.0
+  },
+  {
+   "time": 0.45,
+   "contact": {
+    "hand_r": "free",
+    "hand_l": "free"
+   },
+   "pose": "rest"
+  }
+ ]
+}

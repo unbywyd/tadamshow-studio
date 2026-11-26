@@ -73,6 +73,7 @@ static var chosen := ""             # the action chosen last
 static var _cmd_seen := 0
 static var still := false           # the idle life (breath, sway) off: a pose stands exactly still
 static var _sized := false
+static var engine_mode := "now"     # "now": the engine of films and the site · "new": the angles player (experiment)
 static var proof_pick: Array = ["proof:plain", "proof:tall", "proof:heavy", "proof:skirt_floor"]   # at most PROOF_MAX side by side
 const PROOF_MAX := 4
 
@@ -159,6 +160,8 @@ func _ready() -> void:
 	camera_on = false
 	super._ready()
 	set_physics_process(true)
+	if engine_mode == "new":
+		_start_new()
 	_fit_window()
 	_dots = Dots.new()
 	_dots.ws = self
@@ -341,6 +344,8 @@ func _one_step(delta: float) -> void:
 	if still:
 		_set_life()                      # (a turn makes the hero's motion anew)
 	super._physics_process(delta)
+	for pl: Variant in _new_players.values():
+		pl.step()
 	if not _pending.is_empty():
 		var calm := true
 		for a: Actor in actors.values():
@@ -768,6 +773,11 @@ func _switch_world(w: Dictionary) -> void:
 
 
 func _show_mode(i: int) -> void:
+	if i == 1 and engine_mode == "new":     # posing by hand is the engine of now's: switch back to it
+		engine_mode = "now"
+		tab = 1
+		_reload()
+		return
 	tab = i
 	for k in _modes.size():
 		(_modes[k] as Button).set_pressed_no_signal(k == i)
@@ -784,6 +794,18 @@ func _show_mode(i: int) -> void:
 func _actions_page() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
+	# which engine plays the actions in this window (only here: films and the site keep the engine of now)
+	var eng := _seg([["Движок нынешний", "now"], ["Новый, на углах (опыт)", "new"]], engine_mode, func(v: String) -> void:
+		if v != engine_mode:
+			engine_mode = v
+			chosen = ""
+			_reload())
+	eng.tooltip_text = "Только для этого окна: фильмы, сайт и проверка героев играют нынешним движком."
+	box.add_child(eng)
+	if engine_mode == "new":
+		var nn := _note("Новый движок: позы — углы суставов, касания — точки на теле. Перенесены 10 действий из опыта, остальные ещё нет. Сравните с нынешним, переключая сверху.", 16)
+		nn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(nn)
 	_search = LineEdit.new()
 	_search.placeholder_text = "Найти действие: «помахать», wave…"
 	_search.clear_button_enabled = true
@@ -877,6 +899,9 @@ func _fill_tiles() -> void:
 	for c in _tiles.get_children():
 		c.queue_free()
 	_tile_of.clear()
+	if engine_mode == "new":
+		_fill_new_tiles()
+		return
 	var q := _search.text.strip_edges().to_lower() if _search != null else ""
 	var by_group := {}
 	for id: String in actions():
@@ -1266,6 +1291,9 @@ func _play(id: String) -> void:
 ## The card's buttons change the action that plays: a pick plays it again at once, the new way.
 ## A new action from the list: the elbow goes back to «Сам» (a forced elbow fits one action, it wrecks the next).
 func _pick_action(id: String) -> void:
+	if engine_mode == "new":
+		_play_new(id)
+		return
 	if id != chosen and _elbow_say != "":
 		_elbow_say = ""
 		if _elbow_seg != null:
@@ -1314,6 +1342,96 @@ func _update_how() -> void:
 	_elbow_row.visible = elbowed
 	_how_title.text = "Как сыграть «%s»" % _title_of(act, chosen)
 	_how_note.text = "Нажатие сразу переигрывает. Рука — справа или слева на экране." if sided else "Нажатие сразу переигрывает."
+
+
+## THE NEW ENGINE in this window (engine/pose: the angles player of the experiment): each hero on the stage is
+## driven by it instead of the motion of now; its actions are engine/pose/actions.
+const PosePlayer := preload("res://pose/pose_player.gd")
+var _new_players := {}               # actor id -> its angles player
+var _new_actions := {}               # id -> action
+var _new_item: Node2D = null
+
+
+func _start_new() -> void:
+	var dir := ProjectSettings.globalize_path("res://pose/actions")
+	for f in DirAccess.get_files_at(dir):
+		if f.ends_with(".json"):
+			var a: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
+			if a is Dictionary:
+				_new_actions[a["id"]] = a
+	for a: Actor in actors.values():
+		a.hand_driven = true
+		var pl := PosePlayer.new()
+		pl.setup(a.puppet, floor_y)
+		_new_players[a.id] = pl
+	_fill_tiles()
+
+
+func _fill_new_tiles() -> void:
+	_tiles.add_child(_title("Действия на углах (опыт)", 21))
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	var ids: Array = _new_actions.keys()
+	ids.sort()
+	for id: String in ids:
+		var b := Button.new()
+		b.text = str(_new_actions[id].get("title", id))
+		b.tooltip_text = id
+		b.theme_type_variation = "Tile"
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.button_pressed = id == chosen
+		b.pressed.connect(func() -> void: _pick_action(id))
+		flow.add_child(b)
+		_tile_of[id] = b
+	_tiles.add_child(flow)
+	_tiles.add_child(_gap(4))
+	_tiles.add_child(_note("Остальные действия на новый движок ещё не перенесены — их смотрите на нынешнем.", 16))
+
+
+func _play_new(id: String) -> void:
+	if not _new_actions.has(id):
+		return
+	var act: Dictionary = _new_actions[id]
+	chosen = id
+	_mark_tile(id)
+	_dirty_state = true
+	if _new_item != null:
+		_new_item.queue_free()
+		_new_item = null
+	for aid: String in _new_players:
+		var pl: Variant = _new_players[aid]
+		pl.item = null
+		pl.item_hand = ""
+		pl.contacts.clear()
+		if act.has("item") and aid == _main().id:
+			_new_item = _mug_at(actors[aid].puppet.body_position().x + float(act["item"].get("out", 0.55)) * pl.leg)
+			pl.item = _new_item
+		# a clean switch, as in the engine of now: back to rest first, then the action
+		var clean: Dictionary = act.duplicate(true)
+		clean["phases"] = [{"time": 0.35, "pose": "rest"}] + act.get("phases", [])
+		pl.play(clean, {"side": "right"})
+	_say("%s  · новый движок" % str(act.get("title", id)))
+	if _how_card != null:
+		_how_card.visible = false
+	if _faults != null:
+		_faults.visible = false
+
+
+func _mug_at(x: float) -> Node2D:
+	var n := Node2D.new()
+	var spr := Sprite2D.new()
+	var img := Image.load_from_file(ProjectSettings.globalize_path("res://items/mug.png"))
+	spr.texture = ImageTexture.create_from_image(img)
+	var k: float = SIZE.y * 0.05 / maxf(float(img.get_height()), 1.0)
+	spr.scale = Vector2(k, k)
+	spr.offset = Vector2(0.0, -img.get_height() * 0.5)
+	n.add_child(spr)
+	n.position = Vector2(x, floor_y)
+	n.z_index = 3000
+	add_child(n)
+	return n
 
 
 ## THINGS for an action that needs one (its "test_items": what the engine's own check gives it): on the floor
@@ -1379,6 +1497,18 @@ func _let_go() -> void:
 
 
 func _rest(say := true) -> void:
+	if engine_mode == "new":
+		for pl: Variant in _new_players.values():
+			pl.play({"phases": [{"time": 0.45, "pose": "rest"}]})
+		chosen = ""
+		_mark_tile("")
+		if _faults != null:
+			_faults.visible = false
+		if _how_card != null:
+			_how_card.visible = false
+		if say:
+			_say("В покое.")
+		return
 	_pending = {}
 	_due_lines.clear()
 	_let_go()
@@ -1962,6 +2092,10 @@ func _scripted() -> void:
 				_show_mode(int(bits[1]))
 			"play":
 				_pick_action(bits[1])
+			"engine":                      # engine:new: as the «Движок» buttons do
+				engine_mode = bits[1]
+				chosen = ""
+				_reload()
 			"row":                         # row:proof: as the «Один герой / Все герои / Пробные тела» buttons do
 				row = bits[1]
 				_reload()
