@@ -89,86 +89,42 @@
     "drop": 0.3
    },
    "arms": {
-    "at": [
-     0.3,
-     0.6
-    ]
+    "raise": 30,
+    "elbow": -30
    }
   },
   {
-   "time": 0.6,
+   "time": 0.55,
    "legs": {
-    "seat": 0.22,
-    "foot_l": [
-     0.7,
-     0.08
-    ],
-    "foot_r": [
-     0.7,
-     0.08
-    ]
+    "drop": 0.6,
+    "shift": 0.04
    },
-   "arms": {
-    "at": [
-     0.3,
-     0.75
-    ]
-   }
-  },
-  {
-   "time": 0.15,
-   "legs": {
-    "foot_l": [
-     0.7,
-     0.0
-    ],
-    "foot_r": [
-     0.7,
-     0.0
-    ]
+   "arm_l": {
+    "raise": 43,
+    "elbow": -70
+   },
+   "arm_r": {
+    "raise": 40,
+    "elbow": -64
    }
   },
   {
    "time": 1.2
   },
   {
-   "time": 0.3,
+   "time": 0.5,
    "legs": {
-    "seat": 0.22,
-    "foot_l": [
-     0.3,
-     0.1
-    ],
-    "foot_r": [
-     0.3,
-     0.1
-    ]
+    "drop": 0.25,
+    "shift": 0.0
    },
    "arms": {
-    "at": [
-     0.3,
-     0.6
-    ]
-   }
-  },
-  {
-   "time": 0.45,
-   "legs": {
-    "drop": 0.3,
-    "foot_l": [
-     0.0,
-     0.0
-    ],
-    "foot_r": [
-     0.0,
-     0.0
-    ],
-    "shift": 0.0
+    "raise": 25,
+    "elbow": -20
    }
   },
   {
    "name": "return",
-   "time": 0.6,
+   "time": 0.5,
    "legs": "rest",
    "body": "rest",
    "arm_r": "rest",

@@ -37,10 +37,8 @@
   {
    "time": 0.6,
    "arm_r": {
-    "at": [
-     0.3,
-     0.62
-    ]
+    "raise": 48,
+    "elbow": -58
    },
    "legs": "rest",
    "body": "rest",
