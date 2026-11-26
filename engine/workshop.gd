@@ -159,6 +159,11 @@ func _ready() -> void:
 	camera_on = false
 	super._ready()
 	set_physics_process(true)
+	var where := "%s|%s|%s" % [str(cfg.get("world", "")), hero_id, row]
+	if where != _logged_where:
+		_log("open" if _logged_where == "" else "hero", "рубрика «%s» · %s" % [str(cfg.get("world_title", "")),
+			"все герои" if row == "all" else ("пробные тела" if row == "proof" else "герой «%s»" % str(_hero_def(hero_id).get("title", hero_id)))])
+		_logged_where = where
 	_fit_window()
 	_dots = Dots.new()
 	_dots.ws = self
@@ -734,6 +739,14 @@ func _build_panel() -> void:
 		b.pressed.connect(func() -> void: _show_mode(i))
 		modes.add_child(b)
 		_modes.append(b)
+	var logb := _toggle("Журнал", _log_open, func(on: bool) -> void:
+		_log_open = on
+		if _log_card != null:
+			_log_card.visible = on
+			_fill_log())
+	logb.theme_type_variation = "Mode"
+	logb.tooltip_text = "что было в окне: действия, брак, позы, команды ИИ — любую строку или всё можно скопировать для ИИ"
+	modes.add_child(logb)
 	col.add_child(_gap(4))
 	col.add_child(modes)
 	_status = _note("", 19)
@@ -745,6 +758,7 @@ func _build_panel() -> void:
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		pages.add_child(page)
 		_pages.append(page)
+	col.add_child(_log_panel())
 
 
 ## Another rubric: its heroes, its actions, its poses (each rubric keeps its own .tadam/workshop).
@@ -1017,6 +1031,12 @@ func _pose_words(p: Dictionary) -> String:
 	var r := rest_pose()
 	var w: Array = []
 	for ch: String in ["arm_r", "arm_l"]:
+		var arm0: Dictionary = p.get(ch, {})
+		if arm0.has("raise"):                   # (in angles: a hand hanging as at rest is not news)
+			if float(arm0["raise"]) < 15.0 and absf(float(arm0.get("elbow", 0.0))) < 12.0 and not arm0.has("look"):
+				continue
+			w.append("%s: подъём %d°, локоть %d°" % ["правая рука" if ch == "arm_r" else "левая рука", int(arm0["raise"]), int(arm0.get("elbow", 0.0))])
+			continue
 		if JSON.stringify(p.get(ch, {})) != JSON.stringify(r.get(ch, {})):
 			var arm: Dictionary = p.get(ch, {})
 			var extra: Array = []
@@ -1058,7 +1078,10 @@ func _fill_poses() -> void:
 	var t0 := _title("Позы: %d" % poses.size(), 21)
 	t0.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head0.add_child(t0)
-	head0.add_child(_btn("Очистить все", func() -> void:
+	var all_btn := _btn("Всё для ИИ ⧉", func() -> void: _copy_for_ai(-1), "Tile")
+	all_btn.tooltip_text = "все позы по порядку, с временем и картинкой-раскадровкой: вставьте в чат с ИИ"
+	head0.add_child(all_btn)
+	head0.add_child(_btn("Очистить", func() -> void:
 		poses.clear()
 		_sel = -1
 		_fill_poses()
@@ -1092,12 +1115,15 @@ func _fill_poses() -> void:
 		var t := _slider(0.1, 3.0, float(p["time"]), "%.2f с", func(x: float) -> void:
 			poses[i]["time"] = snappedf(x, 0.05)
 			_save_poses())
-		t.custom_minimum_size = Vector2(210, 0)
+		t.custom_minimum_size = Vector2(170, 0)
 		t.tooltip_text = "сколько секунд герой идёт в эту позу"
 		head.add_child(t)
 		head.add_child(_btn("↑", func() -> void: _move_pose(i, -1), "Tile"))
 		head.add_child(_btn("↓", func() -> void: _move_pose(i, 1), "Tile"))
 		head.add_child(_btn("✕", func() -> void: _delete_pose(i), "Tile"))
+		var one := _btn("⧉", func() -> void: _copy_for_ai(i), "Tile")
+		one.tooltip_text = "скопировать эту позу для ИИ: словами, числами и картинкой («вот так хочу»)"
+		head.add_child(one)
 		v.add_child(head)
 		# row 2: how it goes there, and whether it stays
 		var bottom := HBoxContainer.new()
@@ -1114,10 +1140,12 @@ func _fill_poses() -> void:
 		hold.theme_type_variation = "Tile"
 		hold.tooltip_text = "поза стоит, пока действие не отпустят (как «руки в боки»)"
 		bottom.add_child(hold)
+
 		v.add_child(bottom)
 		if i == _sel:
 			v.add_child(_btn("Заменить позу %d на то, как стоит герой сейчас" % (i + 1), func() -> void:
-				poses[i]["pose"] = pose_now.duplicate(true)
+				poses[i]["pose"] = _in_angles(pose_now)
+				_log("pose", "заменена поза %d: %s" % [i + 1, _pose_words(poses[i]["pose"])], poses[i]["pose"])
 				_fill_poses()
 				_save_poses()
 				_say("Поза %d заменена." % (i + 1)), "Main"))
@@ -1259,6 +1287,18 @@ func _play(id: String) -> void:
 				_due_lines.append(line)
 			_pending = {}
 	_say("%s%s" % [_title_of(act, id), "  · действие рубрики" if world_action_ids.has(id) else ""])
+	var how := {"id": id}
+	if act.get("params", {}).has("side"):
+		how["side"] = _side
+	if _elbow_say != "":
+		how["elbow"] = _elbow_say
+	if absf(_energy - 1.0) > 0.01:
+		how["energy"] = _energy
+	if absf(_speed - 1.0) > 0.01:
+		how["speed"] = _speed
+	if _over_mode:
+		how["over"] = true
+	_log("action", "«%s» на %s" % [_title_of(act, id), "всех героях" if actors.size() > 1 else str(_hero_def(hero_id).get("title", hero_id))], how)
 	_show_faults(id)
 	_update_how()
 
@@ -1470,6 +1510,7 @@ func _show_faults(id: String) -> void:
 	if said.is_empty():
 		return
 	var main: bool = data["actions"][id].get("stage1", false)
+	_log("fault", "«%s» у героя «%s»: %s" % [_title_of(actions().get(id, {}), id), str(_hero_def(hero_id).get("title", hero_id)), ", ".join(said.keys())])
 	_faults_text.text = "Брак у этого героя: %s. %s" % [", ".join(said.keys()),
 		"Основное действие: из-за него герой не проходит проверку." if main else "Не основное: героя не валит."]
 	_faults_text.add_theme_color_override("font_color", C_INK)
@@ -1553,6 +1594,250 @@ static func _hand_of(arm: Dictionary) -> Vector2:
 	return Vector2(p[0], p[1])
 
 
+## THE LOG: what happened in the window, newest last (it outlives a reload, and is written to log.jsonl beside
+## the poses for the assistant to read). Any line, or all of them, can be copied for the assistant.
+static var _log_lines: Array = []    # [{t, kind, text, data}]
+static var _log_open := false
+static var _logged_where := ""
+var _log_card: PanelContainer
+var _log_list: VBoxContainer
+const LOG_KEEP := 300
+const LOG_KINDS := {"open": "окно", "hero": "герой", "action": "действие", "fault": "брак", "pose": "поза",
+	"save": "сохранено", "ai": "ИИ", "file": "файл", "copy": "копия"}
+
+
+func _log(kind: String, text: String, data: Variant = null) -> void:
+	var e := {"t": Time.get_time_string_from_system(), "kind": kind, "text": text}
+	if data != null:
+		e["data"] = data
+	_log_lines.append(e)
+	if _log_lines.size() > LOG_KEEP:
+		_log_lines = _log_lines.slice(_log_lines.size() - LOG_KEEP)
+	var dir: String = str(cfg.get("state_dir", ""))
+	if dir != "":
+		DirAccess.make_dir_recursive_absolute(dir)
+		var path := dir.path_join("log.jsonl")
+		var f := FileAccess.open(path, FileAccess.READ_WRITE) if FileAccess.file_exists(path) else FileAccess.open(path, FileAccess.WRITE)
+		if f != null:
+			f.seek_end()
+			f.store_line(JSON.stringify({"time": Time.get_datetime_string_from_system(false, true), "kind": kind,
+				"text": text, "data": data, "world": cfg.get("world_title", ""), "hero": hero_id}))
+			f.close()
+	if _log_open and _log_list != null:
+		_fill_log()
+
+
+func _log_panel() -> Control:
+	_log_card = PanelContainer.new()
+	_log_card.visible = _log_open
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	_log_card.add_child(v)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
+	var t := _title("Журнал", 21)
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(t)
+	var all := _btn("Весь журнал для ИИ ⧉", func() -> void: _copy_log(-1), "Tile")
+	head.add_child(all)
+	head.add_child(_btn("Очистить", func() -> void:
+		_log_lines.clear()
+		_fill_log(), "Tile"))
+	v.add_child(head)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 170)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_log_list = VBoxContainer.new()
+	_log_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_log_list.add_theme_constant_override("separation", 2)
+	scroll.add_child(_log_list)
+	v.add_child(scroll)
+	_fill_log()
+	_log_list.resized.connect(func() -> void: scroll.scroll_vertical = int(_log_list.size.y))
+	return _log_card
+
+
+func _fill_log() -> void:
+	if _log_list == null:
+		return
+	for c in _log_list.get_children():
+		c.queue_free()
+	if _log_lines.is_empty():
+		_log_list.add_child(_note("Пока пусто. Сыграйте действие или запомните позу — здесь появится строка.", 16))
+		return
+	var from: int = maxi(_log_lines.size() - 60, 0)
+	for i in range(from, _log_lines.size()):
+		var e: Dictionary = _log_lines[i]
+		var r := HBoxContainer.new()
+		r.add_theme_constant_override("separation", 8)
+		var l := Label.new()
+		l.text = "%s  %s · %s" % [e["t"], LOG_KINDS.get(e["kind"], e["kind"]), e["text"]]
+		l.clip_text = true
+		l.tooltip_text = l.text
+		l.mouse_filter = Control.MOUSE_FILTER_PASS
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.add_theme_font_size_override("font_size", 16)
+		if e["kind"] == "fault":
+			l.add_theme_color_override("font_color", C_MAIN)
+		r.add_child(l)
+		var cp := _btn("⧉", func() -> void: _copy_log(i), "Tile")
+		cp.tooltip_text = "скопировать эту строку для ИИ"
+		r.add_child(cp)
+		_log_list.add_child(r)
+
+
+## The head of anything copied for the assistant: where, who (the hero in words, its picture), how ready it is.
+func _hero_info() -> String:
+	var h: Dictionary = _hero_def(hero_id)
+	var dir: String = str(h.get("dir", ""))
+	var out: Array = ["Мастерская ТадамШоу · рубрика «%s» · герой «%s» (%s)" % [str(cfg.get("world_title", "")), str(h.get("title", hero_id)), hero_id]]
+	var hj: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.get_base_dir().path_join("hero.json"))) if dir != "" and FileAccess.file_exists(dir.get_base_dir().path_join("hero.json")) else null
+	var about: Array = []
+	if hj is Dictionary:
+		for k: String in ["trait", "about"]:
+			var v: Variant = hj.get(k, null)
+			if v is Dictionary:
+				v = v.get("ru", v.get("en", ""))
+			if v is String and v != "":
+				about.append(v)
+	if h.has("height"):
+		about.append("ростом %.2f высоты кадра" % float(h["height"]))
+	var ready: Dictionary = h.get("ready", {})
+	if not ready.is_empty():
+		about.append("готовность %d%%%s" % [int(ready.get("percent", 0)), ("; с браком: " + ", ".join(ready.get("bad", []))) if not (ready.get("bad", []) as Array).is_empty() else ""])
+	if not about.is_empty():
+		out.append("О герое: " + "; ".join(about))
+	if dir != "" and FileAccess.file_exists(dir.path_join("portrait.png")):
+		out.append("Портрет героя (открой его): " + dir.path_join("portrait.png"))
+	if row != "one":
+		out.append("На сцене: %s" % ("все герои рубрики" if row == "all" else "пробные тела"))
+	return "\n".join(out)
+
+
+func _copy_log(i: int) -> void:
+	var lines: Array = [_hero_info()]
+	var pick: Array = [_log_lines[i]] if i >= 0 else _log_lines
+	lines.append("Журнал мастерской%s:" % ("" if i >= 0 else " (%d строк, старые сверху)" % pick.size()))
+	for e: Dictionary in pick:
+		lines.append("%s %s · %s%s" % [e["t"], LOG_KINDS.get(e["kind"], e["kind"]), e["text"],
+			("  " + JSON.stringify(e["data"])) if e.has("data") else ""])
+	if i < 0:
+		lines.append("Журнал файлом: " + str(cfg.get("state_dir", "")).path_join("log.jsonl"))
+	DisplayServer.clipboard_set("\n".join(lines))
+	_say("Скопировано для ИИ: %s. Вставьте в чат." % ("строка журнала" if i >= 0 else "весь журнал"))
+
+
+## COPY FOR AI: what the person shows, for the assistant to see. The hero is put in the pose (or in each pose in
+## turn), a picture is taken without the dots and kept beside the poses (.tadam/workshop/shots/), and the
+## clipboard gets the rubric, the hero, the pose in words and in numbers, the timing, and the picture's path.
+var _copying := false
+
+
+func _copy_for_ai(which: int) -> void:
+	if _copying or poses.is_empty():
+		return
+	_copying = true
+	var keep := pose_now.duplicate(true)
+	var keep_sel := _sel
+	var dir: String = str(cfg.get("state_dir", "")).path_join("shots")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var idx: Array = [which] if which >= 0 else range(poses.size())
+	_say("Снимаю %s…" % ("позу %d" % (which + 1) if which >= 0 else "позы"))
+	var pics: Array = []
+	for i: int in idx:
+		pose_now = (poses[i]["pose"] as Dictionary).duplicate(true)
+		_apply_pose()
+		pics.append(await _snap_hero())
+	var files: Array = []
+	for k in pics.size():
+		var f: String = dir.path_join("pose-%d.png" % (int(idx[k]) + 1))
+		(pics[k] as Image).save_png(f)
+		files.append(f)
+	var sheet := ""
+	if which < 0 and pics.size() > 1:
+		sheet = dir.path_join("poses.png")
+		_strip(pics).save_png(sheet)
+	pose_now = keep
+	_sel = keep_sel
+	_apply_pose()
+	var lines: Array = [_hero_info()]
+	if which >= 0:
+		var p: Dictionary = poses[which]
+		lines.append("Поза %d из %d — вот так я хочу: %s" % [which + 1, poses.size(), _pose_words(p["pose"])])
+		lines.append("Картинка (открой её): %s" % files[0])
+		lines.append("Поза числами (руки — углы в градусах: raise 0 вниз, 90 в сторону, 180 вверх; elbow + сгиб в ту же сторону; ноги и тело — в длинах ноги): %s" % JSON.stringify(p["pose"]))
+	else:
+		lines.append("Движение из %d поз — вот так я хочу:" % poses.size())
+		if sheet != "":
+			lines.append("Раскадровка, слева направо (открой её): %s" % sheet)
+		for k in poses.size():
+			var p2: Dictionary = poses[k]
+			lines.append("%d. %.2f с, %s%s — %s" % [k + 1, float(p2["time"]), EASE_WORDS.get(str(p2.get("ease", "inout")), "плавно"),
+				", держать" if bool(p2.get("hold", false)) else "", _pose_words(p2["pose"])])
+			lines.append("   картинка: %s" % files[k])
+			lines.append("   числами: %s" % JSON.stringify(p2["pose"]))
+		lines.append("Все позы файлом: %s · черновик действия: tadam action from-poses <id> --title \"…\"" % str(cfg.get("state_dir", "")).path_join("poses.json"))
+	DisplayServer.clipboard_set("\n".join(lines))
+	_log("copy", "скопировано для ИИ: %s" % ("поза %d" % (which + 1) if which >= 0 else "все позы (%d)" % poses.size()))
+	_copying = false
+	_say("Скопировано для ИИ: %s. Вставьте в чат." % ("поза %d с картинкой" % (which + 1) if which >= 0 else "все позы с раскадровкой"))
+
+
+const EASE_WORDS := {"inout": "плавно", "out": "резкий старт", "in": "резкий конец", "linear": "ровно"}
+
+
+## The hero as it stands now, still (the dots hidden, the idle life paused while the picture is taken).
+func _snap_hero() -> Image:
+	var was_still := still
+	still = true
+	_set_life()
+	_dots.visible = false
+	for k in 45:
+		await get_tree().physics_frame
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	_dots.visible = true
+	still = was_still
+	_set_life()
+	# the hero's box on the stage (its dots, and a margin), in the picture's pixels
+	var a := _main()
+	var pts := _dot_points(a)
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for k: String in pts:
+		lo = lo.min(pts[k])
+		hi = hi.max(pts[k])
+	var vis: Vector2 = get_viewport().get_visible_rect().size
+	var kx: float = float(img.get_width()) / vis.x
+	var ky: float = float(img.get_height()) / vis.y
+	var top: float = lo.y - (hi.y - lo.y) * 0.25
+	var r := Rect2i(int(maxf(lo.x - 160.0, 0.0) * kx), int(maxf(top, 0.0) * ky),
+		int((minf(hi.x + 160.0, SIZE.x) - maxf(lo.x - 160.0, 0.0)) * kx), int((minf(floor_y + 30.0, SIZE.y) - maxf(top, 0.0)) * ky))
+	r = r.intersection(Rect2i(0, 0, img.get_width(), img.get_height()))
+	return img.get_region(r)
+
+
+## The pictures side by side, one height, on the stage's paper.
+static func _strip(pics: Array) -> Image:
+	var h := 0
+	for im: Image in pics:
+		h = maxi(h, im.get_height())
+	var w := 0
+	var scaled: Array = []
+	for im: Image in pics:
+		var c: Image = im.duplicate()
+		c.resize(int(c.get_width() * float(h) / c.get_height()), h, Image.INTERPOLATE_BILINEAR)
+		scaled.append(c)
+		w += c.get_width() + 16
+	var out := Image.create(w, h, false, (scaled[0] as Image).get_format())
+	out.fill(Color("efe8da"))
+	var x := 0
+	for c: Image in scaled:
+		out.blit_rect(c, Rect2i(0, 0, c.get_width(), c.get_height()), Vector2i(x, 0))
+		x += c.get_width() + 16
+	return out
+
+
 ## A pose as it plays: what it does not say (a shoulder, the head's drop) is at rest, not left where it was.
 static func _full(pose: Dictionary) -> Dictionary:
 	var out := pose.duplicate(true)
@@ -1573,6 +1858,7 @@ func _fix() -> void:
 	var before: Dictionary = poses[-1]["pose"] if not poses.is_empty() else rest_pose()
 	var kept := _in_angles(pose_now)
 	poses.append({"pose": kept, "time": way_time(before, kept), "ease": "inout", "hold": false})
+	_log("pose", "запомнена поза %d: %s" % [poses.size(), _pose_words(kept)], kept)
 	_sel = -1
 	_fill_poses()
 	_save_poses()
@@ -1621,6 +1907,7 @@ func _move_pose(i: int, d: int) -> void:
 
 
 func _delete_pose(i: int) -> void:
+	_log("pose", "удалена поза %d" % (i + 1))
 	poses.remove_at(i)
 	_sel = -1 if _sel == i else (_sel - 1 if _sel > i else _sel)
 	_fill_poses()
@@ -1695,6 +1982,7 @@ func _save_action() -> void:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	f.store_string(JSON.stringify(act, " ", false) + "\n")
 	f.close()
+	_log("save", "сохранено действие «%s» из %d поз: %s" % [id, poses.size(), path])
 	reload_actions()
 	_stamp = _actions_stamp()
 	_fill_tiles()
@@ -1919,6 +2207,7 @@ func _watch_files() -> void:
 		if tab == 0 and chosen != "" and actions().has(chosen):
 			_play(chosen)
 			_say("Файл изменился — «%s» играет заново." % _title_of(actions()[chosen], chosen))
+			_log("file", "файл действия изменился, «%s» играет заново" % _title_of(actions()[chosen], chosen))
 	var dir: String = str(cfg.get("state_dir", ""))
 	if dir == "":
 		return
@@ -1929,6 +2218,7 @@ func _watch_files() -> void:
 			_cmd_seen = int(c["n"])
 			match str(c.get("do", "")):
 				"fix":
+					_log("ai", "ИИ попросил запомнить позу")
 					if tab == 1:
 						_fix()
 				"pose":
@@ -2008,6 +2298,19 @@ func _scripted() -> void:
 			"row":                         # row:proof: as the «Один герой / Все герои / Пробные тела» buttons do
 				row = bits[1]
 				_reload()
+			"log":                         # log: open the log; log:<n>: copy its n-th line (0 = all)
+				if bits.size() > 1:
+					_copy_log(int(bits[1]) - 1)
+				else:
+					_log_open = true
+					_log_card.visible = true
+					_fill_log()
+			"copy":                        # copy:<n> (0 = all): as the «Для ИИ» buttons do
+				_copy_for_ai(int(bits[1]) - 1)
+			"clip":                        # clip:<file>: what the clipboard holds now
+				var cf := FileAccess.open(":".join(bits.slice(1)), FileAccess.WRITE)
+				cf.store_string(DisplayServer.clipboard_get())
+				cf.close()
 			"side":                        # side:left: as the «Рука» buttons do
 				_pick_side(bits[1])
 			"elbow":

@@ -332,3 +332,27 @@ def test_a_pose_made_by_hand_is_kept_in_angles(tmp_path):
     assert max(abs(rel(pa)[i] - rel(pb)[i]) for i in range(2)) < 8.0, (rel(pa), rel(pb))
     act = workshop.from_poses(poses, "angled", base=rest)
     assert "raise" in act["phases"][0]["arm_r"]
+
+
+@needs_godot
+def test_a_pose_and_the_log_are_copied_for_the_assistant(tmp_path):
+    """«⧉» on a pose: the clipboard says the rubric, the hero, the pose in words and numbers and where its picture
+    is (and the picture is there); «весь журнал»: what was played, with its settings, and where the log file is."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    one, logc = (tmp_path / "one.txt").as_posix(), (tmp_path / "log.txt").as_posix()
+    seq = (f"still@5,play:wave@20,tab:1@100,drag:hand_r:480:520@120,fix@180,copy:1@190,clip:{one}@300,"
+           f"log:0@310,clip:{logc}@320,quit@322")
+    cmd = workshop.command(d / "config.json")
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
+    text = Path(one).read_text(encoding="utf-8")
+    assert "Поза 1 из 1" in text and "raise" in text and "archivist" in text, text
+    pic = next(l.split(": ", 1)[1] for l in text.splitlines() if l.startswith("Картинка"))
+    assert Path(pic).is_file()
+    log = Path(logc).read_text(encoding="utf-8")
+    assert "«" in log and "wave" in log and "log.jsonl" in log, log
+    assert (d / "log.jsonl").is_file()
