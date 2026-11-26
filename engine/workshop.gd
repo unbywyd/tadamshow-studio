@@ -1202,7 +1202,7 @@ func _poses_page() -> Control:
 	box.add_child(actions_row)
 	# which arm is drawn over the other (a hand raised across the body, over the other arm)
 	var fr := "r" if bool(pose_now.get("arm_r", {}).get("front", false)) else ("l" if bool(pose_now.get("arm_l", {}).get("front", false)) else "")
-	_front_seg = _seg([["Как нарисовано", ""], ["Правая", "r"], ["Левая", "l"]], fr, func(v: String) -> void:
+	_front_seg = _seg([["Как нарисовано", ""], ["Слева на экране", "l"], ["Справа на экране", "r"]], fr, func(v: String) -> void:
 		for ch: String in ["arm_l", "arm_r"]:
 			if pose_now.get(ch, null) is Dictionary:
 				if ch.right(1) == v:
@@ -1210,7 +1210,7 @@ func _poses_page() -> Control:
 				else:
 					pose_now[ch].erase("front")
 		_apply_pose()
-		_say("Спереди: %s." % {"": "как нарисовано", "r": "правая рука", "l": "левая рука"}[v]), "Tile")
+		_say("Спереди: %s." % {"": "как нарисовано", "r": "рука справа на экране", "l": "рука слева на экране"}[v]), "Tile")
 	box.add_child(_line("Спереди", _front_seg))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -2107,7 +2107,7 @@ func _show_front() -> void:
 		return
 	var fr := "r" if bool(pose_now.get("arm_r", {}).get("front", false)) else ("l" if bool(pose_now.get("arm_l", {}).get("front", false)) else "")
 	for b: Button in _front_seg.get_children():
-		b.set_pressed_no_signal(["", "r", "l"][b.get_index()] == fr)
+		b.set_pressed_no_signal(["", "l", "r"][b.get_index()] == fr)
 
 
 ## A pose as it plays: what it does not say (a shoulder, the head's drop) is at rest, not left where it was.
@@ -2718,7 +2718,7 @@ func _scripted() -> void:
 			"front":                       # front:r / front:l / front: (as drawn): as the «Спереди» buttons do
 				var fv: String = bits[1] if bits.size() > 1 else ""
 				for b: Button in _front_seg.get_children():
-					if ["", "r", "l"][b.get_index()] == fv:
+					if ["", "l", "r"][b.get_index()] == fv:
 						b.emit_signal("pressed")
 			"copy":                        # copy:<n> (0 = all): as the «Для ИИ» buttons do
 				_copy_for_ai(int(bits[1]) - 1)
