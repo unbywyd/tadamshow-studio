@@ -20,6 +20,11 @@ extends RefCounted
 ##         walk: leg lengths to walk (forward in profile, to the right seen from the front; negative = back / left),
 ##               with "speed" in leg lengths a second; the phase lasts as long as the walk
 ##         seat: sit down on something this many leg lengths high (0 = the floor); "rest" stands up
+##         hip, knee (both legs) or hip_l / hip_r / knee_l / knee_r: the ANGLES of the legs, degrees from the pelvis:
+##              hip 0 straight down, + out to its side; knee 0 straight, + the shin turns further out, - back in.
+##              Legs said so are FREE: the feet leave their places and the legs go with the body (a hero lying
+##              down, kicking in the air); the floor still holds everything up. "rest" or a place for a foot
+##              plants them again (the foot steps back to its spot).
 ##   body  lean: degrees (+ = to the action's side)   chest: degrees
 ##   head  a number = tilt in degrees, or { "tilt": ..., "drop": ... }: drop = the head drawn into the collar
 ##         (+, shares of its height, at most 0.25) or stretched up (-, at most 0.15)
@@ -201,6 +206,8 @@ var _floor_held: Dictionary = {}    # hand -> its place was under the floor and 
 var _under_run := 0
 var _lift_fix := 0.0                # px the body rose so a pelvis lying turned stays on the floor
 var _lean_fix := 0.0                # degrees the lean gave way so the body lies on the floor, not in it
+var _free_w := 0.0                  # 0..1: the legs are free (said in angles), eased: the laws of a STANDING body fade out
+var _all_under_was := -INF          # last step: how far the lowest part of a body with free legs was under the floor
 var _under_was := Vector2(-INF, -INF)   # last step: how far the chest/head and the pelvis were under the floor
 var _rest_body := Vector2.ZERO     # where the body stood when set up
 var _limbs: Dictionary = {}         # names of the parts in arms and legs
@@ -250,7 +257,8 @@ func setup(p: Puppet, body: BodyPhysics, floor_at: float, stage_size: Vector2) -
 			front = maxf(front, (box.end.x - home.x) if facing >= 0.0 else (home.x - box.position.x))
 	for ch in CHANNELS:
 		chans[ch] = Chan.new()
-	rest["legs"] = {"drop": 0.0, "shift": 0.0, "foot_l": Vector2.ZERO, "foot_r": Vector2.ZERO}
+	rest["legs"] = {"drop": 0.0, "shift": 0.0, "foot_l": Vector2.ZERO, "foot_r": Vector2.ZERO,
+		"hip_l": 0.0, "knee_l": 0.0, "hip_r": 0.0, "knee_r": 0.0, "free": false}
 	rest["body"] = {"lean": 0.0, "chest": 0.0}
 	rest["head"] = {"tilt": 0.0, "drop": 0.0}
 	for ch in ["arm_l", "arm_r"]:
@@ -520,7 +528,47 @@ func _resolve(ph: Dictionary, side: String, prm: Dictionary) -> Dictionary:
 	for ch: String in ["arm_l", "arm_r"]:
 		if out.get(ch, null) is Dictionary and (out[ch] as Dictionary).has("raise"):
 			out[ch] = _from_angles(ch, out[ch])
+	if out.get("legs", null) is Dictionary:             # legs in angles: "hip" / "knee" mean both; they are FREE
+		var lg: Dictionary = (out["legs"] as Dictionary).duplicate()
+		for key: String in ["hip", "knee"]:
+			if lg.has(key):
+				for sd: String in ["_l", "_r"]:
+					if not lg.has(key + sd):
+						lg[key + sd] = lg[key]
+				lg.erase(key)
+		if lg.has("hip_l") or lg.has("hip_r") or lg.has("knee_l") or lg.has("knee_r"):
+			lg["free"] = true
+		out["legs"] = lg
 	return out
+
+
+## Legs going FREE (said in angles) start from the angles they have now; legs planted again start from where
+## the feet are now and step back to their places (never a jump either way).
+func _legs_mode(c: Chan, spec: Variant) -> void:
+	var p := puppet
+	var want_free: bool = spec is Dictionary and bool((spec as Dictionary).get("free", false))
+	var is_free: bool = bool(c.now.get("free", false))
+	if want_free and not is_free:
+		var turn: float = p.root.node.global_rotation
+		for sd: String in ["l", "r"]:
+			var ch: Variant = p.chains["foot_" + sd]
+			var s := _sign("foot_" + sd)
+			var th: float = (p.joint_position(ch.b.name) - p.joint_position(ch.a.name)).angle()
+			var sh: float = (p.joint_position(ch.end.name) - p.joint_position(ch.b.name)).angle()
+			c.now["hip_" + sd] = rad_to_deg(wrapf((PI / 2.0 - (th - turn)) * s, -PI, PI))
+			c.now["knee_" + sd] = rad_to_deg(wrapf((th - sh) * s, -PI, PI))
+		c.now["free"] = true
+	elif not want_free and is_free and (spec is String or (spec is Dictionary and not (spec as Dictionary).is_empty())):
+		for f: String in foot_home:
+			var s2 := _sign(f)
+			var off: Vector2 = (p.target_position(f) - (foot_home[f] as Vector2)) / leg
+			c.now[f] = Vector2(off.x * s2, maxf(-off.y, 0.0) if -off.y > 0.05 else 0.0)   # (just over the floor: standing)
+			p.set_bend(f, "out")
+		c.now["free"] = false
+		# what the floor lifted the body by becomes its own height: it goes on from where it is, and the planted
+		# legs are not left reaching up after a body the floor still held
+		c.now["drop"] = float(c.now.get("drop", 0.0)) - _lift_fix / leg
+		_lift_fix = 0.0
 
 
 ## An arm said in ANGLES ("raise", "elbow": a number) becomes what the rest of the engine plays: the place of the
@@ -600,6 +648,15 @@ func _mirror_legs(v: Variant) -> Variant:
 	var d: Dictionary = (v as Dictionary).duplicate(true)
 	if d.has("shift"):
 		d["shift"] = _negate(d["shift"])
+	for key: String in ["hip", "knee"]:               # (their angles are measured outward: only the sides swap)
+		var kl: Variant = d.get(key + "_l", null)
+		var kr: Variant = d.get(key + "_r", null)
+		d.erase(key + "_l")
+		d.erase(key + "_r")
+		if kr != null:
+			d[key + "_l"] = kr
+		if kl != null:
+			d[key + "_r"] = kl
 	var l: Variant = d.get("foot_l", null)
 	var r: Variant = d.get("foot_r", null)
 	d.erase("foot_l")
@@ -659,6 +716,8 @@ func _next_phase(r: Run) -> void:
 			r.length = INF
 	for ch: String in r.owned:
 		var c: Chan = chans[ch]
+		if ch == "legs" and ph.has("legs"):
+			_legs_mode(c, ph["legs"])
 		c.from = c.now.duplicate()
 		c.v0 = c.vel.duplicate()
 		# The speed carried on (_carry) is for a value CUT OFF on its way. A phase that ran to its end on a curve
@@ -747,6 +806,8 @@ func _next_phase(r: Run) -> void:
 			_seated = true
 		elif ch == "legs" and not c.goal.is_empty():
 			_seated = bool(r.spec.get("seated", false))     # (a whole sit-down, on the way down and up too)
+		if ch == "legs" and bool(c.now.get("free", false)):
+			_seated = true                                  # (free legs carry no weight: the floor holds the body)
 		if ch.begins_with("arm") and c.goal.has("aim"):
 			c.goal["aim_w"] = 1.0
 		elif ch.begins_with("arm") and c.goal.has("at"):
@@ -938,7 +999,7 @@ func _advance_values(r: Run) -> void:
 	for ch: String in r.owned:
 		var c: Chan = chans[ch]
 		for key: String in c.goal:
-			if key in ["look", "contact", "jump", "forward", "walk", "speed", "seat", "grab", "release", "throw", "reach", "catch", "gait", "elbow", "_side", "exact"]:
+			if key in ["look", "contact", "jump", "forward", "walk", "speed", "seat", "grab", "release", "throw", "reach", "catch", "gait", "elbow", "_side", "exact", "free"]:
 				continue
 			var spec: Variant = c.goal[key]
 			if ch.begins_with("arm") and key == "at":
@@ -1235,7 +1296,9 @@ func _apply() -> void:
 	var lg: Dictionary = chans["legs"].now
 	var bd: Dictionary = chans["body"].now
 	var hd: Dictionary = chans["head"].now
-	phys.squat = (float(lg["drop"]) if _seated else minf(float(lg["drop"]), max_drop)) * leg
+	# (legs just planted again: the limit of a standing squat comes back over a moment, not in one step)
+	var deep: float = maxf(float(lg["drop"]) - max_drop, 0.0) * _free_w
+	phys.squat = (float(lg["drop"]) if _seated else minf(float(lg["drop"]), max_drop + deep)) * leg
 	phys.max_sink = INF if _seated or max_drop >= 0.3 else max_drop * leg     # seated, the cloth folds on the lap
 	if not _gait.is_empty():
 		var gu: float = clampf(_gait["t"] / _gait["dur"], 0.0, 1.0)
@@ -1254,13 +1317,13 @@ func _apply() -> void:
 	# leaning or bending, the hips go the other way so the weight stays over the feet (law)
 	if not _seated and not phys.airborne:
 		var over_w: float = sin(deg_to_rad(float(bd["lean"]))) * 0.45 + sin(deg_to_rad(float(bd["chest"]))) * 0.35
-		body.x -= over_w * leg * (facing if view == "side" else 1.0)     # (lean + is forward in profile)
+		body.x -= over_w * leg * (facing if view == "side" else 1.0) * (1.0 - _free_w)     # (lean + is forward in profile)
 	# on one foot the body moves over it (law): half way, smoothly
 	var standing: Array = []
 	for f: String in foot_home:
 		var g: Variant = chans["legs"].goal.get(f, null)          # (a foot about to rise counts as risen: the
 		var going_up: bool = g is Array and float(g[1]) > 0.01     # weight goes over before it leaves the floor)
-		if (lg[f] as Vector2).y <= 0.01 and not going_up and _gait.get("swing", "") != f:
+		if (lg[f] as Vector2).y <= 0.01 and not going_up and _gait.get("swing", "") != f and not bool(lg.get("free", false)):
 			standing.append(f)
 	var over := 0.0
 	if standing.size() == 1 and _gait.is_empty() and not phys.airborne:
@@ -1289,7 +1352,7 @@ func _apply() -> void:
 		var turn: float = deg_to_rad(lean) * signf(p.scale.x)
 		for f: String in foot_home:
 			var lift: Vector2 = lg[f]
-			if lift.y > 0.01 or _gait.get("swing", "") == f:
+			if lift.y > 0.01 or _gait.get("swing", "") == f or bool(lg.get("free", false)):
 				continue
 			var ankle: Vector2 = foot_home[f]
 			var reach: float = REACH * leg
@@ -1313,7 +1376,9 @@ func _apply() -> void:
 		# Held plumb on a lying body it points into the floor and has to be squashed to a strip.)
 		var plumb: float = 1.0 if view == "side" else 1.0 - smoothstep(25.0, 45.0, absf(lean))
 		skirt.goal = clampf(-deg_to_rad(lean) * plumb, skirt.lo, skirt.hi) if cloth != null else 0.0
-	p.set_handle_angle("chest", float(bd["chest"]) + 0.5 * float(bd["lean"]))
+	# (a standing body that leans bends its chest half as much again; a body with free legs lies as it is written)
+	_free_w = move_toward(_free_w, 1.0 if bool(lg.get("free", false)) else 0.0, DT / 0.3)
+	p.set_handle_angle("chest", float(bd["chest"]) + 0.5 * float(bd["lean"]) * (1.0 - _free_w))
 	p.set_handle_angle("head", float(hd["tilt"]) + life * 2.5 * sin(tt * 0.07))
 	# the head drawn into the collar (+) or stretched up (-), in shares of its height; the shoulders raised (+) or
 	# dropped (-) in arm lengths, capped so the arm never leaves its socket by more than a puppet's joint allows
@@ -1324,7 +1389,21 @@ func _apply() -> void:
 	for ch2 in ["arm_l", "arm_r"]:
 		var up: float = clampf(float(chans[ch2].now.get("shoulder", 0.0)), -0.08, 0.16)
 		p.set_shift(p.chains["hand_" + ch2.right(1)].a.name, Vector2(0.0, -up * arm / kk))
-	if not phys.airborne:
+	if not phys.airborne and bool(lg.get("free", false)):
+		# legs in angles: from the hips as the pelvis holds them now, the knee on the side its sign says
+		var kq: float = absf(p.scale.y)
+		var turn_f: float = deg_to_rad(lean)
+		for f: String in foot_home:
+			var sd: String = f.right(1)
+			var s := _sign(f)
+			var fc: Variant = p.chains[f]
+			var th: float = PI / 2.0 - s * deg_to_rad(float(lg["hip_" + sd])) + turn_f
+			var sh: float = th - s * deg_to_rad(float(lg["knee_" + sd]))
+			var hp: Vector2 = body + (hip[f] as Vector2).rotated(turn_f * signf(p.scale.x))
+			p.set_target(f, hp + (Vector2.from_angle(th) * fc.l1 + Vector2.from_angle(sh) * fc.l2) * kq * REACH)
+			if absf(float(lg["knee_" + sd])) > 3.0:
+				p.set_bend(f, -_lsign(f) * signf(float(lg["knee_" + sd])))
+	elif not phys.airborne:
 		for f: String in foot_home:
 			var lift: Vector2 = lg[f]
 			var s := _sign(f)
@@ -1463,6 +1542,25 @@ func _apply() -> void:
 	var hips_next: float = hips_under + maxf(hips_under - _under_was.y, 0.0) if _under_was.y > -INF else hips_under
 	var next: float = under + maxf(under - _under_was.x, 0.0) if _under_was.x > -INF else under
 	_under_was = Vector2(under, hips_under)
+	# FREE LEGS: nothing holds the body up but the floor. Whatever part is lowest lies ON it: the whole body is
+	# lifted by as much as that part would be under (one law for lying, sitting on the ground, a leg in the air)
+	if bool(lg.get("free", false)):
+		var all_under := -INF
+		for part: String in p.parts:
+			all_under = maxf(all_under, _lowest(part) - floor_y)
+		var all_next: float = all_under + maxf(all_under - _all_under_was, 0.0) if _all_under_was > -INF else all_under
+		_all_under_was = all_under
+		if all_next > 0.0:
+			_lift_fix += minf(all_next, 0.2 * leg)
+		elif all_under < -0.02 * leg:
+			_lift_fix = move_toward(_lift_fix, 0.0, 0.5 * leg * DT)
+		_lean_fix = move_toward(_lean_fix, 0.0, 20.0 * DT)
+		hips_next = -INF
+		hips_under = 0.0
+		next = -INF
+		under = 0.0
+	else:
+		_all_under_was = -INF
 	if hips_next > 0.0:
 		_lift_fix += minf(hips_next, 0.1 * leg)
 	elif hips_under < -0.03 * leg:
@@ -1533,7 +1631,7 @@ func _measure() -> void:
 	_landed = 0 if phys.airborne else _landed + 1
 	if _landed > 20:                        # a foot that has just come down is still being caught
 		for f: String in foot_home:
-			if (chans["legs"].now[f] as Vector2).y <= 0.01 and _gait.get("swing", "") != f:
+			if (chans["legs"].now[f] as Vector2).y <= 0.01 and _gait.get("swing", "") != f and not bool(chans["legs"].now.get("free", false)):
 				var sl: float = p.handle_position(f).distance_to(p.target_position(f)) / leg
 				if OS.has_environment("MOTION_DEBUG") and sl > 0.03 and steps % 4 == 0:
 					var cf: Variant = p.chains[f]

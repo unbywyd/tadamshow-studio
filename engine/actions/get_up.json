@@ -58,45 +58,53 @@
  ],
  "front": [
   {
-   "time": 0.35,
+   "time": 0.6,
+   "head": 4,
    "legs": {
-    "seat": 0.22,
-    "foot_l": [
-     0.3,
-     0.1
-    ],
-    "foot_r": [
-     0.3,
-     0.1
-    ]
+    "hip": 8,
+    "knee": 0,
+    "drop": 0.9
+   },
+   "body": {
+    "lean": 82
    },
    "arms": {
-    "at": [
-     0.3,
-     0.75
-    ]
+    "raise": 150,
+    "elbow": 10
+   }
+  },
+  {
+   "time": 0.5
+  },
+  {
+   "time": 0.6,
+   "legs": {
+    "hip": 12,
+    "knee": -25,
+    "drop": 0.55
+   },
+   "body": {
+    "lean": 30
+   },
+   "arms": {
+    "raise": 40,
+    "elbow": 20
    },
    "head": 0
   },
   {
-   "time": 0.5,
+   "time": 0.45,
    "legs": {
-    "drop": 0.32,
-    "foot_l": [
-     0.0,
-     0.0
-    ],
-    "foot_r": [
-     0.0,
-     0.0
-    ],
-    "shift": 0.0
+    "hip": 4,
+    "knee": -6,
+    "drop": 0.3
+   },
+   "body": {
+    "lean": 6
    },
    "arms": {
-    "at": [
-     0.35,
-     0.5
-    ]
+    "raise": 25,
+    "elbow": 10
    }
   },
   {

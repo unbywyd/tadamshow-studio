@@ -42,6 +42,10 @@ All of it is free: no paid call is made.
   written into the belly IS in the belly: the check says so). A hand that must TOUCH something: a place,
   `"at": {"to": "hip"}` (or `[out, down]`); there the engine picks the elbow, or the action says it
   (`"elbow": "out"`). Write angles by default; a place only for a touch, a thing, a partner.
+- **Legs in angles**: `"legs": {"hip": 8, "knee": 0, "drop": 0.9}` (or `hip_l` / `knee_r`...): hip 0 down, + out;
+  knee − bends it out. Legs said so are FREE (a body lying, falling, a leg kicked up): nothing holds the body but
+  the floor — whatever part is lowest lies ON it, the body is lifted. `"legs": "rest"` (or a foot's place) plants
+  them again; sit the body up straight with the legs under it first, then plant (see `fall`, `get_up`).
 - Any number may swing: `{ "base": 0, "amp": 24, "rate": 2.0 }`. A phase: `time` (s), `ease` (inout / out / in /
   linear), `loop: true` (lasts the call's `duration`). Write it for the RIGHT side: the engine mirrors it.
 - The last phase named `return` brings back what the action moved. Only words, numbers and lists: never a path
