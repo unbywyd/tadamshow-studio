@@ -1,0 +1,39 @@
+{
+ "id": "handshake_b",
+ "title": "пожать руки (второй в паре)",
+ "group": "two",
+ "partner_only": true,
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.6,
+   "arm_r": {
+    "raise": 1,
+    "elbow": -54
+   },
+   "arm_l": {
+    "raise": -54,
+    "elbow": -6
+   }
+  },
+  {
+   "time": 1.3,
+   "arm_r": {
+    "raise": 1,
+    "elbow": {
+     "base": -54,
+     "amp": 7,
+     "rate": 2.5
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ]
+}

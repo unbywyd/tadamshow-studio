@@ -1,0 +1,45 @@
+{
+ "id": "handshake_formal",
+ "title": "пожать руки сдержанно",
+ "group": "two",
+ "pair": {
+  "gap": 0.52,
+  "view": "front",
+  "partner": "handshake_b"
+ },
+ "params": {
+  "side": "right"
+ },
+ "phases": [
+  {
+   "time": 0.6,
+   "arm_r": {
+    "raise": 49,
+    "elbow": -98
+   },
+   "arm_l": {
+    "raise": -64,
+    "elbow": -7,
+    "front": true
+   }
+  },
+  {
+   "time": 1.3,
+   "arm_r": {
+    "raise": 49,
+    "elbow": {
+     "base": -98,
+     "amp": 7,
+     "rate": 2.5
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.5,
+   "arm_r": "rest",
+   "arm_l": "rest"
+  }
+ ],
+ "two": true
+}

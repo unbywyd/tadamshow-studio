@@ -559,12 +559,9 @@ func _held(it: Item, dt: float) -> void:
 		want_rot = PI * 0.5 * outward
 	elif hold is float or hold is int:
 		want_rot = deg_to_rad(float(hold)) * outward
-	# the bulk of a thing held at its edge (a mug by its handle) is on the hand's outer side, off the body
-	# ...but brought to the face (the hand above the shoulders: drinking, a phone at the ear) it turns its bulk
-	# TO the head: the mug is between the fist and the mouth, not on the far side of the fist. It turns over in the
-	# hand (through edge on), it does not jump.
-	var shoulder_y: float = mo._shoulder_at("arm_" + (it.hands[0] as String).right(1), mo.puppet.body_position()).y
-	var bulk_to: float = -outward if fist.y < shoulder_y - 0.05 * mo.arm else outward
+	# the bulk of a thing held at its edge (a mug by its handle) is INWARD, toward the body, its handle in the fist
+	# on the outer side (as a mug is carried; bulk outward read as a mug held inside out). In profile: forward.
+	var bulk_to: float = outward if mo.view == "side" else -outward
 	var mirrored: bool = (it.grip.x - 0.5) * bulk_to > 0.0 and not (hold is String and hold in ["hand", "level", "palm"])
 	# (just taken, still on its way into the fist, it is simply the right way round at once: turning over through
 	# edge on there squeezed a mug lying the other way into a thin strip under the hand)
