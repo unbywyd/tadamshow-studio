@@ -52,7 +52,8 @@
      "dx": 0.36,
      "dy": -0.46
     },
-    "contact": true
+    "contact": true,
+    "elbow": "out"
    },
    "arm_l": {
     "at": {
@@ -61,7 +62,8 @@
      "dx": 0.36,
      "dy": -0.46
     },
-    "contact": true
+    "contact": true,
+    "elbow": "out"
    },
    "head": 6
   },
@@ -80,7 +82,8 @@
      ],
      "rate": 2.0
     },
-    "contact": true
+    "contact": true,
+    "elbow": "out"
    },
    "arm_l": {
     "at": {
@@ -95,7 +98,8 @@
      "rate": 2.0,
      "phase": 0.5
     },
-    "contact": true
+    "contact": true,
+    "elbow": "out"
    },
    "head": {
     "base": 6,
