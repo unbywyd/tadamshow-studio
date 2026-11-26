@@ -106,6 +106,9 @@ var _tiles: VBoxContainer
 var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
 var _how_card: Control
+var _panel_bg: Control
+var _panel_want := Vector2.ZERO
+var _below: ColorRect               # under the stage when the window is taller than it
 var _elbow_seg: HBoxContainer
 var _tiles_scroll: ScrollContainer
 var _how_hint: Label
@@ -150,6 +153,8 @@ func _ready() -> void:
 		acts.append({"id": h["id"], "puppet": h["dir"], "x": (i + 0.8) / (heroes.size() + 0.6),
 			"height": minf(float(h.get("height", 0.36)), fit)})
 	preset = {"floor": 0.84, "seconds": 99999, "actors": acts, "items": [], "script": []}
+	# the window's base is the stage AND the panel: a narrower window shrinks both, a wider one widens the panel
+	get_tree().root.content_scale_size = Vector2i(int(SIZE.x + PANEL_W), int(SIZE.y))
 	camera_on = false
 	super._ready()
 	set_physics_process(true)
@@ -360,6 +365,10 @@ func _one_step(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	# (a control never shrinks by itself: once its content was laid out narrow it stayed too tall, cut at the
+	# bottom; it is held at the window's size, the action list scrolls inside)
+	if _panel_bg != null and _panel_bg.size != _panel_want:
+		_panel_bg.size = _panel_want
 	if _dots != null:
 		_dots.queue_redraw()
 	_poll += delta
@@ -577,6 +586,18 @@ func _gap(h := 6) -> Control:
 
 # ----------------------------------------------------------------------------- the panel
 
+## The panel takes everything right of the stage, the whole height (the window is resizable).
+func _fit_panel() -> void:
+	if _panel_bg == null or not is_instance_valid(_panel_bg):
+		return
+	var vs := get_viewport().get_visible_rect().size
+	_panel_want = Vector2(maxf(PANEL_W, vs.x - SIZE.x), maxf(SIZE.y, vs.y))
+	_panel_bg.size = _panel_want
+	if _below != null and is_instance_valid(_below):
+		_below.position = Vector2(0, SIZE.y)
+		_below.size = Vector2(SIZE.x, maxf(0.0, vs.y - SIZE.y))
+
+
 func _build_panel() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 20
@@ -584,6 +605,10 @@ func _build_panel() -> void:
 	var bg := PanelContainer.new()
 	bg.position = Vector2(SIZE.x, 0)
 	bg.size = Vector2(PANEL_W, SIZE.y)
+	_panel_bg = bg
+	_fit_panel()
+	if not get_viewport().size_changed.is_connected(_fit_panel):
+		get_viewport().size_changed.connect(_fit_panel)
 	bg.theme = _theme()
 	bg.add_theme_stylebox_override("panel", _box(C_PAPER, 0, 28, 24))
 	layer.add_child(bg)
@@ -1097,6 +1122,11 @@ func _build_clock() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 21
 	add_child(layer)
+	_below = ColorRect.new()              # (the floor goes on under the stage when the window is taller)
+	_below.color = C_CONTROL
+	_below.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_below)
+	_fit_panel()
 	var bar := PanelContainer.new()
 	bar.theme = _theme()
 	bar.add_theme_stylebox_override("panel", _box(Color(C_PAPER, 0.96), 14, 14, 12))
@@ -1844,6 +1874,8 @@ func _scripted() -> void:
 				_play_poses()
 			"state":
 				_write_state()
+			"sizes":                       # sizes: the panel against the window, printed (a check of the layout)
+				print("SIZES visible=%s panel=%s min=%s" % [get_viewport().get_visible_rect().size, _panel_bg.size, _panel_bg.get_combined_minimum_size()])
 			"shot":
 				get_viewport().get_texture().get_image().save_png(":".join(bits.slice(1)))
 			"quit":
