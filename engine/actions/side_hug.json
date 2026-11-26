@@ -3,7 +3,7 @@
  "title": "обнять за плечи",
  "group": "two",
  "pair": {
-  "gap": 0.15,
+  "gap": 0.28,
   "view": "front",
   "partner": "side_hug_b",
   "over": false
@@ -24,7 +24,7 @@
    "body": {
     "lean": 6
    },
-   "head": 9
+   "head": 14
   },
   {
    "time": 2.0,
@@ -43,7 +43,7 @@
     }
    },
    "head": {
-    "base": 9,
+    "base": 14,
     "amp": 3,
     "rate": 0.5
    }
