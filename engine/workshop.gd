@@ -72,6 +72,8 @@ static var chosen := ""             # the action chosen last
 static var _cmd_seen := 0
 static var still := false           # the idle life (breath, sway) off: a pose stands exactly still
 static var _sized := false
+static var proof_pick: Array = ["proof:plain", "proof:tall", "proof:heavy", "proof:skirt_floor"]   # at most PROOF_MAX side by side
+const PROOF_MAX := 4
 
 var _side := "right"
 var _elbow_say := ""
@@ -104,6 +106,7 @@ var _tiles: VBoxContainer
 var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
 var _how_card: Control
+var _elbow_seg: HBoxContainer
 var _tiles_scroll: ScrollContainer
 var _how_hint: Label
 var _how_title: Label                # «Как сыграть «…»»: what the card's buttons change
@@ -141,10 +144,11 @@ func _ready() -> void:
 		_load_poses()
 	var heroes := _row_heroes()
 	var acts: Array = []
+	var fit := (SIZE.x / (heroes.size() + 0.6)) / 0.62 / SIZE.y     # (a body with its arms out is about 0.6 of its height wide)
 	for i in heroes.size():
 		var h: Dictionary = heroes[i]
-		acts.append({"id": h["id"], "puppet": h["dir"], "x": (i + 1.0) / (heroes.size() + 1.0),
-			"height": float(h.get("height", 0.36)) * (0.85 if heroes.size() > 2 else 1.0)})
+		acts.append({"id": h["id"], "puppet": h["dir"], "x": (i + 0.8) / (heroes.size() + 0.6),
+			"height": minf(float(h.get("height", 0.36)), fit)})
 	preset = {"floor": 0.84, "seconds": 99999, "actors": acts, "items": [], "script": []}
 	camera_on = false
 	super._ready()
@@ -202,7 +206,8 @@ func _row_heroes() -> Array:
 	if row == "all" and not world.is_empty():
 		return world
 	if row == "proof" and not proof.is_empty():
-		return proof
+		var some := proof.filter(func(h: Dictionary) -> bool: return proof_pick.has(h["id"]))
+		return some if not some.is_empty() else proof.slice(0, PROOF_MAX)
 	for h: Dictionary in world + proof:
 		if h["id"] == hero_id:
 			return [h]
@@ -220,6 +225,88 @@ func _main() -> Actor:
 	if actors.has(hero_id):
 		return actors[hero_id]
 	return actors.values()[0] if not actors.is_empty() else null
+
+
+## How complete the hero is: a bar with the percent, and a list of what it has and what it lacks.
+func _ready_box(ready: Dictionary) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 12)
+	var l := Label.new()
+	l.text = "Готовность"
+	l.custom_minimum_size = Vector2(120, 0)
+	line.add_child(l)
+	var bar := ProgressBar.new()
+	bar.min_value = 0
+	bar.max_value = 100
+	bar.value = float(ready.get("percent", 0))
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0, 14)
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bar.add_theme_stylebox_override("background", _box(C_CONTROL, 7, 0, 0))
+	bar.add_theme_stylebox_override("fill", _box(C_CHOSEN, 7, 0, 0))
+	line.add_child(bar)
+	var pc := Label.new()
+	pc.text = "%d%%" % int(bar.value)
+	pc.custom_minimum_size = Vector2(56, 0)
+	pc.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	line.add_child(pc)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 2)
+	list.visible = false
+	var more := _toggle("Что есть и чего нет", false, func(on: bool) -> void: list.visible = on)
+	more.theme_type_variation = "Tile"
+	line.add_child(more)
+	box.add_child(line)
+	for it: Dictionary in ready.get("items", []):
+		var r := HBoxContainer.new()
+		r.add_theme_constant_override("separation", 10)
+		var mark := Label.new()
+		mark.text = "✓" if it["ok"] else "✕"
+		mark.custom_minimum_size = Vector2(24, 0)
+		mark.add_theme_color_override("font_color", C_CHOSEN if it["ok"] else C_MAIN)
+		r.add_child(mark)
+		var t := Label.new()
+		t.text = "%s — %s" % [it["title"], it["say"]]
+		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		t.add_theme_font_size_override("font_size", 17)
+		r.add_child(t)
+		list.add_child(r)
+	box.add_child(list)
+	return box
+
+
+## Why an action will not play right in this window for this hero ("" when it will): it needs a partner, a thing
+## to hold (the workshop puts no things on the stage yet), or the hero's own check found it faulty.
+func _why_not(id: String) -> String:
+	var a: Dictionary = actions().get(id, {})
+	if (a.get("group", "") == "two" or a.has("pair")) and _hero_count() < 2:
+		return "Для двоих: включите «Все герои», если героев в рубрике двое и больше."
+	if a.has("test_items") or str(a.get("params", {}).get("item", "")) != "":
+		return "С предметом: в мастерской предметов пока нет, рука тянется в пустоту."
+	if (_hero_def(hero_id).get("ready", {}).get("bad", []) as Array).has(id):
+		return "У этого героя с браком: проверка нашла ошибки (нажмите — покажу какие)."
+	return ""
+
+
+func _hero_count() -> int:
+	if row == "one":
+		return 1
+	return (cfg.get("proof", []) if row == "proof" else cfg.get("heroes", [])).size()
+
+
+## The views a hero has drawn: front always; side (left and right) and back when puppet/side, puppet/back exist.
+static func _views_of(h: Dictionary) -> Array:
+	var d: String = str(h.get("dir", ""))
+	var out: Array = ["front"]
+	if d != "" and FileAccess.file_exists(d.path_join("side/rig.json")):
+		out.append_array(["left", "right"])
+	if d != "" and FileAccess.file_exists(d.path_join("back/rig.json")):
+		out.append("back")
+	return out
 
 
 func _hero_def(id: String) -> Dictionary:
@@ -338,6 +425,15 @@ func _theme() -> Theme:
 	t.set_stylebox("pressed", "Tile", _box(C_CHOSEN, 8, 12, 7))
 	t.set_stylebox("hover_pressed", "Tile", _box(C_CHOSEN_HOVER, 8, 12, 7))
 	t.set_font_size("font_size", "Tile", 19)
+	# an action that will not play right here: a quieter tile (light card, soft text), still pressable
+	t.set_type_variation("Off", "Button")
+	t.set_stylebox("normal", "Off", _box(C_CARD, 8, 12, 7))
+	t.set_stylebox("hover", "Off", _box(C_HOVER, 8, 12, 7))
+	t.set_stylebox("pressed", "Off", _box(C_CHOSEN, 8, 12, 7))
+	t.set_stylebox("hover_pressed", "Off", _box(C_CHOSEN_HOVER, 8, 12, 7))
+	t.set_color("font_color", "Off", C_SOFT)
+	t.set_color("font_hover_color", "Off", C_INK)
+	t.set_font_size("font_size", "Off", 19)
 	# the two modes on top: big, the chosen one blue
 	t.set_type_variation("Mode", "Button")
 	for st: String in ["normal", "hover", "pressed", "hover_pressed"]:
@@ -556,10 +652,47 @@ func _build_panel() -> void:
 				_reload())
 			heroes.add_child(b)
 		col.add_child(heroes)
-	col.add_child(_line("Вид", _seg([["Спереди", "front"], ["Влево", "left"], ["Вправо", "right"], ["Сзади", "back"]], "front",
+		var ready: Dictionary = _hero_def(hero_id).get("ready", {})
+		if not ready.is_empty():
+			col.add_child(_ready_box(ready))
+	elif row == "proof":
+		# which proof bodies stand side by side: at most four, so they do not crowd into a mess
+		var picks := HFlowContainer.new()
+		picks.add_theme_constant_override("h_separation", 6)
+		picks.add_theme_constant_override("v_separation", 6)
+		for h: Dictionary in cfg.get("proof", []):
+			var id: String = h["id"]
+			var b := Button.new()
+			b.text = str(h.get("title", id)).replace("проба: ", "")
+			b.theme_type_variation = "Tile"
+			b.toggle_mode = true
+			b.focus_mode = Control.FOCUS_NONE
+			b.button_pressed = proof_pick.has(id)
+			b.pressed.connect(func() -> void:
+				if proof_pick.has(id):
+					if proof_pick.size() > 1:
+						proof_pick.erase(id)
+				else:
+					proof_pick.append(id)
+					if proof_pick.size() > PROOF_MAX:
+						proof_pick.pop_front()
+				_reload())
+			picks.add_child(b)
+		col.add_child(picks)
+		col.add_child(_note("Рядом стоят до четырёх тел: отметьте, какие сравнить.", 16))
+	# the views: only the ones the hero has drawn can be pressed (ours face the audience: front only, as a rule)
+	var has := _views_of(_hero_def(hero_id))
+	var vseg := _seg([["Спереди", "front"], ["Влево", "left"], ["Вправо", "right"], ["Сзади", "back"]], "front",
 		func(v: String) -> void:
 			for id: String in actors:
-				_command({"who": id, "turn": v}))))
+				_command({"who": id, "turn": v}))
+	for b: Button in vseg.get_children():
+		var v: String = ["front", "left", "right", "back"][b.get_index()]
+		b.disabled = not has.has(v)
+		b.tooltip_text = "" if has.has(v) else "Этот вид у героя не нарисован"
+	col.add_child(_line("Вид", vseg))
+	if has.size() == 1:
+		col.add_child(_note("Нарисован только вид спереди: наши герои смотрят на зрителя.", 16))
 
 	# the two modes
 	var modes := HBoxContainer.new()
@@ -636,6 +769,7 @@ func _actions_page() -> Control:
 	box.add_child(step)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(0, 200)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_tiles_scroll = scroll
 	_tiles = VBoxContainer.new()
@@ -660,8 +794,8 @@ func _actions_page() -> Control:
 	hv.add_child(_how_note)
 	_side_row = _line("Рука", _seg([["Правая", "right"], ["Левая", "left"], ["Обе", "both"]], _side, _pick_side))
 	hv.add_child(_side_row)
-	_elbow_row = _line("Локоть", _seg([["Сам", ""], ["Вниз", "down"], ["Вверх", "up"], ["Наружу", "out"], ["Внутрь", "in"]], _elbow_say,
-		_pick_elbow))
+	_elbow_seg = _seg([["Сам", ""], ["Вниз", "down"], ["Вверх", "up"], ["Наружу", "out"], ["Внутрь", "in"]], _elbow_say, _pick_elbow)
+	_elbow_row = _line("Локоть", _elbow_seg)
 	hv.add_child(_elbow_row)
 	var sliders := HBoxContainer.new()
 	sliders.add_theme_constant_override("separation", 18)
@@ -702,7 +836,7 @@ func _actions_page() -> Control:
 	_faults.theme_type_variation = "Fault"
 	_faults_text = Label.new()
 	_faults_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_faults_text.add_theme_font_size_override("font_size", 18)
+	_faults_text.add_theme_font_size_override("font_size", 16)
 	_faults.add_child(_faults_text)
 	_faults.visible = false
 	box.add_child(_faults)
@@ -729,8 +863,14 @@ func _fill_tiles() -> void:
 	var own: Array = world_action_ids.filter(func(id: String) -> bool: return by_group.values().any(func(l: Array) -> bool: return l.has(id)))
 	var order: Array = ["_own"] + GROUP_TITLES.keys() + by_group.keys().filter(func(k: String) -> bool: return not GROUP_TITLES.has(k))
 	var any := false
+	var off := {}                        # reason -> the actions that will not play right here for it
 	for g: String in order:
 		var ids: Array = own if g == "_own" else by_group.get(g, []).filter(func(id: String) -> bool: return not world_action_ids.has(id))
+		ids = ids.filter(func(id: String) -> bool:
+			var why := _why_not(id)
+			if why != "":
+				off.get_or_add(why, []).append(id)
+			return why == "")
 		if ids.is_empty():
 			continue
 		any = true
@@ -749,11 +889,34 @@ func _fill_tiles() -> void:
 			b.toggle_mode = true
 			b.focus_mode = Control.FOCUS_NONE
 			b.button_pressed = id == chosen
-			b.pressed.connect(func() -> void: _play(id))
+			b.pressed.connect(func() -> void: _pick_action(id))
 			flow.add_child(b)
 			_tile_of[id] = b
 		_tiles.add_child(flow)
 		_tiles.add_child(_gap(4))
+	if not off.is_empty():
+		any = true
+		_tiles.add_child(_title("Здесь не сыграет как надо", 21))
+		for why: String in off:
+			_tiles.add_child(_note(why, 16))
+			var flow2 := HFlowContainer.new()
+			flow2.add_theme_constant_override("h_separation", 6)
+			flow2.add_theme_constant_override("v_separation", 6)
+			var l2: Array = off[why]
+			l2.sort()
+			for id: String in l2:
+				var b := Button.new()
+				b.text = _title_of(actions()[id], id)
+				b.tooltip_text = "%s: %s" % [id, why]
+				b.theme_type_variation = "Off"
+				b.toggle_mode = true
+				b.focus_mode = Control.FOCUS_NONE
+				b.button_pressed = id == chosen
+				b.pressed.connect(func() -> void: _pick_action(id))
+				flow2.add_child(b)
+				_tile_of[id] = b
+			_tiles.add_child(flow2)
+			_tiles.add_child(_gap(4))
 	if not any:
 		_tiles.add_child(_note("Ничего не нашлось. Имя действия латиницей или его название по-русски."))
 
@@ -1023,6 +1186,15 @@ func _play(id: String) -> void:
 
 
 ## The card's buttons change the action that plays: a pick plays it again at once, the new way.
+## A new action from the list: the elbow goes back to «Сам» (a forced elbow fits one action, it wrecks the next).
+func _pick_action(id: String) -> void:
+	if id != chosen and _elbow_say != "":
+		_elbow_say = ""
+		if _elbow_seg != null:
+			(_elbow_seg.get_child(0) as Button).button_pressed = true
+	_play(id)
+
+
 func _pick_side(v: String) -> void:
 	_side = v
 	_dirty_state = true
@@ -1063,15 +1235,7 @@ func _update_how() -> void:
 	_side_row.visible = sided
 	_elbow_row.visible = elbowed
 	_how_title.text = "Как сыграть «%s»" % _title_of(act, chosen)
-	var says: Array = []
-	if sided:
-		says.append("Рука — какой рукой: справа или слева на экране, или обеими.")
-	if elbowed:
-		says.append("Локоть — куда он смотрит, пока рука идёт.")
-	says.append("Сила — шире или скромнее, темп — быстрее или медленнее.")
-	if not sided and not elbowed:
-		says.push_front("Здесь не выбрать руку и локоть: это действие не про одну руку.")
-	_how_note.text = " ".join(says)
+	_how_note.text = "Нажатие сразу переигрывает. Рука — справа или слева на экране." if sided else "Нажатие сразу переигрывает."
 
 
 ## The clean switch: every hero lets everything go and goes back to rest (motion.gd play_clean); the line waits.
@@ -1168,17 +1332,15 @@ func _show_faults(id: String) -> void:
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(f))
 	if not (data is Dictionary) or not data.get("actions", {}).has(id):
 		return
-	var lim: Dictionary = data.get("limits", {})
 	var said := {}
 	for r: Dictionary in data["actions"][id].get("runs", []):
 		for k: String in r.get("faults", {}):
-			var side := "правой рукой" if r.get("side", "right") == "right" else "левой рукой"
-			said["%s — %s (%s при допуске %s)" % [FAULT_WORDS.get(k, k), side, str(snappedf(float(r["faults"][k]), 0.01)), str(lim.get(k, "?"))]] = true
+			said[FAULT_WORDS.get(k, k)] = true
 	if said.is_empty():
 		return
 	var main: bool = data["actions"][id].get("stage1", false)
-	_faults_text.text = "Проверка героя: брак\n• %s\n%s" % ["\n• ".join(said.keys()),
-		"Это основное действие: из-за него герой не проходит проверку." if main else "Не основное действие: только сообщается, героя не валит."]
+	_faults_text.text = "Брак у этого героя: %s. %s" % [", ".join(said.keys()),
+		"Основное действие: из-за него герой не проходит проверку." if main else "Не основное: героя не валит."]
 	_faults_text.add_theme_color_override("font_color", C_INK)
 	_faults.visible = true
 
@@ -1425,7 +1587,7 @@ func _input(event: InputEvent) -> void:
 	var a := _main()
 	if a == null:
 		return
-	var m := get_global_mouse_position()
+	var m: Vector2 = get_canvas_transform().affine_inverse() * (event as InputEventMouse).position   # (the event's own spot, never the OS cursor)
 	if (m.x >= SIZE.x or m.y >= SIZE.y - 160.0) and _drag == "":
 		_hover = ""
 		return
@@ -1562,7 +1724,7 @@ func _watch_files() -> void:
 				"play":
 					if actions().has(str(c.get("action", ""))):
 						_show_mode(0)
-						_play(str(c["action"]))
+						_pick_action(str(c["action"]))
 			_dirty_state = true
 
 
@@ -1628,7 +1790,10 @@ func _scripted() -> void:
 			"tab":
 				_show_mode(int(bits[1]))
 			"play":
-				_play(bits[1])
+				_pick_action(bits[1])
+			"row":                         # row:proof: as the «Один герой / Все герои / Пробные тела» buttons do
+				row = bits[1]
+				_reload()
 			"side":                        # side:left: as the «Рука» buttons do
 				_pick_side(bits[1])
 			"elbow":
@@ -1651,7 +1816,6 @@ func _scripted() -> void:
 					(ev as InputEventMouseButton).pressed = bits[0] == "press"
 				ev.position = get_viewport().get_screen_transform().affine_inverse() * at if false else at
 				ev.global_position = ev.position
-				Input.warp_mouse(at)
 				Input.parse_input_event(ev)
 			"dot":                         # dot:<name>:<file>: where that dot is now
 				var pts2 := _dot_points(_main())

@@ -49,8 +49,45 @@ def _heroes_of(root: Path | str) -> list[dict]:
             title = (name.get("ru") or name.get("en")) if isinstance(name, dict) else (name or s)
             heroes.append({"id": s, "title": str(title), "dir": pdir.resolve().as_posix(),
                            "height": float(h) if isinstance(h, (int, float)) else 0.42,
-                           "checks": (pdir / "actions.json").resolve().as_posix()})
+                           "checks": (pdir / "actions.json").resolve().as_posix(),
+                           "ready": readiness(pdir)})
     return heroes
+
+
+def readiness(pdir: Path | str) -> dict:
+    """How complete a hero is, for a person: the steps a hero goes through (drawn and cut, the face oval, the
+    movement check) and how many of the engine's actions it plays cleanly. {"percent", "items": [{title, ok, say}]}."""
+    from tadam import actions as table
+    pdir = Path(pdir)
+    items = []
+    rep, _ = read_json(pdir / "report.json")
+    rep = rep if isinstance(rep, dict) else {}
+    ok_parts, all_parts = rep.get("parts_ok", 0), rep.get("parts_total", 15)
+    drawn = bool(rep.get("passed")) and ok_parts == all_parts
+    items.append({"title": "Нарисован и разрезан", "ok": drawn,
+                  "say": f"все {all_parts} частей на месте" if drawn else
+                         f"частей в порядке: {ok_parts} из {all_parts}" if rep else "нет отчёта о сборке"})
+    rig, _ = read_json(pdir / "rig.json")
+    board = ((rig or {}).get("parts", {}).get("head", {}) if isinstance(rig, dict) else {}).get("board")
+    items.append({"title": "Окно для лица", "ok": bool(board),
+                  "say": "есть: сюда встанет записанное лицо" if board else "нет: лицо записи некуда поставить"})
+    st, data = table.state(pdir)
+    acts = (data or {}).get("actions", {}) if isinstance(data, dict) else {}
+    s1 = (data or {}).get("stage1", []) if isinstance(data, dict) else []
+    bad1 = (data or {}).get("stage1_failed", []) if isinstance(data, dict) else []
+    items.append({"title": "Проверка движений", "ok": st == "passed",
+                  "say": {"passed": f"пройдена: обязательных {len(s1) - len(bad1)} из {len(s1)}",
+                          "failed": f"не пройдена: {', '.join(bad1)}",
+                          "stale": "устарела: герой менялся после проверки (tadam hero check)",
+                          "missing": "ещё не было (tadam hero check)"}[st]})
+    good = sum(1 for a in acts.values() if a.get("pass"))
+    total = len(acts)
+    items.append({"title": "Чисто играет действий", "ok": total > 0 and good == total,
+                  "say": f"{good} из {total}" if total else "неизвестно до проверки"})
+    share = (good / total) if total else 0.0
+    percent = round(100 * (sum(1 for i in items[:3] if i["ok"]) + share) / 4)
+    return {"percent": percent, "items": items,
+            "bad": sorted(k for k, a in acts.items() if not a.get("pass"))}
 
 
 def world_title(root: Path | str) -> str:

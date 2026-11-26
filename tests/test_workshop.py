@@ -276,7 +276,7 @@ def test_the_hand_buttons_replay_the_action_at_once(tmp_path):
     cmd = workshop.command(d / "config.json")
     cmd[cmd.index("--position") + 1] = "6000,0"
     a, b = (tmp_path / "a.json").as_posix(), (tmp_path / "b.json").as_posix()
-    seq = f"still@5,play:wave@20,where:{a}@120,side:left@130,where:{b}@260,state@262,quit@264"
+    seq = f"still@5,play:wave@20,where:{a}@120,side:left@130,where:{b}@260,elbow:in@262,play:clap@266,state@270,quit@272"
     out = _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
     assert Path(a).exists() and Path(b).exists(), out[-2000:]
     pa, pb = json.loads(Path(a).read_text()), json.loads(Path(b).read_text())
@@ -284,4 +284,15 @@ def test_the_hand_buttons_replay_the_action_at_once(tmp_path):
     assert up(pa, "hand_r") > up(pa, "hand_l") + 60, pa
     assert up(pb, "hand_l") > up(pb, "hand_r") + 60, pb
     st = workshop.read_state(root)
-    assert st["action"] == "wave" and st["side"] == "left"
+    # a forced elbow belongs to the action it was chosen for: the next action starts with «Сам»
+    assert st["action"] == "clap" and st["side"] == "left" and st["elbow"] == ""
+
+
+def test_a_hero_says_how_complete_it_is(tmp_path):
+    """The window's readiness bar: drawn and cut, the face oval, the movement check, the share of clean actions."""
+    root = _world(tmp_path)
+    h = workshop.config(root, with_proof=False)["heroes"][0]
+    r = h["ready"]
+    assert 0 <= r["percent"] <= 100 and len(r["items"]) == 4
+    assert all(set(i) == {"title", "ok", "say"} and i["say"] for i in r["items"])
+    assert isinstance(r["bad"], list)
