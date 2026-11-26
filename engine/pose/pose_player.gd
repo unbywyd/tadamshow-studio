@@ -458,7 +458,7 @@ func _level_foot(f: Variant) -> void:
 
 ## A named place on this hero's body (world): the part's painted box, x outward on the hand's side.
 const PLACES := {
-	"forehead": ["head", 0.0, -0.25, "face"], "face": ["head", 0.0, 0.1, "face"], "cheek": ["head", 0.55, 0.25, "face"],
+	"forehead": ["head", 0.0, -0.8, "face"], "face": ["head", 0.0, 0.1, "face"], "cheek": ["head", 0.55, 0.25, "face"],
 	"chin": ["head", 0.0, 0.75, "face"], "ear": ["head", 1.0, 0.0, "face"], "crown": ["head", 0.4, -0.95, "box"],
 	"chest": ["chest", 0.0, -0.1, "box"], "heart": ["chest", -0.25, -0.2, "box"], "belly": ["pelvis", 0.0, -0.3, "box"],
 	"hip": ["pelvis", 1.0, -0.2, "box"], "waist": ["chest", 1.0, 0.75, "box"], "front": ["chest", 0.0, 0.2, "box"],

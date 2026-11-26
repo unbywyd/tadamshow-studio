@@ -1406,7 +1406,7 @@ func _play_new(id: String) -> void:
 		pl.item_hand = ""
 		pl.contacts.clear()
 		if act.has("item") and aid == _main().id:
-			_new_item = _mug_at(actors[aid].puppet.body_position().x + float(act["item"].get("out", 0.55)) * pl.leg)
+			_new_item = _mug_at(actors[aid].puppet.body_position().x + float(act["item"].get("out", 0.55)) * pl.arm)   # (arm lengths: where a hand reaches)
 			pl.item = _new_item
 		# a clean switch, as in the engine of now: back to rest first, then the action
 		var clean: Dictionary = act.duplicate(true)
