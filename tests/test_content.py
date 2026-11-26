@@ -182,7 +182,7 @@ def test_word_check_paths_follow_the_server():
 
 def test_the_kit_has_the_servers_schemas_and_word_list():
     names = {p.name for p in (kit_root() / "schema").glob("*.json")}
-    assert len(names) == 43 and {"bad-words.json", "sources.json", "join-verify.response.json",
+    assert len(names) == 44 and {"action.json", "bad-words.json", "sources.json", "join-verify.response.json",
                                  "submission-review.response.json"} <= names
     assert "access-request.request.json" not in names
 

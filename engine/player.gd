@@ -193,6 +193,8 @@ func _shot(i: int) -> void:
 		return
 	var s: Dictionary = shots[k]
 	StageScript.boot_args = PackedStringArray(["--scene=%s" % s["scene"], "--seconds=%s" % s["seconds"]])
+	if str(plan.get("actions", "")) != "":             # the world's own actions (its actions/ folder)
+		StageScript.boot_args.append("--actions=%s" % plan["actions"])
 	stage = StageScene.instantiate()
 	add_child(stage)
 	move_child(stage, 0)                 # (under the overlay)

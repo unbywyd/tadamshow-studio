@@ -189,20 +189,36 @@ class Actor:
 
 
 static var _actions: Dictionary = {}
+## A world's own actions (its actions/ folder): --actions=<folder>, or actions/ beside the scene's scene.json.
+## They come after the library: a library name always wins (a world action never stands in for a core one).
+static var world_actions_dir := ""
+static var world_action_ids: Array = []   # which of actions() came from the world's folder
 
 
-## The action library: engine/actions/*.json, read once.
+## The action library: engine/actions/*.json, read once, and the world's own actions beside it.
 static func actions() -> Dictionary:
 	if _actions.is_empty():
 		var dir := ProjectSettings.globalize_path("res://actions")
 		if not DirAccess.dir_exists_absolute(dir):
 			dir = "res://actions"
-		for f in DirAccess.get_files_at(dir):
-			if f.ends_with(".json"):
-				var a: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
-				if a is Dictionary:
-					_actions[a["id"]] = a
+		world_action_ids.clear()
+		for d: String in [dir, world_actions_dir]:
+			if d.is_empty() or not DirAccess.dir_exists_absolute(d) and not d.begins_with("res://"):
+				continue
+			for f in DirAccess.get_files_at(d):
+				if f.ends_with(".json") and not f.ends_with(".check.json"):
+					var a: Variant = JSON.parse_string(FileAccess.get_file_as_string(d.path_join(f)))
+					if a is Dictionary and a.has("id") and not _actions.has(a["id"]):
+						_actions[a["id"]] = a
+						if d == world_actions_dir:
+							world_action_ids.append(a["id"])
 	return _actions
+
+
+## Read the library and the world's actions again (a file changed on disk: the workshop).
+static func reload_actions() -> Dictionary:
+	_actions.clear()
+	return actions()
 
 
 static var preset: Dictionary = {}
@@ -283,6 +299,12 @@ func _ready() -> void:
 			_live_port = int(a.trim_prefix("--live="))
 		elif a.begins_with("--live-host="):
 			_live_host = a.trim_prefix("--live-host=")
+		elif a.begins_with("--actions="):
+			world_actions_dir = a.trim_prefix("--actions=")
+			_actions.clear()
+	if world_actions_dir.is_empty() and not scene_dir.is_empty() and DirAccess.dir_exists_absolute(scene_dir.path_join("actions")):
+		world_actions_dir = scene_dir.path_join("actions")
+		_actions.clear()
 	# (a scene handed over ready-made, by the viewer, instead of a file)
 	var parsed: Variant = preset if not preset.is_empty() else JSON.parse_string(FileAccess.get_file_as_string(scene_dir.path_join("scene.json")))
 	if not (parsed is Dictionary):

@@ -76,6 +76,45 @@ def build_parser() -> argparse.ArgumentParser:
     hc.add_argument("slug")
     hc.add_argument("--json", action="store_true", help="print actions.json")
 
+    ac = sub.add_parser("action", help="actions of the core library and of this world: list, show, new, check, "
+                                       "sheet (free: the engine plays them)")
+    acs = ac.add_subparsers(dest="what", metavar="<what>")
+    al = acs.add_parser("list", help="the actions by group (the core's and this world's)")
+    al.add_argument("--json", action="store_true")
+    ash = acs.add_parser("show", help="one action in words, phase by phase: tadam action show <id>")
+    ash.add_argument("id")
+    ash.add_argument("--json", action="store_true", help="the file itself")
+    an = acs.add_parser("new", help="a world's own action from a template: tadam action new <id> [--title ..]")
+    an.add_argument("id")
+    an.add_argument("--title", default=None)
+    an.add_argument("--group", default="gesture")
+    ack = acs.add_parser("check", help="play the action on the world's heroes (--proof: on the proof bodies too) and "
+                                       "measure it; exit 1 on a fault")
+    ack.add_argument("id")
+    ack.add_argument("--heroes", default=None, help="only these heroes: a,b")
+    ack.add_argument("--proof", action="store_true", help="the proof bodies: tall, short, heavy, big head, 4 skirts")
+    ack.add_argument("--json", action="store_true")
+    afp = acs.add_parser("from-poses", help="a draft action of this world from the poses fixed in the workshop: "
+                                            "tadam action from-poses <id>")
+    afp.add_argument("id")
+    afp.add_argument("--title", default=None)
+    afp.add_argument("--group", default="gesture")
+    afp.add_argument("--retime", action="store_true", help="times by the length of the way, not the window's")
+    afp.add_argument("--force", action="store_true", help="write over actions/<id>.json")
+    wk = sub.add_parser("workshop", help="the workshop window: the heroes and their mechanics, poses into actions "
+                                         "(tadam workshop [hero]; tadam workshop pose [--fix])")
+    wk.add_argument("what", nargs="?", default=None, help="a hero to open on, or `pose`")
+    wk.add_argument("--fix", action="store_true", help="with `pose`: keep the pose of the moment in the list")
+    wk.add_argument("--core", action="store_true", help="the owner's mode in the kit's own clone: save into the core "
+                                                       "library (engine/actions)")
+    wk.add_argument("--json", action="store_true")
+    asx = acs.add_parser("sheet", help="a storyboard PNG of the action: a row per hero, frames through it")
+    asx.add_argument("id")
+    asx.add_argument("--heroes", default=None)
+    asx.add_argument("--proof", action="store_true")
+    asx.add_argument("--frames", type=int, default=6)
+    asx.add_argument("--out", default=None, help="the PNG (default: .tadam/actions/<id>.png)")
+
     st = sub.add_parser("set", help="sets: paint a set from its kit.json")
     ss = st.add_subparsers(dest="what", metavar="<what>")
     sm = ss.add_parser("make", help="paint the room and the pieces, write set.json: tadam set make <slug>",
@@ -888,6 +927,97 @@ def cmd_review(a) -> int:
     return 2
 
 
+# ------------------------------------------------------------------------------------------------ actions
+
+def _maybe_world(a):
+    """The world folder when there is one here (an action works without one: the core library, the proof bodies)."""
+    from tadam.world import WorldError, find_world
+    try:
+        return find_world(a.world)
+    except WorldError:
+        return None
+
+
+def cmd_action(a) -> int:
+    from tadam import actionkit as ak
+    root = _maybe_world(a)
+    if a.what == "list" or a.what is None:
+        if getattr(a, "json", False):
+            _out(json.dumps({k: {"title": e.title, "group": e.data.get("group"), "where": e.where}
+                             for k, e in ak.library(root).items()}, ensure_ascii=False, indent=1))
+        else:
+            _out(ak.listing(root))
+        return 0
+    if a.what == "show":
+        e = ak.find(a.id, root)
+        _out(json.dumps(e.data, ensure_ascii=False, indent=1) if a.json else ak.describe(e))
+        return 0
+    if a.what == "new":
+        if root is None:
+            _out("tadam: a world's own action lives in a world folder: run it inside one")
+            return 2
+        f = ak.new(root, a.id, a.title, a.group)
+        _out(f"made {f}: write its phases (skill/reference/mechanics.md), then `tadam action sheet {a.id}` and "
+             f"`tadam action check {a.id} --proof`")
+        return 0
+    heroes = [h.strip() for h in a.heroes.split(",") if h.strip()] if getattr(a, "heroes", None) else None
+    if a.what == "check":
+        res = ak.check(a.id, root, heroes, a.proof, log=_out)
+        _out(json.dumps(res, ensure_ascii=False, indent=1) if a.json else ak.table(res))
+        return 0 if res["passed"] else 1
+    if a.what == "sheet":
+        out, run = ak.sheet(a.id, root, Path(a.out).resolve() if a.out else None, heroes, a.proof, a.frames, log=_out)
+        bad = [s for s, runs in run["heroes"].items() if any(not r["pass"] for r in runs)]
+        _out(f"the storyboard: {out}" + (f"\nfaults on: {', '.join(bad)}" if bad else ""))
+        return 0
+    if a.what == "from-poses":
+        from tadam import workshop
+        if root is None:
+            _out("tadam: run it inside the world folder the workshop is open on")
+            return 2
+        poses, rest = workshop.read_poses(root)
+        if (ak.core_dir() / f"{a.id}.json").exists():
+            _out(f"tadam: {a.id!r} is a name of the core library: choose another")
+            return 2
+        f = ak.world_dir(root) / f"{a.id}.json"
+        if f.exists() and not a.force:
+            _out(f"tadam: actions/{a.id}.json is there already (--force writes over it)")
+            return 2
+        act = workshop.from_poses(poses, a.id, a.title, a.group, keep_times=not a.retime, base=rest)
+        from tadam.jsonfile import write_json
+        write_json(f, act, indent=1)
+        _out(f"made {f} from {len(poses)} pose(s): now the ways in (ease, holds, swings), then "
+             f"`tadam action sheet {a.id}` and `tadam action check {a.id} --proof`")
+        return 0
+    _out("tadam action list | show <id> | new <id> | check <id> | sheet <id> | from-poses <id>")
+    return 2
+
+
+def cmd_workshop(a) -> int:
+    from tadam import workshop
+    root = _maybe_world(a)
+    if a.what == "pose":
+        if root is None:
+            _out("tadam: run it inside the world folder the workshop is open on")
+            return 2
+        st = workshop.ask(root, "fix") if a.fix else workshop.read_state(root)
+        if a.json:
+            _out(json.dumps(st, ensure_ascii=False, indent=1))
+        else:
+            _out(f"hero {st.get('hero')}, {st.get('poses', 0)} pose(s) fixed" + (" (this one kept)" if a.fix else ""))
+            _out("pose: " + json.dumps(st.get("pose") or {}, ensure_ascii=False))
+        return 0
+    if a.core:
+        from tadam.paths import kit_root
+        if not (kit_root() / ".git").exists():
+            _out("tadam: --core works only in a clone of the kit's repository (the core library is the owner's)")
+            return 2
+    workshop.open_window(root, a.what, a.core)
+    _out("the workshop is open" + (f" on {root}" if root else " on the proof bodies (no world here)")
+         + ": `tadam workshop pose` reads the pose of the moment, `--fix` keeps it")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     # (piped, as Claude reads it: UTF-8 whatever the console's code page is, so Russian texts come out right)
     if hasattr(sys.stdout, "reconfigure") and not sys.stdout.isatty():
@@ -908,6 +1038,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     from tadam.openai_images import GenerationError
     from tadam.sync import SyncError
     from tadam.world import WorldError
+    from tadam.actionkit import ActionError
+    from tadam.workshop import WorkshopError
     from tadam.join import Stop, banned
     from tadam.keyboard import NoKeyboard
     from tadam.submissions import Refused, missing_lines
@@ -916,7 +1048,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "frames": cmd_frames, "strip": cmd_strip, "film": cmd_film, "cover": cmd_cover, "login": cmd_login, "logout": cmd_logout, "join": cmd_join,
                 "rules": cmd_rules, "push": cmd_push, "pull": cmd_pull, "diff": cmd_diff, "status": cmd_status,
                 "submit": cmd_submit, "withdraw": cmd_withdraw, "reply": cmd_reply, "unpublish": cmd_unpublish,
-                "studio-version": cmd_studio_version, "review": cmd_review}[a.command](a)
+                "studio-version": cmd_studio_version, "review": cmd_review, "action": cmd_action,
+                "workshop": cmd_workshop}[a.command](a)
     except Refused as e:
         _out(f"tadam: {e}" + ("\n" + "\n".join(missing_lines(e.missing)) if e.missing else ""))
         return 1
@@ -929,6 +1062,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ApiError as e:
         _out(f"tadam: {banned(e) or e}")
         return 1
-    except (WorldError, GenerationError, EngineError, MixError, SyncError) as e:
+    except (WorldError, GenerationError, EngineError, MixError, SyncError, ActionError, WorkshopError) as e:
         _out(f"tadam: {e}")
         return 1

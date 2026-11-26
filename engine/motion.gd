@@ -454,7 +454,28 @@ func rest_all(time := RELEASE_TIME) -> Run:
 	return play({"id": "rest", "phases": [back]})
 
 
+## A CLEAN switch (the workshop, mechanics-tz 3.2): every action lets go, the hero goes back to rest, and only then
+## `action` plays, so nothing of the action before still holds a channel. (A scene LAYERS actions instead: a walk
+## goes on under a wave; that is play().) clean_run is the run it started, once it has.
+func play_clean(action: Dictionary, params: Dictionary = {}, time := RELEASE_TIME) -> void:
+	var back := rest_all(time)
+	for r in runs:
+		if r != back and not r.done:
+			r.done = true
+			r.owned.clear()
+			events.append([steps, r.id, "end"])
+	runs = runs.filter(func(r: Run) -> bool: return not r.done)
+	_next = [action, params]
+	clean_run = null
+
+
+var _next: Array = []                # [action, params]: what play_clean plays once the hero is at rest
+var clean_run: Run = null
+
+
 func busy() -> bool:
+	if not _next.is_empty():
+		return true
 	for r in runs:
 		if not r.done:
 			return true
@@ -833,6 +854,10 @@ func step() -> void:
 		else:
 			_advance_values(r)
 	runs = runs.filter(func(r: Run) -> bool: return not r.done)
+	if not _next.is_empty() and runs.is_empty():
+		var n: Array = _next
+		_next = []
+		clean_run = play(n[0], n[1])
 	for ch in CHANNELS:                      # how fast every value moves: a new phase carries it on (_carry)
 		var c: Chan = chans[ch]
 		for key: String in c.now:

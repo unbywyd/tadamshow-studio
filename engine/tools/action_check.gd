@@ -8,6 +8,8 @@ extends SceneTree
 ##        <folder>/<name>/puppet); a hero named by an absolute path is that puppet folder itself.
 ##        without --headless and with --shots=<dir>: also saves 6 pictures of every action on every hero
 ##        (tools/action_report.py makes the storyboards and the table out of them).
+##        --extra-actions=<folder>: a world's own actions (actions/*.json) beside the library (a library name wins)
+##        --frames=<n>: how many pictures of every action with --shots (6)
 ##        --pairs[=b1,b2,..]: TRANSITIONS instead: every action A is interrupted by each action B (default: PAIRS)
 ##        --switch=0.3,1.0 seconds into A (mid-move and mid-hold); only B and the way back are measured.
 ## One-sided actions are played on both sides. Each run: the hero stands, the action plays (loops last 1.5 s),
@@ -30,7 +32,7 @@ const LIMITS := {"wrong": 3, "slide": 0.03, "inside": 0.15, "floor": 0.005, "mis
 	"accel": 450.0, "out": 0.0, "face": 0.5, "back": 0.08, "balance": 0.0,
 	"grab": 0.12, "nograb": 0.0, "item_floor": 0.004, "cross": 0.25,
 	"skirt": 0.25, "torn": 0.10, "jerk": 0.15}
-const SHOTS := 6
+var SHOTS := 6
 ## A hand broken off on its way carries its speed on and may have to straighten for its elbow: in a transition its
 ## path may be up to twice the straight line (a single action: 1.5, LIMITS.path).
 const PATH_BREAK := 2.0
@@ -69,12 +71,9 @@ func _run() -> void:
 	shot_side = args.get("shot-side", "right")
 	hand_shots = args.has("hand-shots")
 	var out: String = args.get("out", ProjectSettings.globalize_path("res://out/actions.json"))
-	var actions := {}
-	var dir := ProjectSettings.globalize_path("res://actions")
-	for f in DirAccess.get_files_at(dir):
-		if f.ends_with(".json"):
-			var a: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
-			actions[a["id"]] = a
+	if args.has("frames"):
+		SHOTS = clampi(int(args["frames"]), 1, 48)
+	var actions := _library(args.get("extra-actions", ""))
 	if args.has("actions"):
 		var keep := {}
 		for id in (args["actions"] as String).split(","):
@@ -104,12 +103,7 @@ func _run() -> void:
 		pairs = PAIRS if args["pairs"] == "1" else Array((args["pairs"] as String).split(","))
 		if args.has("switch"):
 			switches = Array((args["switch"] as String).split(",")).map(func(x): return float(x))
-		var all := {}
-		var dir2 := ProjectSettings.globalize_path("res://actions")
-		for f in DirAccess.get_files_at(dir2):
-			if f.ends_with(".json"):
-				var a2: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir2.path_join(f)))
-				all[a2["id"]] = a2
+		var all := _library(args.get("extra-actions", ""))
 		for hero: String in heroes:
 			var p := _hero(hero)
 			if p == null:
@@ -163,6 +157,30 @@ func _run() -> void:
 	f.store_string(JSON.stringify({"limits": LIMITS, "heroes": heroes, "actions": actions.keys(), "runs": results}, " "))
 	f.close()
 	quit(0)
+
+
+## The library (engine/actions) and, beside it, a world's own actions: a library name wins (a world action may not
+## stand in for a core one; `tadam check` says so as action_name_taken).
+static func _library(extra: String) -> Dictionary:
+	var out := {}
+	for dir: String in [ProjectSettings.globalize_path("res://actions"), extra]:
+		if dir.is_empty() or not DirAccess.dir_exists_absolute(dir):
+			continue
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".json") and not f.ends_with(".check.json"):
+				var a: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
+				if a is Dictionary and a.has("id") and not out.has(a["id"]):
+					out[a["id"]] = a
+	return out
+
+
+## A hero's name in a picture's file name: a hero given by its folder is that folder's name (heroes/<slug>/puppet ->
+## <slug>), so no drive letter or slash gets into a file name.
+static func _tag(hero: String) -> String:
+	if not hero.is_absolute_path():
+		return hero.replace("/", "-")
+	var d := hero.simplify_path().trim_suffix("/")
+	return d.get_base_dir().get_file() if d.get_file() == "puppet" else d.get_file()
 
 
 func _has_profile(name: String) -> bool:
@@ -397,11 +415,11 @@ func _shots(p: Puppet, action: Dictionary, hero: String, length: int, first: Dic
 					r = r.intersection(Rect2i(Vector2i.ZERO, Vector2i(SIZE)))
 					pair.blit_rect(img, r, Vector2i(k * HAND_BOX, 0))
 				var tag_h: String = action["id"] if first.is_empty() else "%s-%s-%d" % [first["id"], action["id"], int(switch * 10)]
-				pair.save_png(shots_dir.path_join("%s__%s__hand%d.png" % [tag_h, hero.replace("/", "-"), done]))
+				pair.save_png(shots_dir.path_join("%s__%s__hand%d.png" % [tag_h, _tag(hero), done]))
 			var floor_y := SIZE.y * FLOOR
 			img = img.get_region(Rect2i(0, int(floor_y - 900), 720, 940))   # the whole width: thrown things too
 			var tag: String = action["id"] if first.is_empty() else "%s-%s-%d" % [first["id"], action["id"], int(switch * 10)]
-			var path := shots_dir.path_join("%s__%s__%d.png" % [tag, hero.replace("/", "-"), done])
+			var path := shots_dir.path_join("%s__%s__%d.png" % [tag, _tag(hero), done])
 			img.save_png(path)
 			files.append(path)
 			done += 1

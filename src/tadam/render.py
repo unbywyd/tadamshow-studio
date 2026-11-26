@@ -93,6 +93,9 @@ def playlist(ep: Episode, mode: str, start: int = 0, snaps: list | None = None, 
           "audio": audio.as_posix() if audio else "", "audio_from": ep.shots[start].start if ep.shots else 0.0,
           "fonts": {"text": TEXT_FONT.as_posix(), "italic": ITALIC_FONT.as_posix(), "mono": MONO_FONT.as_posix()},
           "shots": shots, "snaps": snaps or []}
+    acts = Path(ep.world.root) / "actions"
+    if acts.is_dir():                      # the world's own actions: the engine reads them beside its library
+        pl["actions"] = acts.resolve().as_posix()
     if mode == "play":
         pl.update({"lang": ep.lang, "names": ep.names, "episode": ep.n, "script_sha": ep.script_sha, "rev": rev,
                    "state_dir": state_dir(ep.world).as_posix(),

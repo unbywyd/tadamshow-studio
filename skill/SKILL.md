@@ -16,7 +16,8 @@ edit files there, the server keeps the last pushed copy, the owner approves what
    [script](reference/script.md), [shots and camera](reference/shots-and-camera.md),
    [recording steps](reference/recording-steps.md), [puppets and sets](reference/puppets-and-sets.md),
    [submitting](reference/submitting.md), [after publishing](reference/after-publishing.md),
-   [house rules](reference/house-rules.md); the project's owner also [owner review](reference/owner-review.md).
+   [house rules](reference/house-rules.md), [mechanics: actions and the workshop](reference/mechanics.md); the
+   project's owner also [owner review](reference/owner-review.md).
 3. Not an editor yet? The person runs **`tadam join` themself**, in their own terminal window (it asks the
    email, the code from the letter, shows the rules and they type «согласен» / "I agree"). Another computer:
    `tadam login` the same way. Tell them the command; never run it for them.
@@ -54,8 +55,7 @@ edit files there, the server keeps the last pushed copy, the owner approves what
    every `<file>.server` into its file, delete the copy, check, push again.
 9. **Remind the person** to open the draft on the site (the link from push), record every role through the QR
    code (alone or with friends), make the film and press «make studio version» (or `tadam studio-version
-   <episode> <videoId>`).
-   `tadam status` says what is still missing.
+   <episode> <videoId>`). `tadam status` says what is still missing.
 10. **Submit only after the person explicitly says to send it** («отправляй», "send it"): `tadam submit
     <episode> "<note>"` (it refuses with the list while anything is missing). Then `tadam status` shows the
     owner's answer: remarks point at shots (`remark on sh3: …`) — fix them, check, push, mark the new film,

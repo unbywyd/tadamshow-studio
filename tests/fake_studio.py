@@ -298,7 +298,7 @@ def _review(fake: Fake, x: dict, lang: str = "ru") -> dict:
         "script": {"lang": lang, "cards": cards if e else None, "live": None},
         "heroes": [{"slug": "cow", "name": {"ru": "Корова"}, "trait": {"ru": "упрямая"}, "height": 0.42, "draft": False,
                     "inEpisode": True, "portraitUrl": "https://media.example.com/cow.png", "sheetUrl": None,
-                    "puppet": {"key": "cow", "passed": True, "report": None}}],
+                    "puppet": {"key": "cow", "passed": True, "report": None}, "actions": None}],
         "sets": [{"slug": "barn", "title": "Хлев", "previewUrl": None, "files": {}}],
         "media": [{"path": "media/theme.mp3", "kind": "audio", "bytes": 4096, "url": None,
                    "source": {"source": "licensed", "licence": "CC BY 4.0", "url": "https://music.example.com/theme"}},

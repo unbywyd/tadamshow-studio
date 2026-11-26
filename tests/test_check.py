@@ -35,6 +35,23 @@ def codes(root, episode=None):
     return {i.code for i in check.check_world(root, episode)}
 
 
+def action(name, data=None, check=None):
+    """A world's own action (actions/<name>.json; data: the core wave under this name, or as given)."""
+    def spoil(root):
+        from tadam import actionkit
+        wave = json.loads((actionkit.core_dir() / "wave.json").read_text(encoding="utf-8"))
+        d = root / "actions"
+        d.mkdir(exist_ok=True)
+        f = d / f"{name}.json"
+        if isinstance(data, bytes):
+            f.write_bytes(data)
+        else:
+            write_json(f, data if data is not None else {**wave, "id": name})
+        if check is not None:
+            write_json(d / f"{name}.check.json", {**check, "sha": actionkit.file_sha(f)})
+    return spoil
+
+
 # code -> (how to spoil the world, which episode to check)
 SPOIL = {
     "json_invalid": (lambda r: (r / "heroes/cow/hero.json").write_text("{", encoding="utf-8"), None),
@@ -71,6 +88,11 @@ SPOIL = {
                                  for k in ("", ".f2", ".f3", ".f4", ".f5", ".f6", ".f7", ".f8")],
                                 edit(r, "sets/barn/set.json", lambda d: d["pieces"][0].update(frames={"count": 8}))),
                      None),
+    "action_name": (action("mine", {"id": "other", "title": "t", "group": "gesture", "phases": [{"time": 1}]}), None),
+    "action_name_taken": (action("wave"), None),
+    "action_heavy": (action("big", b"{" + b" " * 17000 + b"}"), None),
+    "action_unchecked": (action("mine"), None),
+    "action_failed": (action("mine", None, {"passed": False, "heroes": {"cow": {"played": True, "pass": False}}}), None),
     "frames_unused": (lambda r: Image.new("RGBA", (200, 150)).save(r / "sets/barn/crate.f2.png"), None),
     "media_missing": (script(lambda s: s["film"]["music"].update(file="nope.mp3")), None),
     "name_case": (script(lambda s: s["film"]["music"].update(file="Theme.mp3")), None),

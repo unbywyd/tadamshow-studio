@@ -1,0 +1,549 @@
+{
+  "$id": "https://tadamshow.com/schemas/action.json",
+  "title": "action",
+  "description": "engine/actions/<id>.json and a world's actions/<id>.json: an action of the puppet engine (data only)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,39}$"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "en": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          "required": [
+            "ru"
+          ]
+        }
+      ]
+    },
+    "group": {
+      "type": "string",
+      "enum": [
+        "pose",
+        "gesture",
+        "body",
+        "move",
+        "feeling",
+        "dance",
+        "item",
+        "fight",
+        "silly",
+        "music",
+        "two"
+      ]
+    },
+    "params": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number",
+            "minimum": -1000,
+            "maximum": 1000
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string",
+            "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+          }
+        ]
+      }
+    },
+    "phases": {
+      "minItems": 1,
+      "maxItems": 24,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "loop": {
+            "type": "boolean"
+          },
+          "ease": {
+            "type": "string",
+            "enum": [
+              "inout",
+              "out",
+              "in",
+              "linear"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+          },
+          "legs": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "head": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "arm_l": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "arm_r": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "arms": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "view": {
+      "type": "string",
+      "enum": [
+        "front",
+        "side",
+        "back"
+      ]
+    },
+    "front": {
+      "minItems": 1,
+      "maxItems": 24,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "loop": {
+            "type": "boolean"
+          },
+          "ease": {
+            "type": "string",
+            "enum": [
+              "inout",
+              "out",
+              "in",
+              "linear"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+          },
+          "legs": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "head": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "arm_l": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "arm_r": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          },
+          "arms": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "rest"
+              },
+              {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "low_view": {
+      "type": "string",
+      "enum": [
+        "front",
+        "side",
+        "back"
+      ]
+    },
+    "two": {
+      "type": "boolean"
+    },
+    "partner_only": {
+      "type": "boolean"
+    },
+    "covers_face": {
+      "type": "boolean"
+    },
+    "seated": {
+      "type": "boolean"
+    },
+    "pair": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/__schema0"
+      }
+    },
+    "beats": {
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/__schema0"
+      }
+    },
+    "beat_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "test": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/__schema0"
+      }
+    },
+    "test_items": {
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/__schema0"
+        }
+      }
+    },
+    "author": {
+      "type": "string",
+      "maxLength": 80
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "group",
+    "phases"
+  ],
+  "additionalProperties": {},
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": -1000,
+          "maximum": 1000
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+        },
+        {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[@$]?[a-z][a-z0-9_]{0,39}$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      ]
+    }
+  }
+}

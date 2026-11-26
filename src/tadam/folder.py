@@ -79,6 +79,9 @@ def why_not(p: str) -> str | None:
     if DOUBLE_EXT.search(p):
         return "a double extension"
     if not _placed(segs, kind):
+        if segs[0] == "actions":            # (mechanics-tz М3: the server takes a world's actions in a later stage)
+            return ("a world's own action: it plays in the kit (tadam play, the workshop); the site takes a world's "
+                    "actions in a later stage, until then a script that calls it plays without it on the site")
         return "not a place of the world folder layout"
     return None
 

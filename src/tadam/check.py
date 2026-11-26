@@ -53,6 +53,13 @@ CODES = {
     "frames_ignored": ("warning", "a 'frames' record on a part that cannot be frames (the head, a hand)"),
     "frames_heavy": ("warning", "the frames of one drawing are very large (memory on a phone)"),
     "frames_unused": ("warning", "frames' files that no 'frames' record shows (left by a puppet or set made again)"),
+    "action_name": ("error", "an action's \"id\" is not its file name (actions/<id>.json)"),
+    "action_name_taken": ("error", "a world's action has the name of a core library action (the library wins)"),
+    "action_heavy": ("error", "an action file is larger than 16 KB"),
+    "action_unchecked": ("warning", "a world's action was never checked in the engine, or changed since "
+                                    "(tadam action check <id> --proof)"),
+    "action_failed": ("warning", "a world's action has faults on a hero or a proof body (an error when a script "
+                                 "uses it)"),
     "media_missing": ("error", "a music, ambience or prop file the script names is not in media/"),
     "name_case": ("error", "a name differs from the file's name only in letter case"),
     "episode_missing": ("error", "no such episode folder"),
@@ -307,6 +314,37 @@ class _Run:
             p["image"]: p.get("frames") for p in (st.get("pieces") if isinstance(st.get("pieces"), list) else [])
             if isinstance(p, dict) and isinstance(p.get("image"), str) and "/" not in p["image"]})
 
+    def actions(self, used: set):
+        """The world's own actions (actions/<id>.json): the schema, the name, the size, the last engine check."""
+        from tadam import actionkit
+        d = self.w.root / "actions"
+        if not d.is_dir():
+            return
+        core = {f.stem for f in actionkit.core_dir().glob("*.json")}
+        for f in sorted(d.glob("*.json")):
+            if f.name.endswith(actionkit.CHECK_SUFFIX):
+                continue
+            rel = f"actions/{f.name}"
+            if f.stat().st_size > actionkit.MAX_BYTES:
+                self.add("action_heavy", rel, f"{f.stat().st_size // 1024} KB: an action is data of a few KB")
+                continue
+            data = self.load(rel, "action")
+            if not isinstance(data, dict):
+                continue
+            if data.get("id") != f.stem:
+                self.add("action_name", rel, f"\"id\" is {data.get('id')!r}: it must be {f.stem!r}")
+            if f.stem in core:
+                self.add("action_name_taken", rel, f"{f.stem!r} is an action of the core library: rename it")
+                continue
+            st, res = actionkit.check_state(actionkit.Entry(f.stem, data, f, "world"))
+            if st in ("missing", "stale"):
+                self.add("action_unchecked", rel, ("never checked" if st == "missing" else "changed since its check")
+                         + f": `tadam action check {f.stem} --proof`")
+            elif st == "failed":
+                bad = [h for h, r in (res or {}).get("heroes", {}).items() if r.get("played") and not r.get("pass")]
+                self.add("action_failed", rel, f"faults on {', '.join(bad)} (actions/{f.stem}.check.json)",
+                         "error" if f.stem in used else None)
+
     def frames_unused(self, folder: Path, where: str, records: dict):
         left = strip.unused(folder, records)
         if left:
@@ -525,7 +563,7 @@ class _Run:
 
     def scenes(self, rel: str, n: str, s: dict):
         """Every shot as the engine scene it becomes, through the scene checks."""
-        ctx = scenecheck.Context.from_engine(engine_dir())
+        ctx = scenecheck.Context.from_engine(engine_dir(), world_actions=self.w.root / "actions")
         for i, (sid, scene) in enumerate(resolve.film_scenes(self.w, s, self.langs[0])):
             for issue in scenecheck.check_scene(scene, ctx, f"{rel} shot {sid}"):
                 if issue.code not in _SOURCE:
@@ -557,6 +595,25 @@ def used_heroes(w: World, episodes: list[str]) -> set:
     return out
 
 
+def used_actions(w: World) -> set:
+    """Every action name a script of the world calls ("do": "<id>", "style": "<id>")."""
+    out: set = set()
+
+    def walk(x):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                if k in ("do", "style") and isinstance(v, str):
+                    out.add(v)
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    for n in w.episodes():
+        data, _ = read_json(w.episode_dir(n) / "script.json")
+        walk(data)
+    return out
+
+
 def check_world(root: Path | str, episode: str | None = None) -> list[Issue]:
     """Every finding for the world folder and one episode (or all of them)."""
     r = _Run(Path(root))
@@ -566,6 +623,7 @@ def check_world(root: Path | str, episode: str | None = None) -> list[Issue]:
     episodes = [episode] if episode else r.w.episodes()
     r.heroes(used_heroes(r.w, [e for e in episodes if r.w.episode_dir(e).is_dir()]))
     r.sets()
+    r.actions(used_actions(r.w))
     for n in episodes:
         r.episode(str(n))
     r.out += words.check_words(r.w.root, [str(n) for n in episodes])

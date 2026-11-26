@@ -131,15 +131,23 @@ class Context:
     phrases: Callable[[str], int | None] = lambda clip: None   # how many phrases a recorded voice has
 
     @classmethod
-    def from_engine(cls, engine_dir: Path, scene_dir: Path | None = None) -> "Context":
-        """The real engine folder, files relative to `scene_dir` (or absolute)."""
+    def from_engine(cls, engine_dir: Path, scene_dir: Path | None = None,
+                    world_actions: Path | None = None) -> "Context":
+        """The real engine folder, files relative to `scene_dir` (or absolute); `world_actions`: a world's own
+        actions/ folder (after the library: a library name wins, as in the engine)."""
         engine_dir = Path(engine_dir)
         actions = {}
-        for f in sorted((engine_dir / "actions").glob("*.json")):
-            try:
-                actions[f.stem] = json.loads(f.read_text(encoding="utf-8"))
-            except ValueError:
-                pass
+        own = [Path(world_actions)] if world_actions else []
+        if scene_dir is not None and not own and (Path(scene_dir) / "actions").is_dir():
+            own = [Path(scene_dir) / "actions"]
+        for d in [engine_dir / "actions", *own]:
+            for f in sorted(d.glob("*.json")):
+                if f.name.endswith(".check.json") or f.stem in actions:
+                    continue
+                try:
+                    actions[f.stem] = json.loads(f.read_text(encoding="utf-8"))
+                except ValueError:
+                    pass
         items = {}
         for f in sorted((engine_dir / "items").glob("*.json")):
             try:

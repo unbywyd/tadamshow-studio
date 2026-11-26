@@ -960,6 +960,139 @@
                 "type": "null"
               }
             ]
+          },
+          "actions": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "passed": {
+                    "type": "boolean"
+                  },
+                  "fresh": {
+                    "type": "boolean"
+                  },
+                  "seconds": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "stage1": {
+                    "type": "object",
+                    "properties": {
+                      "total": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "passed": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "failed": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "passed",
+                      "failed",
+                      "missing"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "limits": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  "actions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "group": {
+                          "type": "string"
+                        },
+                        "stage1": {
+                          "type": "boolean"
+                        },
+                        "pass": {
+                          "type": "boolean"
+                        },
+                        "runs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "side": {
+                                "type": "string"
+                              },
+                              "pass": {
+                                "type": "boolean"
+                              },
+                              "faults": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "required": [
+                              "side",
+                              "pass",
+                              "faults"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "group",
+                        "stage1",
+                        "pass",
+                        "runs"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "passed",
+                  "fresh",
+                  "seconds",
+                  "stage1",
+                  "limits",
+                  "actions"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -971,7 +1104,8 @@
           "inEpisode",
           "portraitUrl",
           "sheetUrl",
-          "puppet"
+          "puppet",
+          "actions"
         ],
         "additionalProperties": false
       }
