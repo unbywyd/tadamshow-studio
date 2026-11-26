@@ -60,5 +60,71 @@
    "legs": "rest",
    "body": "rest"
   }
+ ],
+ "front": [
+  {
+   "time": 0.3,
+   "arms": {
+    "at": [
+     0.5,
+     0.42
+    ],
+    "look": "fist"
+   },
+   "legs": {
+    "drop": 0.04,
+    "shift": -0.1
+   },
+   "head": -4
+  },
+  {
+   "time": 0.24,
+   "ease": "out",
+   "legs": {
+    "foot_r": [
+     0.55,
+     0.4
+    ]
+   },
+   "body": {
+    "lean": -6
+   },
+   "arm_l": {
+    "at": [
+     0.66,
+     0.18
+    ]
+   },
+   "head": -8,
+   "arm_r": {
+    "at": [
+     0.45,
+     0.5
+    ]
+   }
+  },
+  {
+   "time": 0.25
+  },
+  {
+   "time": 0.35,
+   "legs": {
+    "foot_r": [
+     0.0,
+     0.0
+    ]
+   },
+   "body": {
+    "lean": -3
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.4,
+   "arms": "rest",
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
  ]
 }

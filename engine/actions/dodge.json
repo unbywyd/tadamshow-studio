@@ -32,5 +32,37 @@
    "head": "rest",
    "legs": "rest"
   }
+ ],
+ "front": [
+  {
+   "time": 0.2,
+   "ease": "out",
+   "body": {
+    "lean": -16
+   },
+   "legs": {
+    "drop": 0.1,
+    "shift": -0.12
+   },
+   "head": -14,
+   "arms": {
+    "at": [
+     0.45,
+     0.2
+    ],
+    "look": "palm"
+   }
+  },
+  {
+   "time": 0.4
+  },
+  {
+   "name": "return",
+   "time": 0.4,
+   "arms": "rest",
+   "body": "rest",
+   "head": "rest",
+   "legs": "rest"
+  }
  ]
 }

@@ -52,5 +52,50 @@
    "body": "rest",
    "head": "rest"
   }
+ ],
+ "front": [
+  {
+   "time": 0.35,
+   "arms": {
+    "at": [
+     0.3,
+     0.05
+    ],
+    "look": "fist",
+    "contact": true,
+    "elbow": "down"
+   },
+   "legs": {
+    "drop": 0.08,
+    "foot_l": [
+     0.1,
+     0.0
+    ],
+    "foot_r": [
+     0.1,
+     0.0
+    ]
+   },
+   "head": -5
+  },
+  {
+   "time": 1.5,
+   "loop": true,
+   "legs": {
+    "drop": {
+     "base": 0.08,
+     "amp": 0.025,
+     "rate": 2.2
+    }
+   }
+  },
+  {
+   "name": "return",
+   "time": 0.4,
+   "arms": "rest",
+   "legs": "rest",
+   "body": "rest",
+   "head": "rest"
+  }
  ]
 }

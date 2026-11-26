@@ -1291,7 +1291,7 @@ func _apply() -> void:
 			var size: float = float(_gait_look.get("arms", 1.0))
 			var bend: float = float(_gait_look.get("bend", 0.0)) * _walk_w
 			if bend > 0.0:                                    # a run: the elbows bent, the fists pump (forward and up)
-				where = where.lerp(Vector2(0.05 if view == "side" else 0.12, 0.5), bend)
+				where = where.lerp(Vector2(0.05 if view == "side" else 0.44, 0.45), bend)   # (seen from the front the fists pump beside the body, never into it)
 				where.y -= 0.12 * bend * phase
 			if view == "side":
 				where.x += 0.22 * size * phase
