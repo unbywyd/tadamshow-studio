@@ -1022,7 +1022,7 @@ func _pose_words(p: Dictionary) -> String:
 			var extra: Array = []
 			if arm.has("look"):
 				extra.append(LOOK_NAMES.get(arm["look"], arm["look"]))
-			if arm.has("elbow"):
+			if arm.get("elbow", null) is String:
 				extra.append(ELBOW_NAMES.get(arm["elbow"], arm["elbow"]))
 			w.append(("правая рука" if ch == "arm_r" else "левая рука") + (" (" + ", ".join(extra) + ")" if not extra.is_empty() else ""))
 	var lg: Dictionary = p.get("legs", {})
@@ -1512,6 +1512,47 @@ func _apply_pose() -> void:
 	_dirty_state = true
 
 
+## The pose with its arms said in ANGLES, read from the hero as it stands now (what the person sees is what is
+## kept: the elbow's side is in the numbers, so the pose is the same on a tall hero and a short one).
+func _in_angles(pose: Dictionary) -> Dictionary:
+	var out := pose.duplicate(true)
+	var a := _main()
+	if a == null:
+		return out
+	for ch: String in ["arm_l", "arm_r"]:
+		if not (out.get(ch, null) is Dictionary) or out[ch].has("raise"):
+			continue
+		var c: Variant = a.puppet.chains["hand_" + ch.right(1)]
+		var s: float = a.motion._sign(ch)
+		var up: float = (a.puppet.joint_position(c.b.name) - a.puppet.joint_position(c.a.name)).angle()
+		var fo: float = (a.puppet.joint_position(c.end.name) - a.puppet.joint_position(c.b.name)).angle()
+		out[ch]["raise"] = snappedf(rad_to_deg(wrapf((PI / 2.0 - up) * s, -PI, PI)), 1.0)
+		out[ch]["elbow"] = snappedf(rad_to_deg(wrapf((up - fo) * s, -PI, PI)), 1.0)
+		out[ch].erase("at")
+	return out
+
+
+## Before a hand is moved by hand again, its arm goes back from angles to a place (the dots pull places).
+func _arm_to_place(a: Actor, ch: String) -> void:
+	if not (pose_now.get(ch, null) is Dictionary) or not pose_now[ch].has("raise"):
+		return
+	var mo: MotionScript = a.motion
+	var d: Vector2 = (a.puppet.handle_position("hand_" + ch.right(1)) - mo._shoulder_at(ch, a.puppet.body_position())) / mo.arm
+	pose_now[ch]["at"] = [snappedf(d.x * mo._sign(ch), 0.01), snappedf(d.y, 0.01)]
+	pose_now[ch].erase("raise")
+	pose_now[ch].erase("elbow")
+
+
+## Where an arm's hand is, by its pose (a place, or angles with an even upper arm and forearm: for the way's length).
+static func _hand_of(arm: Dictionary) -> Vector2:
+	if arm.has("raise"):
+		var r: float = deg_to_rad(float(arm["raise"]))
+		var e: float = deg_to_rad(float(arm.get("elbow", 0.0)))
+		return Vector2(0.5 * sin(r) + 0.5 * sin(r + e), 0.5 * cos(r) + 0.5 * cos(r + e))
+	var p: Array = arm.get("at", [0, 0])
+	return Vector2(p[0], p[1])
+
+
 ## A pose as it plays: what it does not say (a shoulder, the head's drop) is at rest, not left where it was.
 static func _full(pose: Dictionary) -> Dictionary:
 	var out := pose.duplicate(true)
@@ -1530,7 +1571,8 @@ static func _head_tilt(pose: Dictionary) -> float:
 
 func _fix() -> void:
 	var before: Dictionary = poses[-1]["pose"] if not poses.is_empty() else rest_pose()
-	poses.append({"pose": pose_now.duplicate(true), "time": way_time(before, pose_now), "ease": "inout", "hold": false})
+	var kept := _in_angles(pose_now)
+	poses.append({"pose": kept, "time": way_time(before, kept), "ease": "inout", "hold": false})
 	_sel = -1
 	_fill_poses()
 	_save_poses()
@@ -1542,9 +1584,7 @@ static func way_time(a: Dictionary, b: Dictionary) -> float:
 	var far := 0.0
 	for ch: String in ["arm_l", "arm_r"]:
 		if a.get(ch, null) is Dictionary and b.get(ch, null) is Dictionary:
-			var p: Array = a[ch].get("at", [0, 0])
-			var q: Array = b[ch].get("at", [0, 0])
-			far = maxf(far, Vector2(p[0], p[1]).distance_to(Vector2(q[0], q[1])))
+			far = maxf(far, _hand_of(a[ch]).distance_to(_hand_of(b[ch])))
 	if a.get("legs", null) is Dictionary and b.get("legs", null) is Dictionary:
 		far = maxf(far, 1.5 * absf(float(a["legs"].get("drop", 0.0)) - float(b["legs"].get("drop", 0.0))))
 		for f: String in ["foot_l", "foot_r"]:
@@ -1711,7 +1751,7 @@ func _draw_dots(canvas: Node2D) -> void:
 				extra.append(LOOK_NAMES.get(arm["look"], arm["look"]))
 			if arm.has("wrist"):
 				extra.append("поворот %d°" % int(arm["wrist"]))
-			if arm.has("elbow"):
+			if arm.get("elbow", null) is String:
 				extra.append(ELBOW_NAMES.get(arm["elbow"], arm["elbow"]))
 			if not extra.is_empty():
 				text += " · " + ", ".join(extra)
@@ -1769,6 +1809,8 @@ func _dots_mouse(event: InputEvent, a: Actor, m: Vector2) -> bool:
 				return true
 			return false
 		elif e.pressed and e.button_index == MOUSE_BUTTON_RIGHT and k.begins_with("hand"):
+			if e.shift_pressed:
+				_arm_to_place(a, "arm_" + k.right(1))        # (the elbow is chosen for a place, not for angles)
 			var arm: Dictionary = pose_now["arm_" + k.right(1)]
 			if e.shift_pressed:
 				var i := (ELBOWS.find(str(arm.get("elbow", ""))) + 1) % ELBOWS.size()
@@ -1815,6 +1857,7 @@ func _drag_to(a: Actor, k: String, to: Vector2) -> void:
 	var p: Puppet = a.puppet
 	if k.begins_with("hand"):
 		var ch := "arm_" + k.right(1)
+		_arm_to_place(a, ch)
 		var sh: Vector2 = mo._shoulder_at(ch, p.body_position())
 		var d := (to - sh) / mo.arm
 		d = d.limit_length(1.0)

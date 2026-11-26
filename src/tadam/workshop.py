@@ -228,12 +228,21 @@ def _num(x) -> float:
     return float(x) if isinstance(x, (int, float)) else 0.0
 
 
+def _hand_of(arm: dict) -> list[float]:
+    """Where an arm's hand is, by its pose: a place, or angles (an even upper arm and forearm: for the way's length)."""
+    if "raise" in arm:
+        import math
+        r, e = math.radians(_num(arm["raise"])), math.radians(_num(arm.get("elbow", 0)))
+        return [0.5 * math.sin(r) + 0.5 * math.sin(r + e), 0.5 * math.cos(r) + 0.5 * math.cos(r + e)]
+    return arm.get("at", [0, 0])
+
+
 def way_time(a: dict, b: dict) -> float:
     """The time from pose a to pose b: the longest way at HAND_PACE (engine/workshop.gd way_time, the same)."""
     far = 0.0
     for ch in ("arm_l", "arm_r"):
         if isinstance(a.get(ch), dict) and isinstance(b.get(ch), dict):
-            far = max(far, _dist(a[ch].get("at", [0, 0]), b[ch].get("at", [0, 0])))
+            far = max(far, _dist(_hand_of(a[ch]), _hand_of(b[ch])))
     la, lb = a.get("legs"), b.get("legs")
     if isinstance(la, dict) and isinstance(lb, dict):
         far = max(far, 1.5 * abs(_num(la.get("drop", 0)) - _num(lb.get("drop", 0))))

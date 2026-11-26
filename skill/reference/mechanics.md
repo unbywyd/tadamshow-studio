@@ -35,6 +35,13 @@ All of it is free: no paid call is made.
   shoulder, or `{"to": "chest" | "face" | "hip" | …}`; `look`: palm / fist / back / edge / point; `wrist`;
   `elbow`: down / up / out / in; `aim`; `contact: true` to touch the body; `shoulder`: raised in arm lengths,
   0.1–0.15 is a shrug). The head: a tilt, or `{"tilt": 7, "drop": 0.12}` (drawn into the collar; − stretched up).
+- **Two ways to say an arm.** A FREE gesture (a wave, a shrug, a wind-up): its ANGLES, `"arm_r": {"raise": 140,
+  "elbow": 35}` — raise: 0 hanging, 90 out level, 180 straight up, < 0 across the body; elbow (a number): 0
+  straight, + the forearm turns on the way the arm rises, − in toward the body. What is written is what is drawn,
+  within 2°, the same on every body: the engine guesses nothing, and its laws do not move that hand (so a hand
+  written into the belly IS in the belly: the check says so). A hand that must TOUCH something: a place,
+  `"at": {"to": "hip"}` (or `[out, down]`); there the engine picks the elbow, or the action says it
+  (`"elbow": "out"`). Write angles by default; a place only for a touch, a thing, a partner.
 - Any number may swing: `{ "base": 0, "amp": 24, "rate": 2.0 }`. A phase: `time` (s), `ease` (inout / out / in /
   linear), `loop: true` (lasts the call's `duration`). Write it for the RIGHT side: the engine mirrors it.
 - The last phase named `return` brings back what the action moved. Only words, numbers and lists: never a path
@@ -49,6 +56,9 @@ and the body. Do not fight a law in the file: when the table reports a fault, ch
 ## Working with the person: poses by hand, transitions by you
 
 The person feels movement; you write it down. The order:
+
+(Poses kept in the window say their arms in angles, read from the hero as the person left it: the draft action
+plays back exactly that, on any body.)
 
 1. Start `tadam workshop` in the background. On the «Позы» tab the person drags dots on the hero (hands, feet,
    pelvis, neck for the lean, head) and presses «Фикс» (F) for each pose, or says «вот эту зафиксируй» and you run

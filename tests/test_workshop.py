@@ -224,8 +224,8 @@ def test_the_window_keeps_a_pose_and_gives_it_back(tmp_path):
     assert abs(pa["hand_r"][0] - 480) < 30 and abs(pa["hand_r"][1] - 520) < 30
     poses, rest = workshop.read_poses(root)
     assert len(poses) == 1 and rest is not None
-    at = poses[0]["pose"]["arm_r"]["at"]
-    assert at[0] > 0 and -1.0 <= at[1] <= 1.0
+    arm = poses[0]["pose"]["arm_r"]              # (kept in angles since 26.11: the same on any body)
+    assert -180 <= arm["raise"] <= 180 and -180 <= arm["elbow"] <= 180 and "at" not in arm
     st = workshop.read_state(root)
     assert st["hero"] == "archivist" and st["poses"] == 1
 
@@ -296,3 +296,39 @@ def test_a_hero_says_how_complete_it_is(tmp_path):
     assert 0 <= r["percent"] <= 100 and len(r["items"]) == 4
     assert all(set(i) == {"title", "ok", "say"} and i["say"] for i in r["items"])
     assert isinstance(r["bad"], list)
+
+
+@needs_godot
+def test_an_arm_said_in_angles_is_drawn_at_those_angles():
+    """«raise», «elbow» in an action: the drawn arm has those angles (ten poses, both arms) on bodies of very
+    different build: what is written is what is seen, and the same on every body."""
+    dirs = proof.ensure(["plain", "heavy", "short"], log=lambda *_: None)
+    for name in ("plain", "heavy", "short"):
+        hero = (dirs / name / "puppet").as_posix()
+        out = _godot(["--headless", "--path", str(engine_dir()), "--script", "res://tools/angle_check.gd", "--", f"--hero={hero}"])
+        res = json.loads(next(x for x in out.splitlines() if x.startswith("ANGLES "))[7:])
+        assert len(res["rows"]) == 20 and res["worst"] <= 3.0, (name, res["worst"])
+
+
+@needs_godot
+def test_a_pose_made_by_hand_is_kept_in_angles(tmp_path):
+    """A hand pulled by its dot and the pose kept: the kept pose says the arm in angles (raise, elbow), plays back
+    to the same place, and its draft action carries the angles."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    a, b = (tmp_path / "a.json").as_posix(), (tmp_path / "b.json").as_posix()
+    seq = f"still@5,tab:1@20,drag:hand_r:520:480@40,where:{a}@200,fix@210,rest@220,select:1@240,where:{b}@440,quit@450"
+    cmd = workshop.command(d / "config.json")
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
+    poses, rest = workshop.read_poses(root)
+    arm = poses[0]["pose"]["arm_r"]
+    assert "raise" in arm and "elbow" in arm and "at" not in arm, arm
+    pa, pb = json.loads(Path(a).read_text()), json.loads(Path(b).read_text())
+    rel = lambda p: [p["hand_r"][i] - p["body"][i] for i in range(2)]
+    assert max(abs(rel(pa)[i] - rel(pb)[i]) for i in range(2)) < 8.0, (rel(pa), rel(pb))
+    act = workshop.from_poses(poses, "angled", base=rest)
+    assert "raise" in act["phases"][0]["arm_r"]

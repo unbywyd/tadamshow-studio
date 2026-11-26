@@ -9,11 +9,8 @@
    "ease": "out",
    "arms": {
     "shoulder": 0.15,
-    "at": [
-     0.36,
-     0.6
-    ],
-    "elbow": "down",
+    "raise": 22,
+    "elbow": 80,
     "look": "palm",
     "aim": 10
    },

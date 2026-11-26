@@ -9,10 +9,8 @@
   {
    "time": 0.35,
    "arm_r": {
-    "at": [
-     0.44,
-     -0.68
-    ],
+    "raise": 140,
+    "elbow": 35,
     "look": "palm"
    },
    "head": 6
@@ -21,9 +19,10 @@
    "time": 1.6,
    "loop": true,
    "arm_r": {
-    "wrist": {
-     "base": 0,
-     "amp": 24,
+    "raise": 140,
+    "elbow": {
+     "base": 35,
+     "amp": 22,
      "rate": 2.0
     }
    }

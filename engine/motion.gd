@@ -29,6 +29,12 @@ extends RefCounted
 ##         wrist: degrees, outward   look: "palm" | "fist" | "back" | "edge" (the hand turned edge on) | "point"
 ##              (the index finger out) | "auto"
 ##         contact: true = may touch the body
+##      or, instead of "at", the arm's own ANGLES (what is written is what is seen: the engine guesses nothing):
+##         raise: degrees, 0 hanging straight down, 90 out level, 180 straight up, < 0 across the body
+##         elbow: degrees (a NUMBER here), 0 straight, + the forearm turns on the way the arm rises (up when the
+##              arm is out), - the other way (in toward the body). Its sign IS the elbow's side.
+##         Either may swing: { "base": 35, "amp": 22, "rate": 2.0 }. A hand that must TOUCH something still says
+##         "at": { "to": ... }: angles are for free gestures.
 ##         shoulder: arm lengths the shoulder is raised (+, at most 0.16: a shrug) or dropped (-, at most 0.08)
 ##         elbow: "down" | "up" | "out" | "in": where the ELBOW points in this pose, said outright (by default the
 ##              engine chooses: under the hand for an arm held out or raised, to the side for one hanging)
@@ -511,6 +517,45 @@ func _resolve(ph: Dictionary, side: String, prm: Dictionary) -> Dictionary:
 				out[key] = _flip(hv, ["tilt"]) if mirror and view != "side" else hv
 			_:
 				out[key] = v
+	for ch: String in ["arm_l", "arm_r"]:
+		if out.get(ch, null) is Dictionary and (out[ch] as Dictionary).has("raise"):
+			out[ch] = _from_angles(ch, out[ch])
+	return out
+
+
+## An arm said in ANGLES ("raise", "elbow": a number) becomes what the rest of the engine plays: the place of the
+## wrist ("at", arm lengths from the shoulder, with THIS hero's own upper arm and forearm) and the elbow's side
+## ("_side", decided by the sign of the elbow, never guessed), marked "exact": the laws that move a hand aside
+## (out of the body, away from its own shoulder) leave it where it was written. A swing of an angle becomes the
+## to-and-fro of the wrist along its arc there.
+func _from_angles(ch: String, spec: Dictionary) -> Dictionary:
+	var out := spec.duplicate()
+	var c: Variant = puppet.chains["hand_" + ch.right(1)]
+	var a1: float = c.l1 / (c.l1 + c.l2)
+	var a2: float = 1.0 - a1
+	var rv: Variant = spec["raise"]
+	var ev: Variant = spec.get("elbow", 0.0)
+	if ev is String:
+		ev = 0.0                                  # ("elbow": "out" beside angles: the angle decides)
+	var r0: float = deg_to_rad(float(rv.get("base", 0.0)) if rv is Dictionary else float(rv))
+	var e0: float = deg_to_rad(float(ev.get("base", 0.0)) if ev is Dictionary else float(ev))
+	var at := Vector2(a1 * sin(r0) + a2 * sin(r0 + e0), a1 * cos(r0) + a2 * cos(r0 + e0))
+	var amp := Vector2.ZERO
+	var swing: Dictionary = {}
+	if ev is Dictionary and ev.has("amp"):
+		amp += Vector2(a2 * cos(r0 + e0), -a2 * sin(r0 + e0)) * deg_to_rad(float(ev["amp"]))
+		swing = ev
+	if rv is Dictionary and rv.has("amp"):
+		amp += Vector2(a1 * cos(r0) + a2 * cos(r0 + e0), -(a1 * sin(r0) + a2 * sin(r0 + e0))) * deg_to_rad(float(rv["amp"]))
+		swing = rv
+	if swing.is_empty():
+		out["at"] = [at.x, at.y]
+	else:
+		out["at"] = {"base": [at.x, at.y], "amp": [amp.x, amp.y], "rate": float(swing.get("rate", 1.0)), "phase": float(swing.get("phase", 0.0))}
+	out["_side"] = -_lsign(ch) * signf(e0) if absf(e0) > deg_to_rad(3.0) else 0.0
+	out["exact"] = true
+	out.erase("raise")
+	out.erase("elbow")
 	return out
 
 
@@ -732,6 +777,8 @@ func _next_phase(r: Run) -> void:
 				_elbow[ch] = "out"            # (out in the open now: every way from here goes round the shoulder)
 			var leaving: bool = bool(c.from.get("contact", false)) and not bool(c.goal.get("contact", false)) and not left_already
 			c.now["contact"] = bool(c.goal.get("contact", false)) or leaving
+			if c.goal.has("at"):
+				c.now["exact"] = bool(c.goal.get("exact", false))
 			c.now["leaving"] = leaving
 			var at_spec: Variant = c.goal.get("at", null)
 			var was_front: bool = _elbow[ch] == "down" and not left_already   # leaving a place in front of the body (chin, chest)
@@ -765,6 +812,8 @@ func _next_phase(r: Run) -> void:
 					if not new_place:
 						c.goal["at"] = g_at              # the elbow alone changes: the hand stays, the arm still swings over
 					var side_goal: float = _pose_side(ch, at_spec, g_at, e_want if e_want is String else "")
+					if float(c.goal.get("_side", 0.0)) != 0.0:
+						side_goal = float(c.goal["_side"])       # (said in angles: the elbow's own sign)
 					_side_goal[ch] = side_goal
 					var chain: Variant = puppet.chains[hand]
 					_over.erase(ch)
@@ -889,7 +938,7 @@ func _advance_values(r: Run) -> void:
 	for ch: String in r.owned:
 		var c: Chan = chans[ch]
 		for key: String in c.goal:
-			if key in ["look", "contact", "jump", "forward", "walk", "speed", "seat", "grab", "release", "throw", "reach", "catch", "gait", "elbow"]:
+			if key in ["look", "contact", "jump", "forward", "walk", "speed", "seat", "grab", "release", "throw", "reach", "catch", "gait", "elbow", "_side", "exact"]:
 				continue
 			var spec: Variant = c.goal[key]
 			if ch.begins_with("arm") and key == "at":
@@ -1284,7 +1333,8 @@ func _apply() -> void:
 		var c: Chan = chans[ch]
 		var h: String = "hand_" + ch.right(1)
 		var s := _sign(ch)
-		var where: Vector2 = _cart(_fold_limit(_stretch(ch, c.now["at"])))
+		var exact: bool = c.owner != null and bool(c.now.get("exact", false))
+		var where: Vector2 = _cart(_stretch(ch, c.now["at"]) if exact else _fold_limit(_stretch(ch, c.now["at"])))
 		if _walk_w > 0.0 and c.owner == null:        # arms swing against the legs while walking
 			var same: float = 1.0 if _walk_side.right(1) == ch.right(1) else -1.0
 			var phase: float = -same * cos(PI * _walk_u) * _walk_w      # the arm on the swinging leg's side goes back
@@ -1298,7 +1348,7 @@ func _apply() -> void:
 			else:
 				where.y -= 0.03 * size * absf(phase)
 		var target: Vector2 = _shoulder_at(ch, body) + Vector2(where.x * s, where.y) * arm
-		if not c.now.get("contact", false) and view != "side":     # in profile arms pass before and behind the body
+		if not c.now.get("contact", false) and not exact and view != "side":     # in profile arms pass before and behind the body
 			target = _out_of_body(target, s, ch)
 		# a thing carried with both hands is HELD: hands no action moves stay on its sides, where it is carried
 		# (law). Without it the arms hang and the crate floats between them.
