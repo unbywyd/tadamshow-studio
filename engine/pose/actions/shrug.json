@@ -1,0 +1,30 @@
+{
+ "id": "shrug",
+ "title": "пожать плечами",
+ "old": "shrug",
+ "phases": [
+  {
+   "time": 0.28,
+   "ease": "out",
+   "pose": {
+    "shoulders": 0.13,
+    "arms": {
+     "raise": 22,
+     "elbow": 80,
+     "hand": "palm"
+    },
+    "head": {
+     "tilt": 7,
+     "drop": 0.12
+    }
+   }
+  },
+  {
+   "time": 0.7
+  },
+  {
+   "time": 0.4,
+   "pose": "rest"
+  }
+ ]
+}
