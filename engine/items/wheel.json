@@ -2,6 +2,7 @@
  "id": "wheel",
  "title": "руль",
  "size": 0.1,
+ "fit": 1.2,
  "hold": "both",
  "grip": [
   0.5,

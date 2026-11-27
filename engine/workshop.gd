@@ -155,14 +155,32 @@ func _ready() -> void:
 		_load_poses()
 	var heroes := _row_heroes()
 	var acts: Array = []
-	var fit := (SIZE.x / (heroes.size() + 0.6)) / 0.62 / SIZE.y     # (a body with its arms out is about 0.6 of its height wide)
+	# each hero as big as it is (its "height", and as wide as it is drawn): a short fat one stays short and fat beside
+	# a tall thin one. The whole row is made smaller together when it does not fit: never each to one height.
+	var tall := 0.0
+	var span := 0.0                              # the row's width at full size, share of the stage width
+	var wides: Array = []
+	for h: Dictionary in heroes:
+		var hh := float(h.get("height", 0.36))
+		var wd: float = hh * SIZE.y * _stand_width(str(h["dir"])) / SIZE.x
+		wides.append(wd)
+		tall = maxf(tall, hh)
+		span += wd
+	var gap_k := 0.35                            # between two heroes: this much of the narrower one's width
+	var gaps := 0.0
+	for i in range(1, wides.size()):
+		gaps += gap_k * minf(float(wides[i - 1]), float(wides[i]))
+	var k := minf(minf(1.0, 0.62 / maxf(tall, 0.01)), 0.92 / maxf(span + gaps, 0.01))
+	var x0 := 0.5 - (span + gaps) * k * 0.5
 	for i in heroes.size():
 		var h: Dictionary = heroes[i]
-		var x: float = (i + 0.8) / (heroes.size() + 0.6)
+		if i > 0:
+			x0 += gap_k * minf(float(wides[i - 1]), float(wides[i])) * k
+		var x: float = x0 + float(wides[i]) * k * 0.5
+		x0 += float(wides[i]) * k
 		if row == "pair":                        # (a pair: side by side, as far apart as the slider says)
 			x = float(pair_x[i])
-		acts.append({"id": h["id"], "puppet": h["dir"], "x": x,
-			"height": minf(float(h.get("height", 0.36)), fit)})
+		acts.append({"id": h["id"], "puppet": h["dir"], "x": x, "height": float(h.get("height", 0.36)) * k})
 	preset = {"floor": 0.84, "seconds": 99999, "actors": acts, "items": [], "script": []}
 	# the window's base is the stage AND the panel: a narrower window shrinks both, a wider one widens the panel
 	get_tree().root.content_scale_size = Vector2i(int(SIZE.x + PANEL_W), int(SIZE.y))
@@ -255,6 +273,23 @@ func _row_heroes() -> Array:
 		hero_id = proof[0]["id"]
 		return [proof[0]]
 	return []
+
+
+## How wide a hero stands, in its own heights: from shoulder to shoulder and both arms hanging at the sides (never
+## narrower than its head). The sheet lays the parts apart, so their joints say it, not where they lie.
+static func _stand_width(dir: String) -> float:
+	var rig: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join("rig.json")))
+	if not (rig is Dictionary) or float(rig.get("body_height", 0.0)) <= 0.0:
+		return 0.6
+	var parts: Dictionary = rig.get("parts", {})
+	var w := 0.0
+	if parts.has("upper_arm_l") and parts.has("upper_arm_r"):
+		var l: Dictionary = parts["upper_arm_l"]
+		var r: Dictionary = parts["upper_arm_r"]
+		w = absf(float(r["joint"]["parent_at"][0]) - float(l["joint"]["parent_at"][0])) + float(l["box"][2]) + float(r["box"][2])
+	if parts.has("head"):
+		w = maxf(w, float(parts["head"]["box"][2]))
+	return w / float(rig["body_height"]) if w > 0.0 else 0.6
 
 
 ## Who can stand in a pair: the rubric's heroes (and the proof bodies, when the rubric has fewer than two).

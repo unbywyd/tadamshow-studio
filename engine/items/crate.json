@@ -2,6 +2,7 @@
  "id": "crate",
  "title": "ящик",
  "size": 0.13,
+ "fit": 1.5,
  "hold": "both",
  "grip": [
   0.5,
