@@ -7,36 +7,24 @@
   {
    "time": 0.6,
    "arm_r": {
-    "raise": 17,
-    "elbow": -111,
-    "front": true,
-    "contact": true,
-    "look": "edge"
+    "at": {"to": "belly", "dx": -0.08, "dy": -0.3},
+    "aim": 180, "contact": true, "front": true, "look": "edge"
    },
    "arm_l": {
-    "raise": 21,
-    "elbow": -100,
-    "front": true,
-    "contact": true,
-    "look": "edge"
+    "at": {"to": "belly", "dx": -0.08, "dy": 0.05},
+    "aim": 180, "contact": true, "front": true, "look": "edge"
    }
   },
   {
    "time": 2.0,
    "loop": true,
    "arm_r": {
-    "raise": {"base": 19.5, "amp": -2.5, "rate": 2.0, "phase": -0.25},
-    "elbow": {"base": -119.5, "amp": -8.5, "rate": 2.0, "phase": -0.25},
-    "front": true,
-    "contact": true,
-    "look": "edge"
+    "at": {"to": "belly", "dx": -0.08, "dy": -0.3, "amp": [0.0, -0.12], "rate": 2.0, "phase": -0.25},
+    "aim": 180, "contact": true, "front": true, "look": "edge"
    },
    "arm_l": {
-    "raise": {"base": 22, "amp": -1, "rate": 2.0, "phase": -0.25},
-    "elbow": {"base": -90, "amp": -10, "rate": 2.0, "phase": -0.25},
-    "front": true,
-    "contact": true,
-    "look": "edge"
+    "at": {"to": "belly", "dx": -0.08, "dy": 0.05},
+    "aim": 180, "contact": true, "front": true, "look": "edge"
    }
   },
   {

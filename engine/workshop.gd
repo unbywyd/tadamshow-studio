@@ -24,8 +24,9 @@ extends "res://stage.gd"
 const MotionScript := preload("res://motion.gd")
 const GROUP_TITLES := {"pose": "Позы", "gesture": "Жесты", "body": "Тело", "move": "Перемещение", "feeling": "Чувства",
 	"dance": "Танцы", "item": "С предметами", "fight": "Драка", "silly": "Дурачества", "music": "Музыка", "two": "Вдвоём"}
-const LOOKS := ["auto", "palm", "fist", "back", "edge", "point"]
-const LOOK_NAMES := {"auto": "сама", "palm": "ладонь", "fist": "кулак", "back": "тыльная", "edge": "ребро", "point": "палец"}
+const LOOKS := ["auto", "palm", "back", "edge", "fist", "fist_side", "fist_palm", "point", "thumb", "shake", "pinch"]
+const LOOK_NAMES := {"auto": "сама", "palm": "ладонь", "fist": "кулак", "back": "тыльная", "edge": "ребро", "point": "палец",
+	"fist_side": "кулак сбоку", "fist_palm": "кулак ладонью", "thumb": "большой палец", "shake": "для пожатия", "pinch": "щепоть"}
 const ELBOWS := ["", "down", "up", "out", "in"]
 const ELBOW_NAMES := {"down": "локоть вниз", "up": "локоть вверх", "out": "локоть наружу", "in": "локоть внутрь"}
 const EASES := ["inout", "out", "in", "linear"]
@@ -41,7 +42,8 @@ const FAULT_WORDS := {"wrong": "локоть или колено выгнули�
 const DOT_NAMES := {"hand_l": "левая кисть", "hand_r": "правая кисть", "foot_l": "левая стопа", "foot_r": "правая стопа",
 	"body": "таз: присесть, сдвинуться", "neck": "середина плеч: наклон корпуса", "head": "макушка: вбок — наклон, вниз — втянуть голову",
 	"shoulder_l": "левое плечо: вверх — поднять", "shoulder_r": "правое плечо: вверх — поднять",
-	"elbow_l": "левый локоть: тяните — согнуть в любую сторону", "elbow_r": "правый локоть: тяните — согнуть в любую сторону"}
+	"elbow_l": "левый локоть: тяните — согнуть в любую сторону", "elbow_r": "правый локоть: тяните — согнуть в любую сторону",
+	"turn_l": "левая кисть: тяните — повернуть в запястье", "turn_r": "правая кисть: тяните — повернуть в запястье"}
 const PANEL_W := 760.0
 const DOT := 14.0
 const REACH := 40.0
@@ -114,6 +116,7 @@ var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
 var _how_card: Control
 var _front_seg: HBoxContainer
+var _look_rows: Dictionary = {}        # "arm_r" -> the row of hand drawings to pick from
 var _panel_bg: Control
 var _panel_want := Vector2.ZERO
 var _below: ColorRect               # under the stage when the window is taller than it
@@ -1215,7 +1218,7 @@ static func _title_of(a: Dictionary, id: String) -> String:
 func _poses_page() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
-	box.add_child(_note("Синие точки — кисти, локти (маленькие) и стопы, красные — таз, плечи (наклон) и макушка. Локоть тяните, чтобы согнуть руку в нужную сторону: он остаётся там, пока двигаете кисть. На кисти: правый клик — ладонь, кулак, ребро, палец; колесо — поворот.", 18))
+	box.add_child(_note("Синие точки — кисти, локти и стопы; самые маленькие, на кончиках пальцев, поворачивают кисть в запястье. Красные — таз, плечи (наклон) и макушка. Локоть тяните, чтобы согнуть руку в нужную сторону: он остаётся там, пока двигаете кисть. Какой рисунок у кисти — ниже: «сама» выбирает движок, любой другой держится в позе.", 18))
 	if row == "pair":
 		_edit_seg = _seg([[str(_hero_def(hero_id).get("title", hero_id)) + " (слева)", 0], [str(_hero_def(partner_id).get("title", partner_id)) + " (справа)", 1]],
 			pair_edit, func(k: int) -> void: _pick_edit(k), "Tile")
@@ -1248,6 +1251,11 @@ func _poses_page() -> Control:
 		_apply_pose()
 		_say("Спереди: %s." % {"": "как нарисовано", "r": "рука справа на экране", "l": "рука слева на экране"}[v]), "Tile")
 	box.add_child(_line("Спереди", _front_seg))
+	# the hand's drawing, picked and held in the pose (otherwise the engine picks it by where the hand is)
+	_look_rows.clear()
+	for ch: String in ["arm_r", "arm_l"]:
+		_look_rows[ch] = _look_row(ch)
+		box.add_child(_line("Правая кисть" if ch == "arm_r" else "Левая кисть", _look_rows[ch]))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1285,9 +1293,10 @@ func _pose_words(p: Dictionary) -> String:
 	for ch: String in ["arm_r", "arm_l"]:
 		var arm0: Dictionary = p.get(ch, {})
 		if arm0.has("raise"):                   # (in angles: a hand hanging as at rest is not news)
-			if float(arm0["raise"]) < 15.0 and absf(float(arm0.get("elbow", 0.0))) < 12.0 and not arm0.has("look"):
+			if float(arm0["raise"]) < 15.0 and absf(float(arm0.get("elbow", 0.0))) < 12.0 and not arm0.has("look") and not arm0.has("wrist"):
 				continue
-			w.append("%s: подъём %d°, локоть %d°" % ["правая рука" if ch == "arm_r" else "левая рука", int(arm0["raise"]), int(arm0.get("elbow", 0.0))])
+			w.append("%s: подъём %d°, локоть %d°%s" % ["правая рука" if ch == "arm_r" else "левая рука", int(arm0["raise"]), int(arm0.get("elbow", 0.0)),
+				(", кисть %d°" % int(arm0["wrist"])) if arm0.has("wrist") else ""])
 			continue
 		if JSON.stringify(p.get(ch, {})) != JSON.stringify(r.get(ch, {})):
 			var arm: Dictionary = p.get(ch, {})
@@ -2164,7 +2173,46 @@ static func _strip(pics: Array) -> Image:
 	return out
 
 
+## A row of the hand's drawings for one arm: «сама» lets the engine choose; any other is held in the pose.
+func _look_row(ch: String) -> HFlowContainer:
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 4)
+	row.add_theme_constant_override("v_separation", 4)
+	var group := ButtonGroup.new()
+	var now: String = str(pose_now.get(ch, {}).get("look", "auto"))
+	for look: String in LOOKS:
+		var b := Button.new()
+		b.text = LOOK_NAMES.get(look, look)
+		b.toggle_mode = true
+		b.button_group = group
+		b.theme_type_variation = "Tile"
+		b.focus_mode = Control.FOCUS_NONE
+		b.button_pressed = look == now
+		b.set_meta("look", look)
+		b.pressed.connect(func() -> void:
+			if not (pose_now.get(ch, null) is Dictionary):
+				pose_now[ch] = {}
+			if look == "auto":
+				pose_now[ch].erase("look")
+			else:
+				pose_now[ch]["look"] = look
+			_apply_pose()
+			_say("%s кисть: %s." % ["Правая" if ch == "arm_r" else "Левая", LOOK_NAMES.get(look, look)]))
+		row.add_child(b)
+	return row
+
+
+func _show_looks() -> void:
+	for ch: String in _look_rows:
+		if not is_instance_valid(_look_rows[ch]):
+			continue
+		var now: String = str(pose_now.get(ch, {}).get("look", "auto"))
+		for b: Button in (_look_rows[ch] as HFlowContainer).get_children():
+			b.set_pressed_no_signal(str(b.get_meta("look")) == now)
+
+
 func _show_front() -> void:
+	_show_looks()
 	if _front_seg == null:
 		return
 	var fr := "r" if bool(pose_now.get("arm_r", {}).get("front", false)) else ("l" if bool(pose_now.get("arm_l", {}).get("front", false)) else "")
@@ -2471,6 +2519,10 @@ func _dot_points(a: Actor) -> Dictionary:
 		if p.chains.has("hand_" + sd):
 			out["shoulder_" + sd] = p.chains["hand_" + sd].a.node.global_position
 			out["elbow_" + sd] = p.joint_position(p.chains["hand_" + sd].b.name)
+			# the wrist's turn: a small dot past the hand, at the fingertips
+			var hp2: Variant = p.parts.get("hand_" + sd)
+			if hp2 != null:
+				out["turn_" + sd] = hp2.node.to_global(hp2.center * 2.0)
 	return out
 
 
@@ -2490,7 +2542,7 @@ func _draw_dots(canvas: Node2D) -> void:
 	for k: String in pts:
 		var at: Vector2 = pts[k]
 		var col: Color = C_DOT_BODY if k in ["body", "neck", "head", "shoulder_l", "shoulder_r"] else C_DOT_LIMB
-		var big: float = DOT * (1.25 if k == _drag or k == _hover else 1.0) * (0.75 if k.begins_with("elbow") else 1.0)
+		var big: float = DOT * (1.25 if k == _drag or k == _hover else 1.0) * (0.75 if k.begins_with("elbow") else (0.6 if k.begins_with("turn") else 1.0))
 		canvas.draw_circle(at, big + 3.0, Color.WHITE, true, -1.0, true)
 		canvas.draw_circle(at, big, Color(col, 0.95 if k == _drag or k == _hover else 0.8), true, -1.0, true)
 	var font := ThemeDB.fallback_font
@@ -2498,7 +2550,7 @@ func _draw_dots(canvas: Node2D) -> void:
 	if name != "":
 		var at2: Vector2 = pts[name] + Vector2(22, -18)
 		var text: String = DOT_NAMES.get(name, name)
-		if name.begins_with("hand"):
+		if name.begins_with("hand") or name.begins_with("turn"):
 			var arm: Dictionary = pose_now.get("arm_" + name.right(1), {})
 			var extra: Array = []
 			if arm.has("look"):
@@ -2585,6 +2637,7 @@ func _dots_mouse(event: InputEvent, a: Actor, m: Vector2) -> bool:
 					arm.erase("look")
 				else:
 					arm["look"] = LOOKS[j]
+				_show_looks()
 			_apply_pose()
 			return true
 		elif e.pressed and e.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN] and k.begins_with("hand"):
@@ -2646,6 +2699,20 @@ func _drag_to(a: Actor, k: String, to: Vector2) -> void:
 			bend = _bend[ch3]
 		_bend[ch3] = bend if bend != 0.0 else 1.0
 		_set_arm(a, ch3, _ik_elbow(sh0, target, l1, l2, _bend[ch3]), target)
+	elif k.begins_with("turn"):
+		# the hand turned in the wrist, the arm left as it is: the angle from the forearm's line to the mouse
+		var c4: Variant = p.chains["hand_" + k.right(1)]
+		var wr4: Vector2 = p.joint_position(c4.end.name)
+		var el4: Vector2 = p.joint_position(c4.b.name)
+		var ch4 := "arm_" + k.right(1)
+		var rel: float = rad_to_deg(wrapf((to - wr4).angle() - (wr4 - el4).angle(), -PI, PI)) * mo._sign(ch4)
+		if not (pose_now.get(ch4, null) is Dictionary):
+			pose_now[ch4] = {}
+		var w4: float = snappedf(clampf(rel, -MotionScript.WRIST_MAX, MotionScript.WRIST_MAX), 1.0)
+		if absf(w4) < 2.0:
+			pose_now[ch4].erase("wrist")
+		else:
+			pose_now[ch4]["wrist"] = w4
 	elif k.begins_with("elbow"):
 		var c2: Variant = p.chains["hand_" + k.right(1)]
 		var sh2: Vector2 = p.joint_position(c2.a.name)
@@ -2840,6 +2907,12 @@ func _scripted() -> void:
 				var cf := FileAccess.open(":".join(bits.slice(1)), FileAccess.WRITE)
 				cf.store_string(DisplayServer.clipboard_get())
 				cf.close()
+			"look":                        # look:arm_r:edge: as the «Правая кисть» buttons do
+				if _look_rows.has(bits[1]):
+					for b: Button in (_look_rows[bits[1]] as HFlowContainer).get_children():
+						if str(b.get_meta("look")) == bits[2]:
+							b.button_pressed = true
+							b.emit_signal("pressed")
 			"side":                        # side:left: as the «Рука» buttons do
 				_pick_side(bits[1])
 			"elbow":

@@ -230,6 +230,29 @@ def test_the_window_keeps_a_pose_and_gives_it_back(tmp_path):
     assert st["hero"] == "archivist" and st["poses"] == 1
 
 
+def test_the_wrist_dot_turns_the_hand_and_the_pose_keeps_it(tmp_path):
+    """A small dot at the fingertips turns the hand in the wrist (a beckoning hand bends, not only the forearm); the
+    turn is kept in the pose as "wrist" and the hand is drawn turned."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=False)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    a, b, h = (tmp_path / "a.json").as_posix(), (tmp_path / "b.json").as_posix(), (tmp_path / "h.json").as_posix()
+    seq = (f"still@5,tab:1@20,drag:hand_r:480:520@40,dot:turn_r:{a}@120,dot:hand_r:{h}@120,drag:turn_r:620:440@130,"
+           f"dot:turn_r:{b}@220,fix@230,quit@240")
+    cmd = workshop.command(d / "config.json")
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    out = _godot(cmd[1:], timeout=120, env={"WORKSHOP_SEQ": seq})
+    assert Path(a).exists() and Path(b).exists(), out[-2000:]
+    ta, tb, hand = json.loads(Path(a).read_text()), json.loads(Path(b).read_text()), json.loads(Path(h).read_text())
+    assert ((ta[0] - tb[0]) ** 2 + (ta[1] - tb[1]) ** 2) ** 0.5 > 8, (ta, tb)      # the fingertips went round
+    poses, _ = workshop.read_poses(root)
+    arm = poses[0]["pose"]["arm_r"]
+    assert abs(arm.get("wrist", 0)) >= 10 and abs(arm["wrist"]) <= 80, arm
+    assert "raise" in arm and "elbow" in arm                                     # (the arm itself stays in angles)
+
+
 def test_the_window_lists_the_rubrics_and_never_mixes_them(tmp_path):
     root = _world(tmp_path)
     twin = tmp_path / "twin"

@@ -13,7 +13,8 @@
     "elbow": -85,
     "front": true,
     "contact": true,
-    "look": "back"
+    "look": "back",
+    "wrist": -15
    },
    "head": -4
   },
@@ -29,7 +30,12 @@
     },
     "front": true,
     "contact": true,
-    "look": "back"
+    "look": "back",
+    "wrist": {
+     "base": -15,
+     "amp": 30,
+     "rate": 1.45
+    }
    }
   },
   {
