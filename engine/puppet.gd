@@ -132,6 +132,7 @@ var wrong_total := 0             # steps any held limb spent with its middle joi
 var wrong_longest := 0           # the longest such run
 
 var _idle_mix := 0.0
+const HANG_EDGE := 0.8               # a forearm this far down (its sine) shows the hand edge on
 var _skin_held: Dictionary = {}  # part name -> true: its drawing was chosen by hand, not by the automatic rule
 var _rivets: Array[Node2D] = []
 var _framed: Array[Part] = []    # the parts whose drawing is frames
@@ -987,20 +988,23 @@ func restart_frames(part: String) -> void:
 		_show_frame(p)
 
 
-## The automatic choice of drawings. One rule so far: a hand held clearly higher than its elbow shows its palm,
-## and turns back when it is clearly lower (two thresholds, so it does not flicker at the border).
+## The automatic choice of drawings. A hand held clearly higher than its elbow shows its palm; a hand hanging
+## down at the side is turned EDGE ON, the palm to the leg and the thumb to us, as people stand (a set with that
+## drawing); in between, the back of the hand. Two thresholds at each border, so it does not flicker.
 func _auto_skins() -> void:
 	for c: Chain in chains.values():
 		var hand := c.end
-		if not hand.skins.has("palm") or _skin_held.has(hand.name):
+		if _skin_held.has(hand.name) or not (hand.skins.has("palm") or hand.skins.has("edge")):
 			continue
 		var arm: Vector2 = hand.xf.origin - c.b.xf.origin      # elbow -> wrist, puppet space
 		if arm.length() < 1.0:
 			continue
 		var up: float = -arm.y / arm.length()
-		if up > 0.35:
+		if up > 0.35 and hand.skins.has("palm"):
 			set_skin(hand.name, "palm", false)
-		elif up < 0.15:
+		elif up < -HANG_EDGE and hand.skins.has("edge") and rig.get("view", "front") != "side":     # (in profile: its back)
+			set_skin(hand.name, "edge", false)
+		elif up < 0.15 and (hand.skin != "edge" or up > -HANG_EDGE + 0.12):
 			set_skin(hand.name, "", false)
 
 
