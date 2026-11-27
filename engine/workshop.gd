@@ -25,8 +25,8 @@ const MotionScript := preload("res://motion.gd")
 const GROUP_TITLES := {"pose": "Позы", "gesture": "Жесты", "body": "Тело", "move": "Перемещение", "feeling": "Чувства",
 	"dance": "Танцы", "item": "С предметами", "fight": "Драка", "silly": "Дурачества", "music": "Музыка", "two": "Вдвоём"}
 const LOOKS := ["auto", "palm", "back", "edge", "fist", "fist_side", "fist_palm", "point", "thumb", "shake", "pinch"]
-const LOOK_NAMES := {"auto": "сама", "palm": "ладонь", "fist": "кулак", "back": "тыльная", "edge": "ребро", "point": "палец",
-	"fist_side": "кулак сбоку", "fist_palm": "кулак ладонью", "thumb": "большой палец", "shake": "для пожатия", "pinch": "щепоть"}
+const LOOK_NAMES := {"auto": "авто", "palm": "ладонь", "fist": "кулак", "back": "тыльная", "edge": "ребро", "point": "палец",
+	"fist_side": "кулак сбоку", "fist_palm": "кулак ладонью", "thumb": "класс (палец вверх)", "shake": "для пожатия", "pinch": "щепоть"}
 const ELBOWS := ["", "down", "up", "out", "in"]
 const ELBOW_NAMES := {"down": "локоть вниз", "up": "локоть вверх", "out": "локоть наружу", "in": "локоть внутрь"}
 const EASES := ["inout", "out", "in", "linear"]
@@ -45,7 +45,7 @@ const DOT_NAMES := {"hand_l": "левая кисть", "hand_r": "правая �
 	"elbow_l": "левый локоть: тяните — согнуть в любую сторону", "elbow_r": "правый локоть: тяните — согнуть в любую сторону",
 	"turn_l": "левая кисть: тяните — повернуть в запястье", "turn_r": "правая кисть: тяните — повернуть в запястье"}
 const PANEL_W := 760.0
-const DOT := 14.0
+const DOT := 10.0
 const REACH := 40.0
 const TRAIL := 120                  # steps of the trail
 const HAND_PACE := 1.6              # arm lengths a second: the time a pose's way in gets by default
@@ -116,13 +116,16 @@ var _tile_of: Dictionary = {}       # action id -> its button
 var _search: LineEdit
 var _how_card: Control
 var _front_seg: HBoxContainer
-var _look_rows: Dictionary = {}        # "arm_r" -> the row of hand drawings to pick from
+var _look_rows: Dictionary = {}        # "arm_r" -> the list of hand drawings to pick from
 var _panel_bg: Control
 var _panel_want := Vector2.ZERO
 var _below: ColorRect               # under the stage when the window is taller than it
 var _elbow_seg: HBoxContainer
 var _tiles_scroll: ScrollContainer
 var _how_hint: Label
+static var _dots_on := true           # the dots on the hero in the poses mode (off: to look at the pose clean)
+static var _help_on := false           # the «?» in the header: the long explanations shown (hidden by default: room)
+var _helps: Array = []
 var _how_title: Label                # «Как сыграть «…»»: what the card's buttons change
 var _how_note: Label
 var _side_row: Control
@@ -606,7 +609,7 @@ func _theme() -> Theme:
 	t.default_font_size = 21
 	var clear := _box(Color(0, 0, 0, 0))
 	# a plain button / a tile / a segment: stone at rest, deep blue when chosen (toggle), white text on blue
-	for kind: String in ["Button"]:
+	for kind: String in ["Button", "OptionButton"]:
 		t.set_stylebox("normal", kind, _box(C_CONTROL))
 		t.set_stylebox("hover", kind, _box(C_HOVER))
 		t.set_stylebox("pressed", kind, _box(C_CHOSEN))
@@ -665,6 +668,13 @@ func _theme() -> Theme:
 	t.set_stylebox("slider", "HSlider", _box(C_CONTROL, 4, 0, 3))
 	t.set_stylebox("grabber_area", "HSlider", _box(C_CHOSEN, 4, 0, 3))
 	t.set_stylebox("grabber_area_highlight", "HSlider", _box(C_CHOSEN_HOVER, 4, 0, 3))
+	# a drop-down list: a card under the field, the row under the mouse in stone, the chosen one in ink
+	t.set_stylebox("panel", "PopupMenu", _box(C_CARD, 10, 10, 8))
+	t.set_stylebox("hover", "PopupMenu", _box(C_HOVER, 6, 8, 4))
+	t.set_color("font_color", "PopupMenu", C_INK)
+	t.set_color("font_hover_color", "PopupMenu", C_INK)
+	t.set_color("font_disabled_color", "PopupMenu", C_SOFT)
+	t.set_font_size("font_size", "PopupMenu", 19)
 	t.set_stylebox("panel", "PanelContainer", _box(C_CARD, 14, 18, 14))
 	t.set_type_variation("Fault", "PanelContainer")
 	t.set_stylebox("panel", "Fault", _box(C_FAULT_BG, 12, 16, 12))
@@ -688,6 +698,15 @@ func _title(text: String, size := 30) -> Label:
 	if _head_font != null:
 		l.add_theme_font_override("font", _head_font)
 	l.add_theme_font_size_override("font_size", size)
+	return l
+
+
+## An explanation: hidden until the «?» in the header is pressed (the panel keeps its room for the work).
+func _help(text: String, size := 16) -> Label:
+	var l := _note(text, size)
+	l.visible = _help_on
+	_helps = _helps.filter(func(x: Variant) -> bool: return is_instance_valid(x))
+	_helps.append(l)
 	return l
 
 
@@ -833,6 +852,16 @@ func _build_panel() -> void:
 	box.add_theme_constant_override("h_separation", 6)
 	box.add_theme_constant_override("v_separation", 6)
 	box.visible = false
+	var q := _toggle("?", _help_on, func(on: bool) -> void:
+		_help_on = on
+		for l: Variant in _helps:
+			if is_instance_valid(l):
+				(l as Label).visible = on
+		_update_how())
+	q.tooltip_text = "Подсказки: показать или спрятать"
+	q.custom_minimum_size = Vector2(48, 0)
+	q.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(q)
 	if worlds.size() > 1 or (worlds.size() == 1 and str(worlds[0]["root"]) != str(cfg.get("world", ""))):
 		var change := _toggle("Сменить рубрику", false, func(on: bool) -> void: box.visible = on)
 		change.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -921,7 +950,7 @@ func _build_panel() -> void:
 		(dist.get_child(0) as HSlider).step = 0.01
 		dist.tooltip_text = "как далеко они стоят: доля ширины сцены (или тяните героя за ⇆ под ногами)"
 		col.add_child(_line("Расстояние", dist))
-		col.add_child(_note("Героя можно тащить вбок за ⇆ у его ног.", 16))
+		col.add_child(_help("Героя можно тащить вбок за ⇆ у его ног."))
 	elif row == "proof":
 		# which proof bodies stand side by side: at most four, so they do not crowd into a mess
 		var picks := HFlowContainer.new()
@@ -946,7 +975,7 @@ func _build_panel() -> void:
 				_reload())
 			picks.add_child(b)
 		col.add_child(picks)
-		col.add_child(_note("Рядом стоят до четырёх тел: отметьте, какие сравнить.", 16))
+		col.add_child(_help("Рядом стоят до четырёх тел: отметьте, какие сравнить."))
 	# the views: only the ones the hero has drawn can be pressed (ours face the audience: front only, as a rule)
 	var has := _views_of(_hero_def(hero_id))
 	var vseg := _seg([["Спереди", "front"], ["Влево", "left"], ["Вправо", "right"], ["Сзади", "back"]], "front",
@@ -959,7 +988,7 @@ func _build_panel() -> void:
 		b.tooltip_text = "" if has.has(v) else "Этот вид у героя не нарисован"
 	col.add_child(_line("Вид", vseg))
 	if has.size() == 1:
-		col.add_child(_note("Нарисован только вид спереди: наши герои смотрят на зрителя.", 16))
+		col.add_child(_help("Нарисован только вид спереди: наши герои смотрят на зрителя."))
 
 	# the two modes
 	var modes := HBoxContainer.new()
@@ -1039,7 +1068,7 @@ func _actions_page() -> Control:
 	_search.text_changed.connect(func(_t: String) -> void: _fill_tiles())
 	box.add_child(_search)
 	# 1. the actions: the first thing to press
-	var step := _note("Нажмите любое действие — герой сыграет его. Потом под списком можно выбрать руку, локоть, силу и темп.", 16)
+	var step := _help("Нажмите любое действие — герой сыграет его. Потом под списком можно выбрать руку, локоть, силу и темп.")
 	step.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_how_hint = step
 	box.add_child(step)
@@ -1218,12 +1247,12 @@ static func _title_of(a: Dictionary, id: String) -> String:
 func _poses_page() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
-	box.add_child(_note("Синие точки — кисти, локти и стопы; самые маленькие, на кончиках пальцев, поворачивают кисть в запястье. Красные — таз, плечи (наклон) и макушка. Локоть тяните, чтобы согнуть руку в нужную сторону: он остаётся там, пока двигаете кисть. Какой рисунок у кисти — ниже: «сама» выбирает движок, любой другой держится в позе.", 18))
+	box.add_child(_help("Синие точки — кисти, локти, стопы; маленькие на кончиках пальцев поворачивают кисть. Красные — таз, плечи и макушка. Локоть тяните, чтобы согнуть руку в нужную сторону. Рисунок кисти — в списках «Кисть» («авто» — выбирает движок, любой другой держится в позе)."))
 	if row == "pair":
 		_edit_seg = _seg([[str(_hero_def(hero_id).get("title", hero_id)) + " (слева)", 0], [str(_hero_def(partner_id).get("title", partner_id)) + " (справа)", 1]],
 			pair_edit, func(k: int) -> void: _pick_edit(k), "Tile")
 		box.add_child(_line("Правлю позу", _edit_seg))
-		box.add_child(_note("«Запомнить позу» запоминает обоих сразу: в каждой карточке — поза левого и правого.", 16))
+		box.add_child(_help("«Запомнить позу» запоминает обоих сразу: в каждой карточке — поза левого и правого."))
 	var actions_row := HBoxContainer.new()
 	actions_row.add_theme_constant_override("separation", 8)
 	var fix := _btn("Запомнить позу  (F)", _fix, "Main")
@@ -1238,6 +1267,12 @@ func _poses_page() -> Control:
 		_sel = -1
 		_fill_poses()
 		_apply_pose()))
+	var dots := _toggle("Точки", _dots_on, func(on: bool) -> void:
+		_dots_on = on
+		_drag = ""
+		_say("Точки на герое: %s." % ("показаны" if on else "спрятаны — посмотрите позу чисто")))
+	dots.tooltip_text = "Показать или спрятать точки на герое"
+	actions_row.add_child(dots)
 	box.add_child(actions_row)
 	# which arm is drawn over the other (a hand raised across the body, over the other arm)
 	var fr := "r" if bool(pose_now.get("arm_r", {}).get("front", false)) else ("l" if bool(pose_now.get("arm_l", {}).get("front", false)) else "")
@@ -1253,9 +1288,16 @@ func _poses_page() -> Control:
 	box.add_child(_line("Спереди", _front_seg))
 	# the hand's drawing, picked and held in the pose (otherwise the engine picks it by where the hand is)
 	_look_rows.clear()
+	var hands := HBoxContainer.new()
+	hands.add_theme_constant_override("separation", 10)
 	for ch: String in ["arm_r", "arm_l"]:
+		var l := Label.new()
+		l.text = "правая" if ch == "arm_r" else "левая"
+		hands.add_child(l)
 		_look_rows[ch] = _look_row(ch)
-		box.add_child(_line("Правая кисть" if ch == "arm_r" else "Левая кисть", _look_rows[ch]))
+		_look_rows[ch].size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hands.add_child(_look_rows[ch])
+	box.add_child(_line("Кисть", hands))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1616,7 +1658,7 @@ func _update_how() -> void:
 		return
 	var some := chosen != "" and actions().has(chosen)
 	_how_card.visible = some
-	_how_hint.visible = not some
+	_how_hint.visible = not some and _help_on
 	if not some:
 		return
 	var act: Dictionary = actions()[chosen]
@@ -2173,42 +2215,34 @@ static func _strip(pics: Array) -> Image:
 	return out
 
 
-## A row of the hand's drawings for one arm: «сама» lets the engine choose; any other is held in the pose.
-func _look_row(ch: String) -> HFlowContainer:
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 4)
-	row.add_theme_constant_override("v_separation", 4)
-	var group := ButtonGroup.new()
-	var now: String = str(pose_now.get(ch, {}).get("look", "auto"))
+## The list of the hand's drawings for one arm: «авто» lets the engine choose; any other is held in the pose.
+func _look_row(ch: String) -> OptionButton:
+	var ob := OptionButton.new()
+	ob.focus_mode = Control.FOCUS_NONE
+	ob.fit_to_longest_item = false
 	for look: String in LOOKS:
-		var b := Button.new()
-		b.text = LOOK_NAMES.get(look, look)
-		b.toggle_mode = true
-		b.button_group = group
-		b.theme_type_variation = "Tile"
-		b.focus_mode = Control.FOCUS_NONE
-		b.button_pressed = look == now
-		b.set_meta("look", look)
-		b.pressed.connect(func() -> void:
-			if not (pose_now.get(ch, null) is Dictionary):
-				pose_now[ch] = {}
-			if look == "auto":
-				pose_now[ch].erase("look")
-			else:
-				pose_now[ch]["look"] = look
-			_apply_pose()
-			_say("%s кисть: %s." % ["Правая" if ch == "arm_r" else "Левая", LOOK_NAMES.get(look, look)]))
-		row.add_child(b)
-	return row
+		ob.add_item(LOOK_NAMES.get(look, look))
+		ob.set_item_metadata(ob.item_count - 1, look)
+	ob.select(maxi(LOOKS.find(str(pose_now.get(ch, {}).get("look", "auto"))), 0))
+	ob.item_selected.connect(func(i: int) -> void: _pick_look(ch, LOOKS[i]))
+	return ob
+
+
+func _pick_look(ch: String, look: String) -> void:
+	if not (pose_now.get(ch, null) is Dictionary):
+		pose_now[ch] = {}
+	if look == "auto":
+		pose_now[ch].erase("look")
+	else:
+		pose_now[ch]["look"] = look
+	_apply_pose()
+	_say("%s кисть: %s." % ["Правая" if ch == "arm_r" else "Левая", LOOK_NAMES.get(look, look)])
 
 
 func _show_looks() -> void:
 	for ch: String in _look_rows:
-		if not is_instance_valid(_look_rows[ch]):
-			continue
-		var now: String = str(pose_now.get(ch, {}).get("look", "auto"))
-		for b: Button in (_look_rows[ch] as HFlowContainer).get_children():
-			b.set_pressed_no_signal(str(b.get_meta("look")) == now)
+		if is_instance_valid(_look_rows[ch]):
+			(_look_rows[ch] as OptionButton).select(maxi(LOOKS.find(str(pose_now.get(ch, {}).get("look", "auto"))), 0))
 
 
 func _show_front() -> void:
@@ -2536,7 +2570,7 @@ func _draw_dots(canvas: Node2D) -> void:
 			var tr: Array = _trail[h]
 			for i in range(1, tr.size()):
 				canvas.draw_line(tr[i - 1], tr[i], Color(C_MAIN, float(i) / tr.size() * 0.8), 3.0, true)
-	if tab != 1:
+	if tab != 1 or not _dots_on:
 		return
 	var pts := _dot_points(a)
 	for k: String in pts:
@@ -2603,6 +2637,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _dots_mouse(event: InputEvent, a: Actor, m: Vector2) -> bool:
+	if not _dots_on:
+		_hover = ""
+		return false
 	if event is InputEventMouseMotion:
 		if _drag != "":
 			_drag_to(a, _drag, m + _drag_off)
@@ -2907,12 +2944,23 @@ func _scripted() -> void:
 				var cf := FileAccess.open(":".join(bits.slice(1)), FileAccess.WRITE)
 				cf.store_string(DisplayServer.clipboard_get())
 				cf.close()
+			"arm":                         # arm:arm_r:<raise>:<elbow>[:front]: the arm set in angles, as the dots would
+				if not (pose_now.get(bits[1], null) is Dictionary):
+					pose_now[bits[1]] = {}
+				pose_now[bits[1]].erase("at")
+				pose_now[bits[1]]["raise"] = float(bits[2])
+				pose_now[bits[1]]["elbow"] = float(bits[3])
+				if bits.size() > 4 and bits[4] == "front":
+					pose_now[bits[1]]["front"] = true
+				else:
+					pose_now[bits[1]].erase("front")
+				_apply_pose()
+			"dots":                        # dots:0 / dots:1: as the «Точки» button does
+				_dots_on = bits[1] == "1"
 			"look":                        # look:arm_r:edge: as the «Правая кисть» buttons do
-				if _look_rows.has(bits[1]):
-					for b: Button in (_look_rows[bits[1]] as HFlowContainer).get_children():
-						if str(b.get_meta("look")) == bits[2]:
-							b.button_pressed = true
-							b.emit_signal("pressed")
+				if _look_rows.has(bits[1]) and LOOKS.has(bits[2]):
+					(_look_rows[bits[1]] as OptionButton).select(LOOKS.find(bits[2]))
+					_pick_look(bits[1], bits[2])
 			"side":                        # side:left: as the «Рука» buttons do
 				_pick_side(bits[1])
 			"elbow":

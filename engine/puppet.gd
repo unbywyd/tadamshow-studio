@@ -573,7 +573,7 @@ func _glove_hand(p: Part, def: Dictionary, own: Image, part_name: String) -> boo
 	for key: String in ["grip", "tip"]:
 		var held: String = "fist_side" if _gloves.has("fist_side") else "fist"     # (what a hand holds with)
 		var g: Dictionary = _gloves[held if key == "grip" and _gloves.has(held) else "back"]
-		var off: Vector2 = ((g[key] as Vector2) - (g["at"] as Vector2)) * k
+		var off: Vector2 = ((g[key] as Vector2) - (g["at"] as Vector2)) * k * float(g.get("scale", 1.0))
 		if mirror:
 			off.x = -off.x
 		rig["parts"][part_name][key] = [p.pivot.x + off.x, p.pivot.y + off.y]
