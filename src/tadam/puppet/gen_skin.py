@@ -133,6 +133,7 @@ STYLES["photo_bokeh"] = (
 STYLE_DEFAULT = "wood"
 
 PORTRAIT_PROMPT = """Full-body character design, one character, front view, standing straight in a neutral pose with arms hanging slightly away from the body and legs apart, the whole figure visible from head to feet with margins.
+Arms of a normal length for this body: hanging down, the wrists are level with the crotch and the fingertips reach the middle of the thighs, never the knees. The sleeves come down to the wrists.
 Character: {character}.
 Style: {style}.
 Plain light background, no text, no props on the ground."""

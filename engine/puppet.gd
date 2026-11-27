@@ -143,6 +143,7 @@ var _framed: Array[Part] = []    # the parts whose drawing is frames
 ## Builds the puppet. `handle_overrides` adds settings to rig.handles (same shape as in rig.json):
 ##   "bend": "out" | "front" | "back" | -1 | 1     how the middle joint of an IK chain folds
 ##   "end_mode": "follow" | "level"                what the end part's angle is relative to
+## Arms drawn longer than a person's are shortened to the body's own measure (_arm_keep).
 func load_rig(rig_path: String, skin_dir: String, handle_overrides: Dictionary = {}) -> bool:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(rig_path))
 	if not (parsed is Dictionary and parsed.has("parts")):
@@ -150,6 +151,11 @@ func load_rig(rig_path: String, skin_dir: String, handle_overrides: Dictionary =
 		return false
 	_clear()
 	rig = parsed
+	_cut_forearms.clear()
+	if hand_style == "glove":
+		for sd: String in ["l", "r"]:
+			_bare_wrist(sd, skin_dir)
+	_shorten_arms(_arm_keep())
 	var defs: Dictionary = rig.get("handles", {})
 	for h: String in handle_overrides:
 		var def: Dictionary = defs.get(h, {})
@@ -167,6 +173,136 @@ func load_rig(rig_path: String, skin_dir: String, handle_overrides: Dictionary =
 		_build_handle(h, defs[h])
 	reset_pose()
 	return true
+
+
+## The shared gloves are the ONLY hands: no bit of the hero's own wrist or hand may show between the sleeve and the
+## glove. Along the forearm, from the elbow down, where its colour stops being the sleeve's (a pale wrist, a painted
+## hand) the forearm is cut off, and the wrist joint goes to the sleeve's end: the glove's cuff goes into it there.
+var _cut_forearms: Dictionary = {}     # "forearm_l" -> its image with the bare wrist cut off
+const BARE_DIFF := 0.2                 # a colour this far from the sleeve's (RGB, 0..1) is not the sleeve
+
+
+func _bare_wrist(sd: String, skin_dir: String) -> void:
+	var ps: Dictionary = rig["parts"]
+	var fa_name := "forearm_" + sd
+	if not (ps.has(fa_name) and ps.has("hand_" + sd)):
+		return
+	var img := _load_image(skin_dir.path_join(fa_name + ".png"))
+	if img == null:
+		return
+	img.convert(Image.FORMAT_RGBA8)
+	var fa: Dictionary = ps[fa_name]
+	var pad: float = rig.get("pad", 0.0)
+	var o := Vector2(float(fa["box"][0]) - pad, float(fa["box"][1]) - pad)     # the image's (0, 0) on the sheet
+	var top: Vector2 = _v2(fa["joint"]["at"])
+	var hj: Dictionary = ps["hand_" + sd]["joint"]
+	var wrist: Vector2 = _v2(hj["parent_at"])
+	var axis: Vector2 = wrist - top
+	var length: float = axis.length()
+	if length < 8.0:
+		return
+	var along: Vector2 = axis / length
+	var across := Vector2(-along.y, along.x)
+	var steps := 48
+	var cols: Array = []                   # the mean colour across the forearm at each step (null: nothing painted)
+	for i in steps + 1:
+		var c: Variant = _slice_colour(img, top + along * (length * 1.1 * i / steps) - o, across)
+		cols.append(c)
+	var sleeve := Color(0, 0, 0, 0)
+	var n := 0
+	for i in range(int(steps * 0.25), int(steps * 0.6)):
+		if cols[i] != null:
+			sleeve += cols[i]
+			n += 1
+	if n == 0:
+		return
+	sleeve /= float(n)
+	var end := -1                          # the first step, past the middle, that is no longer the sleeve
+	for i in range(int(steps * 0.6), steps + 1):
+		var c: Variant = cols[i]
+		if c == null:
+			break
+		var d := Vector3((c as Color).r - sleeve.r, (c as Color).g - sleeve.g, (c as Color).b - sleeve.b).length()
+		if d > BARE_DIFF:
+			end = i
+			break
+	if end < 0:
+		return
+	var cut: float = length * 1.1 * end / steps
+	if cut >= length * 1.05:
+		return
+	# everything past the cut line (across the forearm) goes; the wrist moves to the cut
+	for y in img.get_height():
+		for x in img.get_width():
+			if (Vector2(x, y) + o - top).dot(along) > cut and img.get_pixel(x, y).a > 0.0:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+	_cut_forearms[fa_name] = img
+	var w: Vector2 = top + along * minf(cut, length)
+	hj["parent_at"] = [w.x, w.y]
+
+
+## The mean colour of what is painted on a line across a part at `c` (image px), or null if nothing is.
+static func _slice_colour(img: Image, c: Vector2, across: Vector2) -> Variant:
+	var sum := Color(0, 0, 0, 0)
+	var n := 0
+	for k in range(-40, 41):
+		var q: Vector2 = c + across * float(k) * 1.5
+		var x := int(q.x)
+		var y := int(q.y)
+		if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+			continue
+		var px := img.get_pixel(x, y)
+		if px.a > 0.6:
+			sum += px
+			n += 1
+	if n < 4:
+		return null
+	return sum / float(n)
+
+
+## Where a person's hands end: arms hanging straight down, the WRIST is at the crotch, a little below the hip joint
+## (WRIST_BELOW of the thigh's length), and the fingertips at the middle of the thigh. How much of its drawn arm a hero
+## keeps for that (1 = as drawn; never less than ARM_KEEP_MIN). Only ever shorter: a short arm stays as drawn.
+const WRIST_BELOW := 0.15
+const ARM_KEEP_MIN := 0.6
+
+
+func _arm_keep() -> float:
+	var ps: Dictionary = rig["parts"]
+	for n: String in ["upper_arm_r", "forearm_r", "hand_r", "thigh_r", "shin_r"]:
+		if not ps.has(n):
+			return 1.0
+	var at := func(n: String) -> Vector2:                # where a part's joint is on the assembled body (sheet px)
+		var v := Vector2.ZERO
+		var cur: String = n
+		while ps[cur].get("parent") != null:
+			var j: Dictionary = ps[cur]["joint"]
+			v += _v2(j["parent_at"]) - _v2(ps[ps[cur]["parent"]]["joint"]["at"] if ps[ps[cur]["parent"]].get("parent") != null else ps[ps[cur]["parent"]]["origin"])
+			cur = ps[cur]["parent"]
+		return v
+	var l1: float = (_v2(ps["forearm_r"]["joint"]["parent_at"]) - _v2(ps["upper_arm_r"]["joint"]["at"])).length()
+	var l2: float = (_v2(ps["hand_r"]["joint"]["parent_at"]) - _v2(ps["forearm_r"]["joint"]["at"])).length()
+	var thigh: float = (_v2(ps["shin_r"]["joint"]["parent_at"]) - _v2(ps["thigh_r"]["joint"]["at"])).length()
+	var want: float = (at.call("thigh_r") as Vector2).y + WRIST_BELOW * thigh - (at.call("upper_arm_r") as Vector2).y
+	if l1 + l2 <= 1.0 or want <= 0.0:
+		return 1.0
+	return clampf(want / (l1 + l2), ARM_KEEP_MIN, 1.0)
+
+
+## The elbow slid up the upper arm and the wrist up the forearm, each to `keep` of its length (sheet px of the rig):
+## the forearm goes up under the sleeve and the hand under the cuff, no drawing stretched.
+func _shorten_arms(keep: float) -> void:
+	if keep >= 0.999:
+		return
+	var ps: Dictionary = rig["parts"]
+	for sd: String in ["l", "r"]:
+		for pair: Array in [["upper_arm_" + sd, "forearm_" + sd], ["forearm_" + sd, "hand_" + sd]]:
+			if not (ps.has(pair[0]) and ps.has(pair[1])):
+				continue
+			var top: Vector2 = _v2(ps[pair[0]]["joint"]["at"])
+			var j: Dictionary = ps[pair[1]]["joint"]
+			var at: Vector2 = top + (_v2(j["parent_at"]) - top) * keep
+			j["parent_at"] = [at.x, at.y]
 
 
 func _clear() -> void:
@@ -240,7 +376,9 @@ func _build_part(part_name: String, skin_dir: String) -> Part:
 	# rod of length L swings like a point weight at 2/3 L, i.e. 4/3 of the distance to its middle).
 	p.painted = Rect2(p.sprite.position, Vector2(box[2] + 2.0 * pad, box[3] + 2.0 * pad))
 	p.center = p.painted.get_center()
-	var image := _load_image(skin_dir.path_join(part_name + ".png"))
+	var image: Image = _cut_forearms.get(part_name, null)
+	if image == null:
+		image = _load_image(skin_dir.path_join(part_name + ".png"))
 	var simple: bool = hand_style != "" and part_name.begins_with("hand_")
 	if image != null and simple and hand_style == "glove" and _glove_hand(p, def, image, part_name):
 		return _finish_part(p, false)       # (no wooden pin at the wrist: the glove goes into the sleeve)
