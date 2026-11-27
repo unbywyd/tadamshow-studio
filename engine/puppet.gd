@@ -334,7 +334,8 @@ func _finish_part(p: Part, pin := true) -> Part:
 
 
 ## THE SHARED GLOVES (hand_style "glove", engine/hands/glove, tools/gen_gloves.py): one set of drawings for every
-## hero - the back of the hand (the first drawing), "palm", "fist", "point", "edge" - sized so that the glove is as
+## hero - the back of the hand (the first drawing), "palm", "fist", "point", "edge" (and "fist_side", "fist_palm",
+## "thumb", "shake", "pinch" where the set has them) - sized so that the glove is as
 ## long as the hero's own painted hand. Drawn for the hand on the right of the picture; hand_l is their mirror. The
 ## hand's helper points follow the gloves: "grip" from the fist (that is what holds), "tip" from the open hand.
 ## which set (a folder in engine/hands): scene "gloves": "piying_red" ("glove" = the black leather ones)
@@ -429,7 +430,8 @@ func _glove_hand(p: Part, def: Dictionary, own: Image, part_name: String) -> boo
 			p.center = p.sprite.position + _paint_center(im)
 	# the helper points in the rig follow the gloves (sheet px: from the joint)
 	for key: String in ["grip", "tip"]:
-		var g: Dictionary = _gloves["fist" if key == "grip" and _gloves.has("fist") else "back"]
+		var held: String = "fist_side" if _gloves.has("fist_side") else "fist"     # (what a hand holds with)
+		var g: Dictionary = _gloves[held if key == "grip" and _gloves.has(held) else "back"]
 		var off: Vector2 = ((g[key] as Vector2) - (g["at"] as Vector2)) * k
 		if mirror:
 			off.x = -off.x
@@ -916,6 +918,13 @@ func set_squeeze(part: String, k: float) -> void:
 func _apply_squeeze(p: Part) -> void:
 	p.sprite.scale.x = p.squeeze
 	p.sprite.position.x = (p.skins[p.skin]["position"] as Vector2).x * p.squeeze
+
+
+## The drawing of a hand holding something: the fist seen from the thumb, round the handle (a set without it:
+## the fist with the knuckles to us).
+func grip_skin(part: String) -> String:
+	var p: Part = parts.get(part)
+	return "fist_side" if p != null and p.skins.has("fist_side") else "fist"
 
 
 func release_skin(part: String) -> void:

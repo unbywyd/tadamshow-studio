@@ -2764,6 +2764,7 @@ func _scripted() -> void:
 				if pp.parts.has(h):
 					var at: Vector2 = pp.parts[h].node.global_position
 					line[id + "." + h] = [snappedf(at.x, 0.1), snappedf(at.y, 0.1)]
+					line[id + "." + h + ".skin"] = pp.parts[h].skin
 			var mot: Motion = (actors[id] as Actor).motion
 			for chn: String in ["arm_l", "arm_r"]:
 				var nw: Variant = mot.chans[chn].now.get("at", null)

@@ -15,7 +15,8 @@
    "time": 0.6,
    "arm_r": {
     "raise": 49,
-    "elbow": -98
+    "elbow": -98,
+    "look": "shake"
    },
    "arm_l": {
     "raise": -64,
@@ -31,7 +32,8 @@
      "base": -98,
      "amp": 7,
      "rate": 2.5
-    }
+    },
+    "look": "shake"
    }
   },
   {

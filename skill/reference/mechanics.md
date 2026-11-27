@@ -32,7 +32,8 @@ All of it is free: no paid call is made.
 
 - Channels: `legs` (`drop`, `shift`, `foot_l` / `foot_r` `[out, up]`, `walk`, `seat`, `jump`), `body` (`lean`,
   `chest`), `head` (a tilt in degrees), `arm_l` / `arm_r` / `arms` (`at: [out, down]` arm lengths from the
-  shoulder, or `{"to": "chest" | "face" | "hip" | …}`; `look`: palm / fist / back / edge / point; `wrist`;
+  shoulder, or `{"to": "chest" | "face" | "hip" | …}`; `look`: palm / fist / back / edge / point / fist_side (a fist from the thumb, as round a handle: what a
+  hand holds a thing with) / fist_palm / thumb / shake (an open hand edge on, thumb up) / pinch; `wrist`;
   `elbow`: down / up / out / in; `aim`; `contact: true` to touch the body; `shoulder`: raised in arm lengths,
   0.1–0.15 is a shrug). The head: a tilt, or `{"tilt": 7, "drop": 0.12}` (drawn into the collar; − stretched up).
 - **Two ways to say an arm.** A FREE gesture (a wave, a shrug, a wind-up): its ANGLES, `"arm_r": {"raise": 140,

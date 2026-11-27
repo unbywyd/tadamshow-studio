@@ -506,7 +506,7 @@ func _let_go(it: Item) -> void:
 		mo.puppet.release_skin(hand)
 		var ch: String = "arm_" + hand.right(1)
 		var look: String = mo.chans[ch].now.get("look", "auto")
-		if look == "auto" or look == "fist":
+		if look == "auto" or look == "fist" or look == "fist_side":
 			mo.puppet.set_skin(hand, "", false)
 	it.holder = null
 	it.hands = []
@@ -790,7 +790,7 @@ func _lowest(it: Item) -> float:
 ## The middle of a closed fist, world (or of the open hand if it has no fist drawing).
 func _fist(mo: Object, hand: String) -> Vector2:
 	var p: Object = mo.puppet.parts[hand]
-	var sk: Dictionary = p.skins.get("fist", {})
+	var sk: Dictionary = p.skins.get(mo.puppet.grip_skin(hand), {})
 	if sk.is_empty():
 		return p.node.to_global(p.center)
 	var tex: Texture2D = sk["texture"]
@@ -833,7 +833,7 @@ func _close_hand(mo: Object, hand: String, it: Item) -> void:
 		mo.puppet.set_skin(hand, "")
 	else:
 		mo.holding[hand] = true
-		mo.puppet.set_skin(hand, "fist")
+		mo.puppet.set_skin(hand, mo.puppet.grip_skin(hand))
 
 
 ## A thing held with both hands: the hero's free hands stay on its sides where it is carried.

@@ -617,7 +617,7 @@ func _enter(a: Actor, view: String, x: float) -> bool:
 		a.props[id] = s
 		if s.visible:
 			mo.holding[s.get_meta("hand")] = true
-			p.set_skin(s.get_meta("hand"), "fist")
+			p.set_skin(s.get_meta("hand"), p.grip_skin(s.get_meta("hand")))
 	return true
 
 
@@ -985,7 +985,7 @@ func _command(line: Dictionary) -> void:
 		var prop: Sprite2D = a.props[line["show"]]
 		prop.visible = true
 		mo.holding[prop.get_meta("hand")] = true
-		a.puppet.set_skin(prop.get_meta("hand"), "fist")
+		a.puppet.set_skin(prop.get_meta("hand"), a.puppet.grip_skin(prop.get_meta("hand")))
 	if line.has("hide") and a.props.has(line["hide"]):
 		var prop: Sprite2D = a.props[line["hide"]]
 		prop.visible = false

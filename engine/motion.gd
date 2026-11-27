@@ -32,6 +32,7 @@ extends RefCounted
 ##   arm_l / arm_r / arms (both):
 ##         at: [out, down] arm lengths from the shoulder, or { "to": landmark, "dx": .., "dy": .. } (see LANDMARKS)
 ##         wrist: degrees, outward   look: "palm" | "fist" | "back" | "edge" (the hand turned edge on) | "point"
+##         | "fist_side" (a fist seen from the thumb, as round a handle) | "fist_palm" | "thumb" | "shake" | "pinch"
 ##              (the index finger out) | "auto"
 ##         contact: true = may touch the body
 ##         front: true = this arm is drawn over the other one (a hand raised across the body, over the other arm)
@@ -72,7 +73,8 @@ const RAMP := 0.2                # seconds an oscillation takes to grow to full 
 const RELEASE_TIME := 0.45       # seconds back to rest when an action is let go without a return phase
 const FLOOR_GAP := 0.12          # arm lengths a wrist stays above the floor
 const REACH := 0.95              # share of its length a planted leg may be stretched to
-const SKIN_OF := {"palm": "palm", "fist": "fist", "back": "", "edge": "edge", "point": "point"}   # (a hand without such a drawing keeps the one it shows; "edge" without one is the back squeezed across)
+const SKIN_OF := {"palm": "palm", "fist": "fist", "back": "", "edge": "edge", "point": "point", "fist_side": "fist_side",
+	"fist_palm": "fist_palm", "thumb": "thumb", "shake": "shake", "pinch": "pinch"}   # (a hand without such a drawing keeps the one it shows; "edge" without one is the back squeezed across)
 const EDGE_WIDTH := 0.42         # a hand seen edge on: the flat hand at this share of its width
 
 ## Places of the hero's own body a hand can be sent to. Measured from the drawing every step, so a hand on the
@@ -374,7 +376,7 @@ func adopt(other: Variant) -> void:
 	for ch in ["arm_l", "arm_r"]:
 		var h: String = "hand_" + ch.right(1)
 		if _fist_held(h):
-			puppet.set_skin(h, "fist")
+			puppet.set_skin(h, puppet.grip_skin(h))
 		elif chans[ch].now.get("look", "auto") not in ["auto", ""]:
 			puppet.set_skin(h, _skin_of(h, chans[ch].now["look"]))
 
@@ -823,7 +825,7 @@ func _next_phase(r: Run) -> void:
 			if on_body and look in ["palm", "auto"]:
 				look = "back"
 			if _fist_held(hand):
-				puppet.set_skin(hand, "fist")
+				puppet.set_skin(hand, puppet.grip_skin(hand))
 			elif look == "auto":
 				puppet.release_skin(hand)
 			else:
