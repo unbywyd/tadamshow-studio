@@ -1,0 +1,27 @@
+{
+ "id": "cheer_fists",
+ "title": "крепитесь!",
+ "group": "gesture",
+ "params": {},
+ "phases": [
+  {
+   "time": 0.4,
+   "arm_r": {"raise": 100, "elbow": 75, "look": "fist"},
+   "arm_l": {"raise": 100, "elbow": 75, "look": "fist"},
+   "head": 4
+  },
+  {
+   "time": 1.4,
+   "loop": true,
+   "arm_r": {"raise": 100, "elbow": {"base": 75, "amp": 8, "rate": 3.0}, "look": "fist"},
+   "arm_l": {"raise": 100, "elbow": {"base": 75, "amp": 8, "rate": 3.0}, "look": "fist"}
+  },
+  {
+   "name": "return",
+   "time": 0.45,
+   "arm_r": "rest",
+   "arm_l": "rest",
+   "head": "rest"
+  }
+ ]
+}

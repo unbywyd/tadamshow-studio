@@ -132,6 +132,8 @@ var wrong_total := 0             # steps any held limb spent with its middle joi
 var wrong_longest := 0           # the longest such run
 
 var _idle_mix := 0.0
+var _fist_turns: Dictionary = {}       # hand -> true: a "fist" that turns to the fingers' side once the forearm comes up
+const FIST_UP := -0.3                  # a forearm this high (its sine up) shows the fist from the fingers, thumb over them
 const HANG_EDGE := 0.8               # a forearm this far down (its sine) shows the hand edge on
 var _skin_held: Dictionary = {}  # part name -> true: its drawing was chosen by hand, not by the automatic rule
 var _rivets: Array[Node2D] = []
@@ -1032,6 +1034,14 @@ func set_skin(part: String, variant: String, hold := true) -> void:
 		return
 	if hold:
 		_skin_held[part] = true
+		if variant == "fist" and p.skins.has("fist_palm"):
+			_fist_turns[part] = true
+		else:
+			_fist_turns.erase(part)
+	_show_skin(p, variant)
+
+
+func _show_skin(p: Part, variant: String) -> void:
 	if p.skin != variant:
 		p.skin = variant
 		p.sprite.texture = p.skins[variant]["texture"]
@@ -1070,6 +1080,7 @@ func grip_skin(part: String) -> String:
 
 func release_skin(part: String) -> void:
 	_skin_held.erase(part)
+	_fist_turns.erase(part)
 
 
 # ----------------------------------------------------------------------------- frames
@@ -1132,6 +1143,21 @@ func restart_frames(part: String) -> void:
 ## down at the side is turned EDGE ON, the palm to the leg and the thumb to us, as people stand (a set with that
 ## drawing); in between, the back of the hand. Two thresholds at each border, so it does not flicker.
 func _auto_skins() -> void:
+	# a fist held up (the arm out to the side, raised): a person cannot show the knuckles there; it is the fist seen
+	# from the fingers, the thumb over them (the owner's photo, 27.11). Lowered again, the knuckles come back.
+	for name: String in _fist_turns:
+		var fc: Chain = chains.get(name)
+		var fp: Part = parts.get(name)
+		if fc == null or fp == null or not _skin_held.has(name):
+			continue
+		var fa: Vector2 = fc.end.xf.origin - fc.b.xf.origin
+		if fa.length() < 1.0:
+			continue
+		var fup: float = -fa.y / fa.length()
+		if fup > FIST_UP and fp.skin == "fist":
+			_show_skin(fp, "fist_palm")
+		elif fup < FIST_UP - 0.15 and fp.skin == "fist_palm":
+			_show_skin(fp, "fist")
 	for c: Chain in chains.values():
 		var hand := c.end
 		if _skin_held.has(hand.name) or not (hand.skins.has("palm") or hand.skins.has("edge")):
