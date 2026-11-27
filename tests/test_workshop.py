@@ -399,6 +399,30 @@ def test_a_pose_for_two_is_set_fixed_and_saved_as_a_pair(tmp_path):
 
 
 @needs_godot
+def test_a_wheel_steered_by_many_never_throws_a_hand_off(tmp_path):
+    """The proof bodies all at a wheel: its rim turned up to a shoulder sent the wrist back through the shoulder,
+    and the hand flew round the outside to the edge of the stage and jumped back. No hand moves far in a frame."""
+    root = _world(tmp_path)
+    cfg = workshop.config(root, "archivist", with_proof=True)
+    d = workshop.state_dir(root)
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    cmd = workshop.command(d / "config.json", window=(1480, 1280))
+    cmd[cmd.index("--position") + 1] = "6000,0"
+    track = (tmp_path / "track.jsonl").as_posix()
+    _godot(cmd[1:], timeout=240, env={"WORKSHOP_SEQ": f"still@5,row:proof@8,play:drive@20,track:{track}@10,quit@420"})
+    rows = [json.loads(line) for line in Path(track).read_text().splitlines() if line.strip()]
+    assert len(rows) > 300
+    worst = (0.0, None)
+    for a, b in zip(rows, rows[1:]):
+        for k in a:
+            if k.endswith((".hand_l", ".hand_r")) and k in b:
+                dd = ((a[k][0] - b[k][0]) ** 2 + (a[k][1] - b[k][1]) ** 2) ** 0.5
+                worst = max(worst, (dd, (b["f"], k)), key=lambda w: w[0])
+    assert worst[0] < 40, worst
+
+
+@needs_godot
 def test_the_elbow_is_set_by_hand_and_stays_where_it_was_put(tmp_path):
     """The elbow dot bends the arm the other way with the hand left where it is; the hand dragged on after that,
     fast, keeps the elbow on the side it was put (it never flips over by itself)."""

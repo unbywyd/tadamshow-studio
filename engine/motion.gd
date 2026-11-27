@@ -1268,10 +1268,20 @@ func _scene_point(ch: String, spec: Dictionary, aim: Variant) -> Vector2:
 	if f == null:
 		return rest[ch]["at"] if rest.has(ch) else Vector2(0.0, 0.9)
 	var world: Vector2 = (f as Callable).call(ch, spec) + Vector2(float(spec.get("dx", 0.0)) * s, float(spec.get("dy", 0.0))) * arm
-	var along: Vector2 = (world - sh).normalized()
+	var to_place: Vector2 = world - sh
+	var along: Vector2 = to_place.normalized() if to_place.length() > 0.02 * arm else Vector2(0.0, 1.0)
+	var wrist: Vector2
 	if aim != null:
 		along = Vector2(cos(deg_to_rad(float(aim))) * s, sin(deg_to_rad(float(aim))))
-	var wrist: Vector2 = world - along * hand_len[ch] * 0.75
+		wrist = world - along * hand_len[ch] * 0.75
+		if (wrist - sh).length() < WRIST_NEAR * arm:
+			var w_dir: Vector2 = (wrist - sh).normalized() if (wrist - sh).length() > 0.001 else along
+			wrist = sh + w_dir * WRIST_NEAR * arm
+	else:
+		# a place nearer the shoulder than a hand's length (the rim of a big wheel turned up to it): the wrist does
+		# not go back THROUGH the shoulder to the other side of it, where its way flipped and the hand flew round
+		# the outside and back; it stays a little out, the hand on the place's side
+		wrist = sh + along * maxf(to_place.length() - hand_len[ch] * 0.75, WRIST_NEAR * arm)
 	var d: Vector2 = (wrist - sh).limit_length(0.995 * arm)      # out of reach: as far as the arm goes, that way
 	return Vector2(d.x * s, d.y) / arm
 
@@ -2071,6 +2081,9 @@ func _sign(ch: String) -> float:
 ## The same in a part's own frame (a hero facing left is a mirrored puppet).
 func _lsign(ch: String) -> float:
 	return _sign(ch) * signf(puppet.scale.x)
+
+
+const WRIST_NEAR := 0.22       # arm lengths: the nearest a wrist is sent to its own shoulder (an arm folds no closer)
 
 
 static func _polar(p: Vector2) -> Vector2:

@@ -67,6 +67,7 @@ class Item:
 	var pos := Vector2.ZERO         # world: where the grip point is
 	var rot := 0.0
 	var turn := 1.0                 # 1 = as drawn, -1 = mirrored about its grip (its bulk on the other side of the fist)
+	var along := false              # held out on a level forearm: its bulk goes on past the fist (not back over the arm)
 	var vel := Vector2.ZERO
 	var spin := 0.0
 	var holder: Object = null       # the motion (hero) that holds it
@@ -562,6 +563,15 @@ func _held(it: Item, dt: float) -> void:
 	# the bulk of a thing held at its edge (a mug by its handle) is INWARD, toward the body, its handle in the fist
 	# on the outer side (as a mug is carried; bulk outward read as a mug held inside out). In profile: forward.
 	var bulk_to: float = outward if mo.view == "side" else -outward
+	# ... but held out on an arm that is about LEVEL, inward is back along the forearm: the mug hid behind the sleeve.
+	# Then its bulk goes on past the fist, the way the forearm points (a little give either way: no flicker).
+	var fc: Variant = mo.puppet.chains.get(it.hands[0], null)
+	if fc != null and mo.view != "side" and it.hands.size() == 1:
+		var fore: Vector2 = mo.puppet.joint_position(fc.end.name) - mo.puppet.joint_position(fc.b.name)
+		var level: float = absf(fore.x) / maxf(fore.length(), 0.001)
+		it.along = level > (0.62 if it.along else 0.72)
+		if it.along:
+			bulk_to = signf(fore.x)
 	var mirrored: bool = (it.grip.x - 0.5) * bulk_to > 0.0 and not (hold is String and hold in ["hand", "level", "palm"])
 	# (just taken, still on its way into the fist, it is simply the right way round at once: turning over through
 	# edge on there squeezed a mug lying the other way into a thin strip under the hand)

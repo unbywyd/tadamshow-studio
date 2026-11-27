@@ -2744,6 +2744,7 @@ func _write_state() -> void:
 ## steps it by itself (tests), quits after.
 static var _frames := 0
 static var _seq: Array = []
+static var _track := ""                # track:<file>: every frame from now on, each hero's hands, a line of JSON
 
 
 func _scripted() -> void:
@@ -2753,6 +2754,26 @@ func _scripted() -> void:
 	if _frames == 1:
 		for part in OS.get_environment("WORKSHOP_SEQ").split(","):
 			_seq.append([int(part.get_slice("@", 1)), part.get_slice("@", 0)])
+	if _track != "":
+		var tf := FileAccess.open(_track, FileAccess.READ_WRITE) if FileAccess.file_exists(_track) else FileAccess.open(_track, FileAccess.WRITE)
+		tf.seek_end()
+		var line := {"f": _frames}
+		for id: String in actors:
+			var pp: Puppet = (actors[id] as Actor).puppet
+			for h: String in ["hand_l", "hand_r"]:
+				if pp.parts.has(h):
+					var at: Vector2 = pp.parts[h].node.global_position
+					line[id + "." + h] = [snappedf(at.x, 0.1), snappedf(at.y, 0.1)]
+			var mot: Motion = (actors[id] as Actor).motion
+			for chn: String in ["arm_l", "arm_r"]:
+				var nw: Variant = mot.chans[chn].now.get("at", null)
+				line[id + "." + chn] = [snappedf(nw.x, 0.01), snappedf(nw.y, 0.01)] if nw is Vector2 else str(nw)
+		if items != null:
+			for iid: String in items.items:
+				var itm: Variant = items.items[iid]
+				line[iid] = [snappedf(itm.pos.x, 0.1), snappedf(itm.pos.y, 0.1), snappedf(rad_to_deg(itm.rot), 0.1)]
+		tf.store_line(JSON.stringify(line))
+		tf.close()
 	for e: Array in _seq:
 		if e[0] != _frames:
 			continue
@@ -2842,6 +2863,8 @@ func _scripted() -> void:
 				var wf := FileAccess.open(":".join(bits.slice(1)), FileAccess.WRITE)
 				wf.store_string(JSON.stringify(out))
 				wf.close()
+			"track":
+				_track = ":".join(bits.slice(1))
 			"poses":
 				_play_poses()
 			"state":
