@@ -390,7 +390,8 @@ func _glove_hand(p: Part, def: Dictionary, own: Image, part_name: String) -> boo
 		for look: String in meta:
 			var im := _load_image("res://hands".path_join(glove_set).path_join(look + ".png"))
 			if im != null:
-				_gloves[look] = {"image": im, "at": _v2(meta[look]["at"]), "grip": _v2(meta[look]["grip"]), "tip": _v2(meta[look]["tip"])}
+				_gloves[look] = {"image": im, "at": _v2(meta[look]["at"]), "grip": _v2(meta[look]["grip"]), "tip": _v2(meta[look]["tip"]),
+					"scale": float(meta[look].get("scale", 1.0))}     # (a drawing that reads longer than it is: the hand edge on)
 	if not _gloves.has("back"):
 		return false
 	# the hero's own hand: from the wrist to the fingertips (the rig's "tip", or the painted hand's lowest point)
@@ -414,15 +415,16 @@ func _glove_hand(p: Part, def: Dictionary, own: Image, part_name: String) -> boo
 	p.skins.clear()
 	for look: String in _gloves:
 		var g: Dictionary = _gloves[look]
+		var kl: float = k * float(g.get("scale", 1.0))
 		var im: Image = (g["image"] as Image).duplicate()
-		im.resize(maxi(int(im.get_width() * k), 2), maxi(int(im.get_height() * k), 2), Image.INTERPOLATE_LANCZOS)
+		im.resize(maxi(int(im.get_width() * kl), 2), maxi(int(im.get_height() * kl), 2), Image.INTERPOLATE_LANCZOS)
 		var at: Vector2 = g["at"]
 		if mirror:
 			im.flip_x()
 			at.x = float((g["image"] as Image).get_width()) - at.x
 		im.generate_mipmaps()
 		var skin := "" if look == "back" else look
-		p.skins[skin] = {"texture": ImageTexture.create_from_image(im), "position": -at * k}
+		p.skins[skin] = {"texture": ImageTexture.create_from_image(im), "position": -at * kl}
 		if look == "back":
 			p.sprite.texture = p.skins[""]["texture"]
 			p.sprite.position = p.skins[""]["position"]
