@@ -5,34 +5,38 @@
  "params": {},
  "phases": [
   {
-   "time": 0.35,
-   "arms": {
-    "at": {
-     "to": "chest",
-     "dx": 0.14,
-     "dy": 0.1
-    },
+   "time": 0.6,
+   "arm_r": {
+    "raise": 17,
+    "elbow": -111,
+    "front": true,
     "contact": true,
-    "look": "edge",
-    "aim": -90
+    "look": "edge"
+   },
+   "arm_l": {
+    "raise": 21,
+    "elbow": -100,
+    "front": true,
+    "contact": true,
+    "look": "edge"
    }
   },
   {
-   "time": 1.8,
+   "time": 2.0,
    "loop": true,
-   "arms": {
-    "at": {
-     "to": "chest",
-     "dx": 0.14,
-     "dy": 0.1,
-     "amp": [
-      0.13,
-      0.0
-     ],
-     "rate": 2.4
-    },
+   "arm_r": {
+    "raise": {"base": 19.5, "amp": -2.5, "rate": 2.0, "phase": -0.25},
+    "elbow": {"base": -119.5, "amp": -8.5, "rate": 2.0, "phase": -0.25},
+    "front": true,
     "contact": true,
-    "aim": -90
+    "look": "edge"
+   },
+   "arm_l": {
+    "raise": {"base": 22, "amp": -1, "rate": 2.0, "phase": -0.25},
+    "elbow": {"base": -90, "amp": -10, "rate": 2.0, "phase": -0.25},
+    "front": true,
+    "contact": true,
+    "look": "edge"
    }
   },
   {

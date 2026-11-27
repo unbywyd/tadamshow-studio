@@ -7,36 +7,36 @@
  },
  "phases": [
   {
-   "time": 0.35,
+   "time": 0.45,
    "arm_r": {
-    "at": [
-     0.5,
-     -0.02
-    ],
-    "look": "palm"
+    "raise": 24,
+    "elbow": -85,
+    "front": true,
+    "contact": true,
+    "look": "back"
    },
-   "head": -5,
-   "body": {
-    "lean": 3
-   }
+   "head": -4
   },
   {
-   "time": 1.6,
+   "time": 1.75,
    "loop": true,
    "arm_r": {
-    "wrist": {
-     "base": -10,
-     "amp": 28,
-     "rate": 1.7
-    }
+    "raise": 25,
+    "elbow": {
+     "base": -104,
+     "amp": 19,
+     "rate": 1.45
+    },
+    "front": true,
+    "contact": true,
+    "look": "back"
    }
   },
   {
    "name": "return",
    "time": 0.45,
    "arm_r": "rest",
-   "head": "rest",
-   "body": "rest"
+   "head": "rest"
   }
  ]
 }
