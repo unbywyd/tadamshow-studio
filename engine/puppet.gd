@@ -132,8 +132,9 @@ var wrong_total := 0             # steps any held limb spent with its middle joi
 var wrong_longest := 0           # the longest such run
 
 var _idle_mix := 0.0
-var _fist_turns: Dictionary = {}       # hand -> true: a "fist" that turns to the fingers' side once the forearm comes up
-const FIST_UP := -0.3                  # a forearm this high (its sine up) shows the fist from the fingers, thumb over them
+var _fist_turns: Dictionary = {}       # hand -> its drawing ("fist" / "fist_side"): turns to the fingers' side once the forearm comes up
+const FIST_UP := 0.35                  # a forearm this high (its sine up) shows the fist from the fingers, thumb over them...
+const FIST_OUT := -0.85                # ...and so does one held out from the body, from this low (not across the body)
 const HANG_EDGE := 0.8               # a forearm this far down (its sine) shows the hand edge on
 var _skin_held: Dictionary = {}  # part name -> true: its drawing was chosen by hand, not by the automatic rule
 var _rivets: Array[Node2D] = []
@@ -1035,7 +1036,7 @@ func set_skin(part: String, variant: String, hold := true) -> void:
 	if hold:
 		_skin_held[part] = true
 		if variant == "fist" and p.skins.has("fist_palm"):
-			_fist_turns[part] = true
+			_fist_turns[part] = "fist"
 		else:
 			_fist_turns.erase(part)
 	_show_skin(p, variant)
@@ -1076,6 +1077,43 @@ func _apply_squeeze(p: Part) -> void:
 func grip_skin(part: String) -> String:
 	var p: Part = parts.get(part)
 	return "fist_side" if p != null and p.skins.has("fist_side") else "fist"
+
+
+## Which fist drawing a fist of `base` shows with its forearm `fup` high (sine up), `out` from the body or not; the
+## borders lean toward what is shown now (`cur`), so it does not flicker.
+static func _fist_want(base: String, fup: float, out: bool, cur: String) -> String:
+	var up: bool = fup > (FIST_UP - 0.12 if cur == "fist_palm" else FIST_UP)
+	var outward: bool = out and fup > (FIST_OUT - 0.06 if cur == "fist_palm" else FIST_OUT)
+	var across: bool = not out and fup > (-0.75 if cur == "fist" else -0.65)
+	match base:
+		"fist":
+			return "fist_palm" if up or outward else "fist"
+		"fist_side":
+			return "fist_palm" if up else ("fist" if across else "fist_side")
+		"fist_palm":
+			return "fist" if across and not up else "fist_palm"
+	return base
+
+
+## A fist from the thumb's side or the fingers' side asked for by a pose (not one round a handle) turns by the same
+## rule; this one marks it.
+func turn_fist(part: String, base: String) -> void:
+	if parts.has(part) and (parts[part] as Part).skins.has("fist_palm") and (parts[part] as Part).skins.has("fist"):
+		_fist_turns[part] = base
+
+
+## A fist from the thumb's side asked for by a pose (not one round a handle): raised over the shoulder a person
+## cannot show it so (the owner, 27.11), it turns to the fingers' side there.
+func turn_side_fist(part: String) -> void:
+	if parts.has(part) and (parts[part] as Part).skins.has("fist_palm"):
+		_fist_turns[part] = "fist_side"
+
+
+## A fist that stays knuckles to us wherever the arm goes (a boxer's guard): it never turns to the fingers' side.
+func keep_knuckles(part: String) -> void:
+	_fist_turns.erase(part)
+	if parts.has(part):
+		_show_skin(parts[part], "fist")
 
 
 func release_skin(part: String) -> void:
@@ -1143,8 +1181,9 @@ func restart_frames(part: String) -> void:
 ## down at the side is turned EDGE ON, the palm to the leg and the thumb to us, as people stand (a set with that
 ## drawing); in between, the back of the hand. Two thresholds at each border, so it does not flicker.
 func _auto_skins() -> void:
-	# a fist held up (the arm out to the side, raised): a person cannot show the knuckles there; it is the fist seen
-	# from the fingers, the thumb over them (the owner's photo, 27.11). Lowered again, the knuckles come back.
+	# a fist goes the way a wrist can (the owner's photos and checks, 27.11): held UP or OUT from the body it is seen
+	# from the fingers, the thumb over them; ACROSS the body (folded arms, on the hip) from the knuckles; hanging,
+	# the drawing the pose chose.
 	for name: String in _fist_turns:
 		var fc: Chain = chains.get(name)
 		var fp: Part = parts.get(name)
@@ -1154,10 +1193,11 @@ func _auto_skins() -> void:
 		if fa.length() < 1.0:
 			continue
 		var fup: float = -fa.y / fa.length()
-		if fup > FIST_UP and fp.skin == "fist":
-			_show_skin(fp, "fist_palm")
-		elif fup < FIST_UP - 0.15 and fp.skin == "fist_palm":
-			_show_skin(fp, "fist")
+		var away: float = signf(fc.a.xf.origin.x - root.xf.origin.x)       # (this arm's outward side)
+		var out: bool = fa.x * away > 0.0
+		var want: String = _fist_want(_fist_turns[name], fup, out, fp.skin)
+		if fp.skin != want and fp.skins.has(want):
+			_show_skin(fp, want)
 	for c: Chain in chains.values():
 		var hand := c.end
 		if _skin_held.has(hand.name) or not (hand.skins.has("palm") or hand.skins.has("edge")):

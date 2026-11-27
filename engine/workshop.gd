@@ -24,9 +24,9 @@ extends "res://stage.gd"
 const MotionScript := preload("res://motion.gd")
 const GROUP_TITLES := {"pose": "Позы", "gesture": "Жесты", "body": "Тело", "move": "Перемещение", "feeling": "Чувства",
 	"dance": "Танцы", "item": "С предметами", "fight": "Драка", "silly": "Дурачества", "music": "Музыка", "two": "Вдвоём"}
-const LOOKS := ["auto", "palm", "back", "edge", "fist", "fist_side", "fist_palm", "point", "thumb", "shake", "pinch"]
+const LOOKS := ["auto", "palm", "back", "edge", "fist", "fist_knuckles", "fist_side", "fist_palm", "point", "thumb", "shake", "pinch"]
 const LOOK_NAMES := {"auto": "авто", "palm": "ладонь", "fist": "кулак", "back": "тыльная", "edge": "ребро", "point": "палец",
-	"fist_side": "кулак сбоку", "fist_palm": "кулак ладонью", "thumb": "класс (палец вверх)", "shake": "для пожатия", "pinch": "щепоть"}
+	"fist_knuckles": "кулак костяшками (боксёр)", "fist_side": "кулак сбоку", "fist_palm": "кулак ладонью", "thumb": "класс (палец вверх)", "shake": "для пожатия", "pinch": "щепоть"}
 const ELBOWS := ["", "down", "up", "out", "in"]
 const ELBOW_NAMES := {"down": "локоть вниз", "up": "локоть вверх", "out": "локоть наружу", "in": "локоть внутрь"}
 const EASES := ["inout", "out", "in", "linear"]

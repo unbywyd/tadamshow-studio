@@ -73,7 +73,7 @@ const RAMP := 0.2                # seconds an oscillation takes to grow to full 
 const RELEASE_TIME := 0.45       # seconds back to rest when an action is let go without a return phase
 const FLOOR_GAP := 0.12          # arm lengths a wrist stays above the floor
 const REACH := 0.95              # share of its length a planted leg may be stretched to
-const SKIN_OF := {"palm": "palm", "fist": "fist", "back": "", "edge": "edge", "point": "point", "fist_side": "fist_side",
+const SKIN_OF := {"palm": "palm", "fist": "fist", "fist_knuckles": "fist", "back": "", "edge": "edge", "point": "point", "fist_side": "fist_side",
 	"fist_palm": "fist_palm", "thumb": "thumb", "shake": "shake", "pinch": "pinch"}   # (a hand without such a drawing keeps the one it shows; "edge" without one is the back squeezed across)
 const EDGE_WIDTH := 0.42         # a hand seen edge on: the flat hand at this share of its width
 
@@ -379,6 +379,10 @@ func adopt(other: Variant) -> void:
 			puppet.set_skin(h, puppet.grip_skin(h))
 		elif chans[ch].now.get("look", "auto") not in ["auto", ""]:
 			puppet.set_skin(h, _skin_of(h, chans[ch].now["look"]))
+			if chans[ch].now["look"] == "fist_knuckles":
+				puppet.keep_knuckles(h)
+			elif chans[ch].now["look"] in ["fist_side", "fist_palm"]:
+				puppet.turn_fist(h, chans[ch].now["look"])
 
 
 ## The drawing a hand shows for a "look": its own drawing of it if it has one, else the back of the hand.
@@ -830,6 +834,10 @@ func _next_phase(r: Run) -> void:
 				puppet.release_skin(hand)
 			else:
 				puppet.set_skin(hand, _skin_of(hand, look))
+				if look == "fist_knuckles":
+					puppet.keep_knuckles(hand)
+				elif look in ["fist_side", "fist_palm"]:
+					puppet.turn_fist(hand, look)
 			c.now["look"] = look
 			# a hand leaving the body keeps its leave for the way off it: the law would throw it aside at once. Only for
 			# THAT way: the phase after it starts from a place off the body (the leave carried on, a hand going from
